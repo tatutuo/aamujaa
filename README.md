@@ -45,14 +45,14 @@ This repository uses a monorepo structure. It contains both the React frontend a
 
 1. Start the Backend (Proxy Server)
 Open your terminal in the root directory:
-npm install
-node server.js
+- npm install
+- node server.js
 
 2. Start the Frontend (React App)
 Open a second terminal window and navigate to the React application folder:
-cd aamujaa-react
-npm install
-npm run dev
+- cd aamujaa-react
+- npm install
+- npm run dev
 
 ---
 *Disclaimer: Aamujää is an unofficial, fan-made application. The app is not affiliated with the National Hockey League (NHL) or the Finnish Liiga. No ads, no tracking.*
