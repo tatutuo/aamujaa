@@ -8,11 +8,11 @@ The app was developed out of pure passion for ice hockey and software engineerin
 ## 📸 Screenshots
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/d6184413-646b-406c-92f1-330732979e58" width="15%" title="Home and Games">
-  <img src="https://github.com/user-attachments/assets/ca3e18e8-115e-45ca-9614-7561ccf1b54b" width="15%" title="Stats">
-  <img src="https://github.com/user-attachments/assets/cae239e6-8223-4788-b4f6-978ee227a570" width="15%" title="Standings">
-  <img src="https://github.com/user-attachments/assets/092116f9-fb44-4854-9c5f-f6e0b3d7d463" width="15%" title="About Predictions">
-  <img src="https://github.com/user-attachments/assets/ccb6fd20-72a8-423d-8326-a5a3b51a7b97" width="15%" title="Calendar">
+  <img src="https://github.com/user-attachments/assets/b713996a-2a06-41d7-bd53-2fa49474cb27" width="15%" title="Home and Games">
+  <img src="https://github.com/user-attachments/assets/2a68e3ac-8011-4dd5-9021-3a3250421636" width="15%" title="Stats">
+  <img src="https://github.com/user-attachments/assets/be9b9fbb-b7e0-45ea-beb2-6e48c2f78fbb" width="15%" title="Standings">
+  <img src="https://github.com/user-attachments/assets/5d719f41-4666-465f-b3d1-f2e255567de0" width="15%" title="About Predictions">
+  <img src="https://github.com/user-attachments/assets/c9e05ebd-97e6-4ca5-9147-a74133fcc2d7" width="15%" title="Calendar">
 </p>
 
 ## ✨ Key Features
