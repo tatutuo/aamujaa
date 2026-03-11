@@ -1,0 +1,1725 @@
+* {
+    touch-action: manipulation;
+}
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    /* TÄMÄ ON SE TAIKASANA: */
+    overflow-x: hidden; 
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Varmistetaan vielä juurielemetin tasolla */
+#root, .app-container {
+    width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
+}
+
+/* Varmista että kaikki elementit tottelevat leveyksiä (lisää tämä jos puuttuu) */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+/* --- 1. UUSI HEADER BAR (Lukittu!) --- */
+.header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px; 
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(10px);
+    
+    /* NÄMÄ LUKITSEVAT PALKIN: */
+    position: fixed; 
+    top: 0;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box; /* Tärkeä, ettei mene yli ruudun */
+    
+    z-index: 3000; /* Riittävän korkea, jotta pysyy kaiken päällä */
+    border-bottom: 2px solid #333;
+}
+
+.logo-area h1 {
+    margin: 0;
+    font-size: 2.2rem;
+    color: #00d4ff;
+    font-family: 'VT323', monospace; 
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+    letter-spacing: 2px;
+}
+
+/* UUSI: Oikean reunan kontrollien ryhmitys (Kalenteri + Liput) */
+.header-controls {
+    display: flex;
+    align-items: center; /* Keskittää kaiken täydellisesti pystysuunnassa */
+    gap: 15px; /* Väli kalenterin ja lippujen välillä */
+    margin: 0;
+}
+
+/* Liput headerissa */
+.header-flags {
+    margin-bottom: 0; /* Poistetaan vanha marginaali */
+}
+.header-flags .lang-btn {
+    font-size: 1.5rem; /* Hieman pienemmät liput */
+    padding: 5px;
+}
+
+/* --- LIPPUKUVIEN TYYLIT --- */
+.lang-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden; /* Piilottaa kuvan kulmat, jos ne menevät yli */
+}
+
+.lang-btn img {
+    width: 24px;
+    border-radius: 3px;
+    pointer-events: none; /* Estää selaimen "raahaa kuva" -ominaisuuden */
+}
+
+/* Kalenterinappi (Hero-tyyli) */
+.calendar-hero-btn {
+    background: linear-gradient(135deg, #222, #1a1a1a);
+    border: 2px solid #00d4ff;
+    color: #fff;
+    padding: 12px 30px;
+    border-radius: 30px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+    transition: all 0.3s ease;
+    width: 100%; /* Koko leveys mobiilissa */
+    max-width: 400px;
+}
+.calendar-hero-btn:hover {
+    background: #00d4ff;
+    color: #000;
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.6);
+}
+
+/* Kalenterinappi (Nyt isompi ja näyttävämpi!) */
+.header-icon-btn {
+    background: #111;
+    border: 2px solid #00d4ff;
+    border-radius: 50%;
+    font-size: 1.5rem; /* Hieman pienempi, jotta mahtuu kaksi rinnakkain! */
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px; 
+    height: 45px;
+    transition: all 0.3s ease;
+    padding: 0;
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.4); 
+}
+.header-icon-btn:hover {
+    background: #00d4ff;
+    transform: scale(1.1);
+    box-shadow: 0 0 25px rgba(0, 212, 255, 0.8);
+}
+
+/* Liput (Korjaa PC-bugin!) */
+.language-selector.header-flags {
+    position: static; 
+    display: flex;
+    align-items: center; /* Keskittää liput! */
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+}
+
+#paivamaara {
+    color: #aaa;
+    margin-top: 5px;
+    font-size: 1.2rem;
+    text-align: center; /* Tämä korjaa PC:n vasempaan reunaan jumittumisen! */
+    width: 100%;
+}
+
+body {
+    background-color: #111;
+    color: white;
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    min-height: 100vh;
+}
+
+h1 {
+    font-family: 'Teko', sans-serif;
+    font-size: 3rem;
+    margin-bottom: 0;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 0 10px rgba(0, 168, 255, 0.7);
+}
+
+
+.container {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+}
+
+
+/* --- UUDET TIIVIIT PELIKORTIT --- */
+.games-container {
+    display: grid;
+    /* Pakotetaan vähintään 2 vierekkäin mobiilissa (min-width 150px) */
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.game-card {
+    background: linear-gradient(145deg, #1a1a1a, #222);
+    border: 1px solid #333;
+    border-radius: 8px; /* Pienempi pyöristys */
+    padding: 8px 10px; /* Paljon ohuemmat marginaalit sisällä */
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.game-card:hover {
+    border-color: #00d4ff;
+    transform: translateY(-2px);
+}
+
+/* Live-pelin punainen reunus */
+.game-card.live {
+    border: 1px solid #ff4444;
+}
+
+/* Kortin yläosa (esim. "FINAL" tai "LIVE") */
+.compact-header {
+    text-align: right;
+    border-bottom: 1px solid #333;
+    padding-bottom: 4px;
+    margin-bottom: 6px;
+}
+
+.compact-status {
+    font-size: 0.7rem;
+    color: #888;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.live-text {
+    color: #ff4444;
+    animation: pulse 2s infinite;
+}
+
+/* Joukkueen rivi (Logo + Lyhenne + Tulos) */
+.compact-team-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.compact-team-row:last-child {
+    margin-bottom: 0;
+}
+
+.compact-logo {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    filter: drop-shadow(0 0 2px rgba(255,255,255,0.2));
+}
+
+.compact-name {
+    flex-grow: 1;
+    font-weight: bold;
+    font-size: 0.95rem;
+    color: #ddd;
+}
+
+.compact-score {
+    font-family: 'Teko', sans-serif;
+    font-size: 1.5rem; /* Iso numero on tärkein! */
+    font-weight: bold;
+    width: 25px;
+    text-align: right;
+    line-height: 1;
+    color: #fff;
+}
+
+/* --- HAKUKENTTÄ --- */
+/* --- 1. HAKUKENTÄN KÄÄRE (Pitää pudotusvalikon paikoillaan) --- */
+.search-section {
+    position: relative; /* TÄRKEÄ! Tämä lukitsee tulosvalikon tähän laatikkoon */
+    width: 100%;
+    max-width: 500px; /* Ei anneta hakupalkin venyä liian leveäksi isolla näytöllä */
+    margin: 0 auto 30px auto; /* Keskittää koko roskan nätisti */
+}
+
+/* --- 2. ITSE PILLERI (Input + Nappi) --- */
+.search-box {
+    display: flex;
+    align-items: center;
+    background: #222;
+    border: 2px solid #444;
+    border-radius: 30px;
+    padding: 5px 5px 5px 15px; /* Tilaa vasemmalle, nappi tiukasti oikealle */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Tekstikenttä pillerin sisällä */
+.search-box input {
+    flex-grow: 1;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 1.1rem;
+    outline: none;
+    width: 100%;
+}
+
+/* Suurennuslasinappi */
+.search-box button {
+    width: 45px;
+    height: 45px;
+    min-width: 45px;
+    border-radius: 50%; /* Tekee neliöstä täydellisen ympyrän */
+    background: #00d4ff;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 10px;
+    color: #000;
+}
+
+.search-box button:hover {
+    background: #00a0cc;
+    transform: scale(1.05);
+}
+
+.search-results {
+    position: absolute; /* Kelluu muun sisällön päällä */
+    top: 110%; /* Asettuu juuri pillerin alapuolelle (100% + pieni väli) */
+    left: 0;
+    right: 0; /* Pakottaa laatikon täsmälleen pillerin levyiseksi */
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 15px; /* Nätit pyöreät kulmat */
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 1000; /* Varmistaa, että on AINA kaiken muun päällä */
+    box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+    display: none; /* JS hoitaa tämän näyttämisen */
+}
+
+.result-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #ccc;
+    font-size: 1rem;
+}
+
+.result-item:last-child {
+    border-bottom: none; /* Viimeiseltä riviltä viiva pois */
+}
+
+.result-item:hover {
+    background: #00d4ff;
+    color: #000;
+    font-weight: bold;
+}
+
+/* --- PELAAJAKORTTI (THE BIG ONE) --- */
+.player-card-container {
+    margin-top: 20px;
+    background: linear-gradient(135deg, #1e1e1e, #0d0d0d);
+    border: 2px solid #444;
+    border-radius: 15px;
+    padding: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    text-align: center;
+    animation: fadeIn 0.5s;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Taustalle tiimi-logo haileasti */
+.player-bg-logo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 300px;
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+.player-headshot {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    border: 4px solid #fff;
+    background: #333;
+    object-fit: cover;
+    margin-bottom: 10px;
+    position: relative;
+    z-index: 2;
+}
+
+.player-name {
+    font-family: 'Teko', sans-serif;
+    font-size: 2.5rem;
+    margin: 0;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 2;
+}
+
+.player-info {
+    color: #aaa;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
+}
+
+.stats-row {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    margin-top: 15px;
+    position: relative;
+    z-index: 2;
+}
+
+.stat-box {
+    background: rgba(255,255,255,0.1);
+    padding: 10px 20px;
+    border-radius: 10px;
+    min-width: 80px;
+}
+
+.stat-value {
+    font-family: 'Teko', sans-serif;
+    font-size: 2rem;
+    font-weight: bold;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    color: #ccc;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* --- KIELIVALINTA (PARANNETTU) --- */
+.language-selector {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    gap: 15px;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.6); /* Tumma tausta */
+    padding: 8px 15px;
+    border-radius: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(5px);
+}
+
+.lang-btn {
+    background: none;
+    border: 2px solid transparent;
+    font-size: 1.8rem; /* Isommat liput */
+    padding: 0;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: transform 0.2s, filter 0.2s;
+    width: 45px;
+    height: 45px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: grayscale(0.8); /* Oletuksena harmaa */
+}
+
+.lang-btn:hover, .lang-btn.active {
+    transform: scale(1.2);
+    filter: grayscale(0); /* Värit päälle kun valittu/hover */
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Mobiilissa keskemmälle */
+@media (max-width: 600px) {
+    .language-selector {
+        position: relative;
+        justify-content: center;
+        margin-bottom: 20px;
+        right: auto;
+        top: auto;
+        display: inline-flex; /* Jotta keskitys toimii containerissa */
+    }
+}
+
+/* --- KAUSITILASTO TAULUKKO --- */
+.season-table-container {
+    margin-top: 25px;
+    max-height: 300px; /* Scrollaus jos pitkä ura */
+    overflow-y: auto;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    border: 1px solid #333;
+}
+
+/* Kustomoitu scrollbar */
+.season-table-container::-webkit-scrollbar {
+    width: 8px;
+}
+.season-table-container::-webkit-scrollbar-thumb {
+    background: #444; 
+    border-radius: 4px;
+}
+
+.stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+.stats-table th {
+    background: #222;
+    padding: 10px;
+    position: sticky; /* Otsikot pysyy paikallaan scrollatessa */
+    top: 0;
+    z-index: 10;
+    font-family: 'Teko', sans-serif;
+    letter-spacing: 1px;
+    font-size: 1.1rem;
+    color: #00d4ff;
+}
+
+.stats-table td {
+    padding: 8px;
+    border-bottom: 1px solid #333;
+}
+
+.stats-table tr:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.hl-row {
+    color: white;
+    font-weight: bold;
+}
+
+/* --- MODAL (POPUP) --- */
+.modal {
+    display: none; /* Oletuksena piilossa */
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85); /* Tumma tausta */
+    backdrop-filter: blur(5px);
+    width: 100%; 
+}
+
+.modal-content {
+    background: linear-gradient(135deg, #1a1a1a, #0d0d0d);
+    margin: 10% auto;
+    padding: 20px;
+    border: 1px solid #444;
+    border-radius: 15px;
+    width: 90%;
+    max-width: 600px;
+    box-sizing: border-box;
+    position: relative;
+    box-shadow: 0 0 50px rgba(0, 168, 255, 0.2);
+    animation: zoomIn 0.3s;
+    max-height: 75vh; /* Laatikko saa olla max 75% näytön korkeudesta */
+    overflow-y: auto; /* Jos sisältö on pidempi, laita vierityspalkki päälle */
+}
+
+/* UUSI: Tehdään vielä vierityspalkista tyylikäs ja teemaan sopiva */
+.modal-content::-webkit-scrollbar {
+    width: 8px;
+}
+.modal-content::-webkit-scrollbar-thumb {
+    background: #444; 
+    border-radius: 4px;
+}
+
+@keyframes zoomIn {
+    from {transform: scale(0.7); opacity: 0;}
+    to {transform: scale(1); opacity: 1;}
+}
+
+.close-btn {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close-btn:hover {
+    color: white;
+}
+
+/* Modal sisällöt */
+.modal-score-row {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.modal-team {
+    text-align: center;
+    width: 30%;
+}
+
+.modal-logo {
+    width: 80px;
+    height: 80px;
+    filter: drop-shadow(0 0 10px rgba(255,255,255,0.1));
+}
+
+.modal-score {
+    font-family: 'Teko', sans-serif;
+    font-size: 4rem;
+    font-weight: bold;
+    text-shadow: 0 0 20px rgba(255,255,255,0.2);
+}
+
+/* Tilastot (Laukaukset yms) */
+.modal-stats-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid #333;
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+.scorer-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #222;
+    font-size: 0.9rem;
+}
+
+.scorer-time {
+    color: #888;
+    width: 50px;
+    font-size: 0.8rem;
+}
+
+.scorer-logo {
+    width: 25px;
+    height: 25px;
+    margin-right: 10px;
+}
+
+/* --- HAKUKENTÄN VÄLI (Korvaa poistetun viivan) --- */
+.search-section {
+    margin-bottom: 40px; /* Lisää ilmaa ilman rumaa viivaa */
+}
+
+/* --- MOBIILI-OPTIMOINTI --- */
+@media (max-width: 600px) {
+    
+    /* 1. Otsikko pienemmäksi */
+    h1 { font-size: 2rem; }
+
+    /* 2. Pelaajakortin laatikot tiiviimmiksi */
+    .stats-row {
+        gap: 8px; /* Pienempi väli laatikoiden välissä */
+        flex-wrap: wrap; /* Rivitä laatikot jos ei mahdu */
+        justify-content: center;
+    }
+    
+    .stat-box {
+        padding: 5px 8px; /* Vähemmän tyhjää tilaa sisällä */
+        min-width: 60px; /* Ei liian leveitä */
+        flex: 1 1 20%; /* Antaa laatikoiden joustaa */
+    }
+    
+    .stat-value { font-size: 1.4rem; } /* Pienempi numero */
+    .stat-label { font-size: 0.65rem; } /* Pienempi teksti */
+
+    /* 3. Pelaajan perustiedot (RW | 183cm...) */
+    .player-info {
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+    }
+
+    /* 4. Kausitaulukko rullattavaksi */
+    .season-table-container {
+        overflow-x: auto; /* Salli sivuttaisscrollaus */
+        -webkit-overflow-scrolling: touch; /* Pehmeä scrollaus iPhonella */
+        width: 100%;
+    }
+    
+    .stats-table {
+        min-width: 450px; /* Pakota taulukko leveäksi, jotta se scrollaa eikä mene kasaan */
+        font-size: 0.8rem;
+    }
+    
+    .stats-table th, .stats-table td {
+        padding: 6px 4px; /* Tiivistä soluja */
+    }
+    
+    /* Piilotetaan joukkueen nimi mobiilissa jos haluat tilaa (valinnainen) */
+    /* .stats-table th:nth-child(2), .stats-table td:nth-child(2) { display: none; } */
+}
+
+/* --- SUOMALAISET --- */
+.finns-section {
+    margin: 30px auto 40px auto;
+    max-width: 900px;
+    text-align: left;
+}
+
+.finns-section h3 {
+    font-family: 'Teko', sans-serif;
+    color: #00d4ff;
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+    letter-spacing: 1px;
+}
+
+.finns-container {
+    display: flex;
+    gap: 15px;
+    overflow-x: auto; /* Salli rullaus sivusuunnassa */
+    padding-bottom: 15px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.finns-container::-webkit-scrollbar { height: 8px; }
+.finns-container::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+
+.finn-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid #444;
+    border-radius: 12px;
+    padding: 15px;
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: transform 0.2s;
+}
+
+.finn-card:hover { 
+    transform: translateY(-5px);
+    background: rgba(255,255,255,0.1); 
+    border-color: #00d4ff;
+}
+
+.finn-photo {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    background: #222;
+    object-fit: cover;
+    margin-bottom: 10px;
+    border: 2px solid #444;
+}
+
+.finn-name { font-weight: bold; font-size: 1.1rem; margin-bottom: 2px; }
+.finn-team { font-size: 0.8rem; color: #aaa; margin-bottom: 15px; }
+
+.finn-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    width: 100%;
+}
+
+.finn-stat-item { 
+    background: #111; 
+    padding: 6px; 
+    border-radius: 6px; 
+    font-size: 0.8rem;
+    color: #ccc;
+}
+.finn-stat-val { 
+    color: #fff; 
+    font-weight: bold; 
+    font-size: 1.1rem; 
+    display: block; 
+}
+
+/* Korostus pisteille ja maaleille */
+.val-hl { color: #00d4ff; }
+.val-hl-goal { color: #ff4444; }
+
+/* --- TEKSTI-TV 235 --- */
+.tekstitv-container {
+    background-color: #000;
+    border: 4px solid #333;
+    border-radius: 8px;
+    margin: 40px auto;
+    
+    /* --- UUDET SÄÄNNÖT --- */
+    width: 90%; 
+    max-width: 600px;
+    box-sizing: border-box; /* Varmistaa, että padding ei suurenna 90% leveyttä */
+    
+    padding: 10px;
+    box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+}
+
+.tekstitv-header {
+    display: flex;
+    justify-content: space-between;
+    background-color: #000;
+    color: #fff;
+    font-family: 'VT323', monospace;
+    font-size: 1.5rem;
+    padding: 5px 10px;
+    border-bottom: 2px solid #fff;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+/* Lisää rullaus ja maksimikorkeus itse ruutuun */
+.tekstitv-screen {
+    font-family: 'VT323', monospace;
+    color: #00ff00; 
+    font-size: 1.3rem;
+    line-height: 1.2;
+    background-color: #000;
+    margin: 0;
+    padding: 10px;
+    overflow-x: auto;
+    
+    /* UUSI: Pystysuuntainen rullaus! */
+    max-height: 500px;
+    overflow-y: auto; 
+    
+    text-shadow: 0 0 5px rgba(0, 255, 0, 0.5); 
+}
+
+/* Keltaisen tekstin tuki otsikoille */
+.ttv-yellow { color: #ffff00; text-shadow: 0 0 5px rgba(255, 255, 0, 0.5); }
+.ttv-white { color: #ffffff; text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+
+/* UUSI: Kustomoitu retro-rullapalkki ruudun sisälle */
+.tekstitv-screen::-webkit-scrollbar { width: 10px; }
+.tekstitv-screen::-webkit-scrollbar-thumb { background: #333; border-radius: 0; }
+.tekstitv-screen::-webkit-scrollbar-track { background: #000; }
+
+/* Olemassa olevat värit... */
+.ttv-yellow { color: #ffff00; text-shadow: 0 0 5px rgba(255, 255, 0, 0.5); }
+.ttv-white { color: #ffffff; text-shadow: 0 0 5px rgba(255, 255, 255, 0.5); }
+
+/* UUSI: Puolustajien aito vaaleansininen/turkoosi */
+.ttv-cyan { color: #00ffff; text-shadow: 0 0 5px rgba(0, 255, 255, 0.5); }
+
+
+/* --- PELAAJAKORTIN SULKEMISNAPPI --- */
+.close-card-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    color: #aaa;
+    font-size: 35px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 10;
+    line-height: 1;
+    transition: color 0.2s;
+}
+
+.close-card-btn:hover {
+    color: #fff;
+}
+
+/* TV-mode tuki sulkemisnapille */
+body.tv-mode .close-card-btn {
+    color: #00ff00;
+}
+body.tv-mode .close-card-btn:hover {
+    color: #ffff00;
+}
+
+/* --- KALENTERI --- */
+.schedule-content {
+    width: 95%;
+    max-width: 800px;
+    box-sizing: border-box;
+    padding: 15px;
+}
+
+.sched-card {
+    display: flex;
+    flex-direction: column;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid #444;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    padding: 10px;
+    scroll-margin-top: 80px; /* Estää yläpalkkia peittämästä korttia kun hypätään alas! */
+}
+
+.sched-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+}
+
+.sched-logo {
+    width: 40px;
+    height: 40px;
+    margin-right: 15px;
+}
+
+.sched-team-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    flex-grow: 1;
+}
+
+.sched-count {
+    background: #00d4ff;
+    color: #000;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+/* --- RULLAAVA KALENTERIRIVI --- */
+.sched-days {
+    display: flex; /* Muutettu gridistä flexiksi */
+    overflow-x: auto; /* Sallii sivuttaisrullauksen! */
+    gap: 6px;
+    padding-bottom: 10px; /* Tilaa rullapalkille */
+    -webkit-overflow-scrolling: touch; /* Sulava vieritys iPhonella */
+}
+
+/* Tyylitelty rullapalkki */
+.sched-days::-webkit-scrollbar { height: 6px; }
+.sched-days::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+.sched-days::-webkit-scrollbar-track { background: transparent; }
+
+.sched-day-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 4px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-align: center;
+    color: #fff;
+    
+    /* UUSI: Estää laattojen litistymisen kasaan! */
+    min-width: 50px; 
+    flex-shrink: 0; 
+}
+
+.sched-date {
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.6);
+    margin-bottom: 3px;
+}
+
+/* Värikoodaukset */
+.day-off { background: #222; border: 1px solid #333; }
+.day-home { background: #1e5a22; border: 1px solid #2e8a34; } /* Vihreä kotipeli */
+.day-away { background: #8a2e2e; border: 1px solid #c44141; } /* Punainen vieraspeli */
+
+/* --- AIKAVÄLIN VALINTANAPIT --- */
+.sched-filter-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.sched-filter-btn {
+    background: #111;
+    color: #888;
+    border: 1px solid #444;
+    padding: 6px 15px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: 'Teko', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+}
+.sched-filter-btn.active {
+    background: #00d4ff;
+    color: #000;
+    border-color: #00d4ff;
+    font-weight: bold;
+}
+
+/* Kun nappi on lukittu (lataus käynnissä) */
+.sched-filter-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none; /* Estää klikkaukset kokonaan */
+}
+
+.sched-stats {
+    font-size: 0.85rem;
+    color: #ccc;
+    background: rgba(0,0,0,0.4);
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    font-family: 'Teko', sans-serif;
+    letter-spacing: 1px;
+}
+
+/* --- UUSI: MOBIILIN YLÄPALKIN HIENOSÄÄTÖ --- */
+@media (max-width: 600px) {
+    .header-bar {
+        padding: 10px 10px; /* Pienempi reuna mobiilissa, antaa tilaa */
+    }
+    
+    .logo-area h1 {
+        font-size: 1.8rem; /* Hieman pienempi logo, ettei se työnnä nappeja lyttyyn */
+    }
+    
+    .header-controls {
+        gap: 10px; /* Hieman pienempi väli kalenterin ja lippujen välillä */
+    }
+    
+    .header-calendar-btn {
+        width: 45px; /* Skaalataan nappeja hieman mobiiliin */
+        height: 45px;
+        font-size: 1.5rem;
+    }
+}
+
+/* --- NÄKYMIEN VAIHTO (Tilaa yläpalkille) --- */
+.app-view {
+    display: none;
+    animation: fadeIn 0.3s ease;
+    
+    /* UUSI TÄRKEÄ SÄÄNTÖ: Antaa tilaa lukitulle yläpalkille */
+    padding-top: 75px; 
+    
+    padding-bottom: 80px; /* Antaa tilaa alapalkille */
+}
+
+.app-view.active-view {
+    display: block;
+}
+
+/* --- UUSI ALAPALKKI (Bottom Nav) --- */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 65px;
+    background: rgba(15, 15, 15, 0.95);
+    backdrop-filter: blur(15px);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    border-top: 1px solid #333;
+    z-index: 2000;
+    padding-bottom: env(safe-area-inset-bottom); /* iPhonen alareunan tuki! */
+}
+
+.nav-item {
+    background: none;
+    border: none;
+    color: #666;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 25%;
+    height: 100%;
+    cursor: pointer;
+    transition: color 0.2s, transform 0.2s;
+    padding: 0;
+}
+
+.nav-item:hover {
+    color: #aaa;
+}
+
+.nav-item.active {
+    color: #00d4ff;
+    transform: translateY(-2px); /* Pieni nosto aktiiviselle napille */
+}
+
+.nav-icon {
+    font-size: 1.5rem;
+    margin-bottom: 3px;
+    filter: grayscale(1); /* Muuttaa emojit harmaaksi kun ei aktiivinen */
+}
+
+.nav-item.active .nav-icon {
+    filter: grayscale(0); /* Värit takaisin aktiiviseen! */
+}
+
+.nav-label {
+    font-size: 0.7rem;
+    font-family: 'Roboto', sans-serif;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* --- UUDET: KUSTOMOITU KALENTERIHAKU --- */
+.date-input {
+    background: #222;
+    color: #fff;
+    border: 1px solid #444;
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-family: 'Roboto', sans-serif;
+    color-scheme: dark; /* Tekee kalenteriponnahdusikkunasta mobiilissa tumman teeman mukaisen! */
+    outline: none;
+}
+
+.date-input:focus {
+    border-color: #00d4ff;
+}
+
+.date-search-btn {
+    background: #00d4ff;
+    color: #000;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-family: 'Teko', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 1px;
+    transition: transform 0.2s;
+}
+
+.date-search-btn:hover {
+    transform: scale(1.05);
+}
+
+/* Pienennetään napin kokoa hieman mobiilissa, jotta kaikki mahtuu yhdelle riville */
+@media (max-width: 600px) {
+    .date-input { padding: 6px 5px; font-size: 0.85rem; }
+    .date-search-btn { padding: 6px 12px; font-size: 1.1rem; }
+}
+
+footer {
+    margin-bottom: 80px !important; /* Pakottaa footerin nousemaan alapalkin yläpuolelle */
+}
+
+/* --- SARJATAULUKOT --- */
+.standings-logo {
+    width: 25px;
+    height: 25px;
+    margin-right: 8px;
+    vertical-align: middle;
+    filter: drop-shadow(0 0 2px rgba(255,255,255,0.2));
+}
+
+.standings-team-name {
+    font-weight: bold;
+    vertical-align: middle;
+    font-size: 1.1rem;
+}
+
+.rank-col {
+    color: #888;
+    font-weight: bold;
+}
+
+.points-col {
+    color: #00d4ff !important; /* Pakottaa turkoosin värin */
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.team-col {
+    text-align: left;
+    white-space: nowrap; /* Estää joukkueen lyhenteen rivittymisen */
+}
+
+/* PLAYOFF-RAJA! Katkoviiva 8. sijan alle */
+.playoff-line td {
+    border-bottom: 2px dashed #44b4ff !important;
+}
+
+/* Table tiivistys mobiilia varten */
+@media (max-width: 600px) {
+    .standings-team-name { font-size: 0.95rem; }
+    .standings-logo { width: 20px; height: 20px; }
+}
+
+@media (max-width: 600px) {
+    /* --- UUSI: TEKSTI-TV MOBIILIKORJAUS --- */
+    .tekstitv-container {
+        width: 98%; /* Vedetään laatikko melkein reunoihin kiinni */
+        padding: 5px; /* Kavennetaan sisämarginaaleja */
+        margin: 20px auto; /* Vähemmän tyhjää tilaa laatikon ylä/alapuolella */
+    }
+
+    .tekstitv-screen {
+        font-size: 1.05rem; /* Pienennetään fonttia, jotta pitkät datarivit mahtuvat rullaamatta! */
+        padding: 5px;
+    }
+
+    .tekstitv-header {
+        font-size: 1.2rem; /* Otsikko tasapainoon pienemmän tekstin kanssa */
+    }
+}
+
+/* --- SARJATAULUKON KÄÄRE (Korkeampi!) --- */
+.standings-table-container {
+    margin-top: 10px;
+    max-height: 65vh; /* Ottaa 65 % laitteen näytön korkeudesta! */
+    overflow-y: auto;
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    border: 1px solid #333;
+    -webkit-overflow-scrolling: touch; /* Pehmeä rullaus iPhonella */
+}
+
+/* Tyylikäs rullapalkki sarjataulukkoon */
+.standings-table-container::-webkit-scrollbar { width: 8px; }
+.standings-table-container::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+
+/* --- SPLASH SCREEN (Aloitusnäyttö) --- */
+#splash-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #0a0a0a; /* Todella tumma tausta */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* TÄRKEÄÄ: Pakottaa tämän kaiken muun päälle! */
+    transition: opacity 0.5s ease-out, visibility 0.5s ease-out; /* Pehmeä häivytys */
+}
+
+/* Kun JS lisää tämän luokan, ruutu feidaa nätisti pois */
+#splash-screen.hidden {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* Itse logo ja sen sykkivä efekti */
+.splash-logo {
+    width: 350px; /* Säädä logon kokoa tästä sopivaksi puhelimelle */
+    animation: pulseSplash 1.5s infinite alternate ease-in-out;
+}
+
+@keyframes pulseSplash {
+    0% { transform: scale(0.95); filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.4)); }
+    100% { transform: scale(1.05); filter: drop-shadow(0 0 30px rgba(0, 212, 255, 1)); }
+}
+
+/* --- UUSI: PIKAHYPPYLINKIT --- */
+.quick-jump-row {
+    display: flex;
+    overflow-x: auto;
+    gap: 12px;
+    padding: 10px 5px;
+    margin-bottom: 15px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.quick-jump-row::-webkit-scrollbar { height: 6px; }
+.quick-jump-row::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+
+.quick-logo {
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+    transition: transform 0.2s;
+    filter: drop-shadow(0 0 2px rgba(255,255,255,0.2));
+    flex-shrink: 0; /* Estää logojen litistymisen */
+}
+
+.quick-logo:hover {
+    transform: scale(1.2);
+}
+
+/* --- ETUSIVUN PÄIVÄMÄÄRÄNUOLET --- */
+.date-nav-btn {
+    background: transparent;
+    border: none;
+    color: #444;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.2s, transform 0.2s;
+    padding: 5px 15px;
+}
+
+.date-nav-btn:hover {
+    color: #00d4ff;
+    transform: scale(1.2);
+}
+
+.date-nav-btn:active {
+    transform: scale(0.9);
+}
+
+/* Sydän-ikonin asetukset mobiililaitteille optimoituna */
+.fav-sydan {
+  cursor: pointer;
+  color: #555; /* Tyhjä sydän on tumman harmaa, istuu paremmin teemaan */
+  font-size: 1.4rem;
+  background: none;
+  border: none;
+  padding: 5px; /* Hyvä kosketuspinta sormelle */
+  margin: -5px 0 -5px -5px; /* Estää napin paddingia rikkomasta joukkuelistan riviä */
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  outline: none;
+}
+
+.fav-sydan:hover, .fav-sydan:active { 
+  transform: scale(1.3); 
+}
+
+.fav-sydan.aktiivinen { 
+  color: #ff2a2a; 
+  text-shadow: 0 0 10px rgba(255, 42, 42, 0.5); 
+}
+
+/* Suosikkijoukkueen ottelukortin kultainen korostus (Jyrää liven yli!) */
+.suosikki-kortti {
+  border: 2px solid #ffd700 !important;
+  box-shadow: 0 0 15px rgba(255, 215, 0, 0.25);
+  background: linear-gradient(145deg, #1a1a1a, #2a2510); /* Hento kultainen vivahde taustassa */
+}
+
+/* Fantasy-tähden tyylit */
+.fav-tahti {
+  cursor: pointer;
+  color: #555;
+  font-size: 1.4rem;
+  background: none;
+  border: none;
+  padding: 5px;
+  margin: -5px 0 -5px 10px; /* Vähän väliä nimeen */
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  outline: none;
+}
+.fav-tahti:hover, .fav-tahti:active { transform: scale(1.3); }
+.fav-tahti.aktiivinen-tahti { 
+  color: #ffd700; 
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.8); 
+}
+
+.porssi-btn {
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    color: #fff;
+    border: 1px solid #444;
+    padding: 20px 10px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4);
+    transition: all 0.2s;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.porssi-btn:active {
+    transform: scale(0.95);
+    border-color: #ffd700;
+}
+
+@keyframes maalivilkku {
+    0% { opacity: 1; text-shadow: 0 0 10px #ff4444, 0 0 20px #ff4444; transform: scale(1); }
+    100% { opacity: 0.5; text-shadow: 0 0 2px #ff4444; transform: scale(1.05); }
+}
+
+.goal-alert {
+    color: #ff4444;
+    font-weight: bold;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    animation: maalivilkku 0.4s infinite alternate;
+}
+
+.refresh-btn {
+    background: none;
+    border: none;
+    color: #00d4ff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    margin-left: 10px;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background 0.2s, opacity 0.2s;
+    vertical-align: middle;
+}
+
+.refresh-btn:active {
+    opacity: 0.5;
+    background: rgba(0, 212, 255, 0.2);
+}
+
+.pyorii {
+    animation: pyorahdys 0.5s linear;
+}
+
+@keyframes pyorahdys {
+    100% { transform: rotate(360deg); }
+}
+
+.top-icon-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.6rem;
+    cursor: pointer;
+    transition: transform 0.2s, text-shadow 0.2s;
+    color: #fff; /* Tärkeä, jotta emojit näkyvät puhtaasti */
+    padding: 0;
+}
+
+.top-icon-btn:hover, .top-icon-btn:active {
+    transform: scale(1.1);
+    text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+}
+
+/* ==========================================
+   ⭐ MODERNISOINTI & TEEMAT (DARK/LIGHT) ⭐
+   ========================================== */
+
+:root {
+    /* TUMMA TEEMA (Oletus) */
+    --bg-main: #0a0a0a;
+    --bg-card: linear-gradient(145deg, #1a1a1a, #222);
+    --bg-nav: rgba(15, 15, 15, 0.95);
+    --text-main: #ffffff;
+    --text-muted: #888888;
+    --border-color: #333333;
+    --accent-blue: #00d4ff;
+    
+    /* Muodot */
+    --radius-card: 16px; /* Hieman maltillisempi ja tyylikkäämpi pyöreys */
+    --radius-btn: 30px;
+    --shadow-main: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+[data-theme="light"] {
+    /* VAALEA TEEMA (Pehmennetty "jäisemmäksi", jottei räjähdä silmille) */
+    --bg-main: #f0f4f8; 
+    --bg-card: linear-gradient(145deg, #ffffff, #f9fbfd);
+    --bg-nav: rgba(255, 255, 255, 0.95);
+    --text-main: #1a1a1a;
+    --text-muted: #555555;
+    --border-color: #d1dae3; 
+    --accent-blue: #007a99; 
+    
+    --shadow-main: 0 8px 24px rgba(0, 100, 150, 0.08);
+}
+
+/* --- YLIAJETAAN VANHAT KOVAT VÄRIT MUUTTUJILLA --- */
+body { 
+    background-color: var(--bg-main) !important; 
+    color: var(--text-main) !important; 
+    transition: background-color 0.3s ease, color 0.3s ease; 
+}
+.header-bar, .bottom-nav { 
+    background: var(--bg-nav) !important; 
+    border-color: var(--border-color) !important; 
+    transition: background 0.3s ease;
+}
+
+/* VAIN NÄMÄ VAIHTAVAT VÄRIÄ TEEMAN MUKANA (Poistettu kalenteri, taulukot ja Teksti-TV!) */
+.game-card, .finn-card, .porssi-btn, .modal-content {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    border-radius: var(--radius-card) !important;
+    box-shadow: var(--shadow-main) !important;
+    color: var(--text-main) !important;
+}
+
+h2, .finn-name, .compact-name, .compact-score, .finn-stat-val { 
+    color: var(--text-main) !important; 
+}
+
+#txt-standings-title, #txt-schedule-title, #txt-finns-title, .logo-area h1 { 
+    color: var(--accent-blue) !important; 
+}
+
+.sched-filter-btn { 
+    border-radius: var(--radius-btn) !important; 
+    background: var(--bg-main) !important; 
+    border-color: var(--border-color) !important; 
+    color: var(--text-muted) !important;
+}
+.sched-filter-btn.active { 
+    background: var(--accent-blue) !important; 
+    color: #fff !important; 
+    border-color: var(--accent-blue) !important; 
+}
+.finn-stat-item { 
+    background: var(--bg-main) !important; 
+    color: var(--text-muted) !important; 
+}
+.top-icon-btn, .nav-item { color: var(--text-muted) !important; }
+.nav-item.active { color: var(--accent-blue) !important; }
+
+/* ==========================================
+   🔒 PAKOTETUT TUMMAT ELEMENTIT
+   (Nämä pysyvät aina tummina, riippumatta teemasta!)
+   ========================================== */
+
+/* 1. Teksti-TV on aina yöllinen retrolaatikko */
+.tekstitv-container, .tekstitv-screen {
+    background: #0a0a0a !important;
+    color: #fff !important;
+}
+.tekstitv-container {
+    border-color: rgba(0, 212, 255, 0.4) !important;
+    border-radius: 12px !important;
+}
+
+/* 2. Kalenterin kortit ja Sarjataulukko pakotetaan tummiksi */
+.sched-card, .standings-table-container {
+    background: linear-gradient(145deg, #1a1a1a, #222) !important;
+    border-color: #333 !important;
+    border-radius: var(--radius-card) !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
+}
+
+/* 3. Korjataan näiden sisällä olevat tekstit aina vaaleiksi/harmaiksi */
+.sched-team-name, .sched-stats, .sched-date {
+    color: #fff !important;
+}
+.standings-table-container th {
+    color: #aaa !important;
+    border-bottom: 1px solid #444 !important;
+}
+.standings-table-container td {
+    color: #ddd !important;
+}
+
+/* --- SUOSIKIT JA FANTASY --- */
+.fav-sydan { transition: color 0.2s; background: none; border: none; cursor: pointer; color: #555; }
+.fav-sydan.aktiivinen { color: #87ceeb !important; text-shadow: 0 0 8px rgba(135, 206, 235, 0.5); } /* Vaaleansininen */
+
+.fav-tahti { transition: color 0.2s; background: none; border: none; cursor: pointer; color: #555; }
+.fav-tahti.aktiivinen { color: #ffd700 !important; text-shadow: 0 0 8px rgba(255, 215, 0, 0.5); } /* Kulta */
+
+.game-card.kultareunus {
+    border: 2px solid #ffd700 !important;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.15) !important;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.8; }
+    100% { opacity: 1; }
+}
+
+/* --- AAMUJÄÄ 2.0 KORTTITYYLIT --- */
+
+/* Sivuttain rullaava laatikko */
+.h-scroll-wrapper {
+    display: flex;
+    overflow-x: auto;
+    gap: 15px;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
+    scrollbar-width: thin;
+    scrollbar-color: #444 transparent;
+}
+.h-scroll-wrapper::-webkit-scrollbar {
+    height: 6px;
+}
+.h-scroll-wrapper::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+}
+.h-scroll-wrapper::-webkit-scrollbar-thumb {
+    background-color: #444;
+    border-radius: 4px;
+}
+
+/* Uusi Pelaajakortti */
+.modern-p-card {
+    background: #151515;
+    border-radius: 6px;
+    min-width: 210px;
+    max-width: 210px;
+    padding: 12px;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    display: flex;
+    flex-direction: column;
+}
+.modern-p-card:hover {
+    transform: translateY(-2px);
+    background: #1a1a1a;
+}
+
+/* Reunusten värit variantin mukaan */
+.modern-p-card.variant-fantasy { border: 1px solid #ffd700; }
+.modern-p-card.variant-hot { border: 1px solid #ff4444; }
+.modern-p-card.variant-fav { border: 1px solid #333; }
+.modern-p-card.variant-fin { border: 1px solid #333; }
+
+.p-card-header {
+    text-align: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding-bottom: 8px;
+}
+.p-card-name {
+    font-weight: bold;
+    font-size: 1.05rem;
+    color: #fff;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+.p-card-team {
+    font-size: 0.7rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* 2x2 Tilastoruudukko */
+.p-card-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+}
+.p-stat-box {
+    background: #1a1a1a;
+    border-radius: 4px;
+    padding: 8px 4px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 1px solid #222;
+}
+.p-stat-label {
+    font-size: 0.65rem;
+    color: #888;
+    margin-bottom: 4px;
+}
+.p-stat-val {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #ccc;
+}
+
+/* Tekstivärit ja korostukset */
+.val-green { color: #4ade80 !important; }
+.val-red { color: #ff4444 !important; }
+.val-gold { color: #ffd700 !important; }
+.box-gold { 
+    background: rgba(255, 215, 0, 0.08); 
+    border-color: rgba(255, 215, 0, 0.2); 
+}
+.box-green { 
+    background: rgba(74, 222, 128, 0.08); 
+    border-color: rgba(74, 222, 128, 0.2);
+}
+.no-stats-msg {
+    font-size: 0.75rem;
+    color: #555;
+    text-align: center;
+    padding: 20px 0;
+    font-style: italic;
+}
+
+@keyframes spin { 100% { transform: rotate(360deg); } }
+
+.page-main-title {
+    font-size: 1.4rem;
+    color: #fff;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin: 20px 0 25px 0;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-weight: 600;
+}
+
+/* ==========================================
+   🇫🇮 LIIGA (ILTAJÄÄ) ERIKOISTYYLIT
+   ========================================== */
+
+/* 1. Modal Overlay (Tämä pakottaa pop-upin ruudun keskelle KAIKEN päälle!) */
+.modal-overlay {
+    position: fixed;
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.85); /* Tumma kalvo taustalle */
+    display: flex;
+    justify-content: center;
+    align-items: center; /* Keskittää pystysuunnassa täydellisesti */
+    z-index: 99999; /* Pakottaa jopa yläpalkin päälle */
+    backdrop-filter: blur(5px);
+    animation: fadeIn 0.2s;
+}
+
+/* 2. Ylikirjoitetaan vanha margin flexboxin sisällä */
+.modal-overlay .modal-content {
+    margin: 0; 
+    width: 95%;
+    max-width: 500px;
+    max-height: 85vh;
+}
+
+/* 3. Liiga-spesifit korostukset */
+.liiga-modal {
+    border-color: #ff6600 !important;
+    box-shadow: 0 0 30px rgba(255, 102, 0, 0.15) !important;
+}
+
+.liiga-text-orange {
+    color: #ff6600 !important;
+}
