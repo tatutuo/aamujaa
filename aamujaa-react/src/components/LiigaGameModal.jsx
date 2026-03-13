@@ -1,4 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import TeamBadge from './TeamBadge'; // LISÄTTY
+
+// Apufunktio Liigan lyhenteille TeamBadgea varten
+const getBadgeAbbrev = (name) => {
+    if (!name) return '';
+    let n = name.toUpperCase();
+    if (n.includes(':')) n = n.split(':').pop().trim();
+    if (n === 'HIFK' || n === 'HPK' || n === 'JYP' || n === 'TPS') return n;
+    if (n === 'KIEKKO-ESPOO') return 'K-E';
+    return n.substring(0, 3); 
+};
 
 const LiigaGameModal = ({ game, onClose, onTeamClick, onPlayerClick }) => {
     const [activeView, setActiveView] = useState('events'); 
@@ -59,9 +70,6 @@ const LiigaGameModal = ({ game, onClose, onTeamClick, onPlayerClick }) => {
         eventsByPeriod[p].push(e);
     });
 
-    const homeLogo = home.logos?.lightBg || home.logos?.darkBg;
-    const awayLogo = away.logos?.lightBg || away.logos?.darkBg;
-
     const calcPim = (teamName) => {
         const teamPenalties = allEvents.filter(e => e.type === 'penalty' && e.teamName === teamName);
         return teamPenalties.length > 0 ? teamPenalties.reduce((sum, e) => sum + (e.duration || 2), 0) : 0;
@@ -106,10 +114,10 @@ const LiigaGameModal = ({ game, onClose, onTeamClick, onPlayerClick }) => {
                     <span onClick={onClose} style={{ color: '#aaa', fontSize: '28px', fontWeight: 'bold', cursor: 'pointer', lineHeight: 1 }}>&times;</span>
                 </div>
 
-                {/* KORJATTU: Lähetetään onTeamClickille pelkkä teamName (esim. "Tappara"), ei ID:tä! */}
                 <div className="modal-score-row" style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', marginBottom: '20px' }}>
                     <div style={{ textAlign: 'center', width: '30%', cursor: 'pointer', transition: 'transform 0.2s' }} onClick={() => onTeamClick && onTeamClick(home.teamName)} onMouseOver={e => e.currentTarget.style.transform='scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform='scale(1)'}>
-                        <img src={homeLogo} alt={home.teamName} style={{ height: '70px', objectFit: 'contain' }} />
+                        {/* TEAMBADGE */}
+                        <TeamBadge abbrev={getBadgeAbbrev(home.teamName)} size={70} style={{ margin: '0 auto' }} />
                         <h2 style={{ margin: '5px 0', color: '#fff', fontSize: '1.2rem' }}>{home.teamName}</h2>
                     </div>
                     
@@ -118,7 +126,8 @@ const LiigaGameModal = ({ game, onClose, onTeamClick, onPlayerClick }) => {
                     </div>
 
                     <div style={{ textAlign: 'center', width: '30%', cursor: 'pointer', transition: 'transform 0.2s' }} onClick={() => onTeamClick && onTeamClick(away.teamName)} onMouseOver={e => e.currentTarget.style.transform='scale(1.05)'} onMouseOut={e => e.currentTarget.style.transform='scale(1)'}>
-                        <img src={awayLogo} alt={away.teamName} style={{ height: '70px', objectFit: 'contain' }} />
+                        {/* TEAMBADGE */}
+                        <TeamBadge abbrev={getBadgeAbbrev(away.teamName)} size={70} style={{ margin: '0 auto' }} />
                         <h2 style={{ margin: '5px 0', color: '#fff', fontSize: '1.2rem' }}>{away.teamName}</h2>
                     </div>
                 </div>
@@ -148,7 +157,7 @@ const LiigaGameModal = ({ game, onClose, onTeamClick, onPlayerClick }) => {
                                                 <div style={{ background: '#222', padding: '5px', marginTop: '10px', fontSize: '0.8rem', fontWeight: 'bold', color: '#fff' }}>{pName}</div>
                                                 {eventsByPeriod[periodNum].map((event, idx) => {
                                                     const isGoal = event.type === 'goal';
-                                                    const logo = event.isHome ? homeLogo : awayLogo;
+                                                    const tName = event.isHome ? home.teamName : away.teamName;
                                                     
                                                     let pNameStr = "Tuntematon";
                                                     let clickedId = null;
@@ -180,7 +189,8 @@ const LiigaGameModal = ({ game, onClose, onTeamClick, onPlayerClick }) => {
                                                         return (
                                                             <div key={idx} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #222' }}>
                                                                 <span style={{ color: '#ccc', width: '50px', fontSize: '0.8rem' }}>{formatGameTime(event.gameTime)}</span>
-                                                                <img src={logo} style={{ width: '25px', height: '25px', marginRight: '10px', objectFit: 'contain' }} alt="team" />
+                                                                {/* TEAMBADGE */}
+                                                                <TeamBadge abbrev={getBadgeAbbrev(tName)} size={25} style={{ marginRight: '10px' }} />
                                                                 <div>
                                                                     <span 
                                                                         style={{ color: '#4ade80', fontWeight: 'bold', cursor: clickedId ? 'pointer' : 'default' }}
@@ -198,7 +208,8 @@ const LiigaGameModal = ({ game, onClose, onTeamClick, onPlayerClick }) => {
                                                         return (
                                                             <div key={idx} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #222' }}>
                                                                 <span style={{ color: '#ffaa00', width: '50px', fontSize: '0.8rem', fontWeight: 'bold' }}>{formatGameTime(event.gameTime)}</span>
-                                                                <img src={logo} style={{ width: '25px', height: '25px', marginRight: '10px', objectFit: 'contain' }} alt="team" />
+                                                                {/* TEAMBADGE */}
+                                                                <TeamBadge abbrev={getBadgeAbbrev(tName)} size={25} style={{ marginRight: '10px' }} />
                                                                 <div>
                                                                     <span 
                                                                         style={{ color: '#fff', fontWeight: 'bold', cursor: clickedId ? 'pointer' : 'default' }}

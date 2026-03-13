@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations } from '../utils/translations';
+import TeamBadge from './TeamBadge'; // LISÄTTY TURVALLINEN KOMPONENTTI
 
 const FantasyModal = ({ isOpen, onClose, playerId, fantasyTeam, toggleFantasyPlayer, language }) => {
     const t = translations[language] || translations.fi;
@@ -33,17 +34,14 @@ const FantasyModal = ({ isOpen, onClose, playerId, fantasyTeam, toggleFantasyPla
                                     fetch(`/api/nhl/boxscore/${peli.id}`).then(r => r.json()),
                                     fetch(`/api/nhl/game/${peli.id}`).then(r => r.json())
                                 ]).then(([box, game]) => {
-                                    // TALLENNETAAN MYÖS STATUS, JOTTA TIEDETÄÄN ONKO PELI OHI
                                     setGameData({ boxData: box, fullGameData: game, status: peli.gameState });
                                     setIsLoading(false);
                                 });
                             } else {
-                                // PELI TULOSSA! Tallennetaan alkamisaika!
                                 setGameData({ status: 'UPCOMING', startTime: peli.startTimeUTC });
                                 setIsLoading(false);
                             }
                         } else {
-                            // EI PELIÄ TÄNÄÄN!
                             setGameData({ status: 'NO_GAME' });
                             setIsLoading(false);
                         }
@@ -163,7 +161,6 @@ const FantasyModal = ({ isOpen, onClose, playerId, fantasyTeam, toggleFantasyPla
 
     const isFantasy = fantasyTeam?.some(f => f.id === playerId);
 
-    // KESKITETTY VIESTI JOS KUITTI ON TYHJÄ!
     const renderEmptyState = () => {
         if (gameData?.status === 'UPCOMING' && gameData.startTime) {
             const timeString = new Date(gameData.startTime).toLocaleTimeString('fi-FI', {hour: '2-digit', minute:'2-digit'});
@@ -185,10 +182,19 @@ const FantasyModal = ({ isOpen, onClose, playerId, fantasyTeam, toggleFantasyPla
                 ) : (
                     <>
                         <div style={{ textAlign: 'center', position: 'relative' }}>
-                            <img src={player.teamLogo} style={{ width: '40px', opacity: 0.8, position: 'absolute', left: 0, top: 0 }} alt="logo" />
                             
+                            {/* KORVATTU NHL LOGO TEAMBADGELLA */}
+                            <div style={{ position: 'absolute', left: 0, top: 0, opacity: 0.8 }}>
+                                {(player.currentTeamAbbrev || player.teamAbbrev) && (
+                                    <TeamBadge abbrev={player.currentTeamAbbrev || player.teamAbbrev} size={40} />
+                                )}
+                            </div>
+                            
+                            {/* KORVATTU HEADSHOT-KUVA TYYLITELLYLLÄ IKONILLA */}
                             <div style={{ display: 'inline-block', padding: '3px', border: '3px solid #ffd700', borderRadius: '50%', marginTop: '10px' }}>
-                                <img src={player.headshot} style={{ width: '90px', height: '90px', borderRadius: '50%', backgroundColor: '#222', display: 'block', objectFit: 'cover' }} alt="headshot" />
+                                <div style={{ width: '90px', height: '90px', borderRadius: '50%', backgroundColor: '#222', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3rem', color: '#555' }}>
+                                    👤
+                                </div>
                             </div>
                             
                             <h2 style={{ margin: '15px 0 5px 0', color: '#fff', fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>

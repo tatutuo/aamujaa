@@ -22,35 +22,49 @@ const TopBar = ({ onOpenSettings, onOpenSearch, activeLeague, setActiveLeague })
 
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '20px' }}>
                 
-                {/* NHL LOGO */}
-                <img 
-                    src="./nhl-logo.png"
-                    alt="NHL"
+                {/* TYYLITELLTY NHL-TEKSTILOGO CSS:LLÄ */}
+                <div 
                     onClick={() => setActiveLeague('NHL')}
                     style={{
-                        height: '32px', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: '900', fontStyle: 'italic', fontFamily: 'Impact, sans-serif', fontSize: '1.2rem',
+                        padding: '2px 10px', borderRadius: '4px',
+                        background: 'linear-gradient(135deg, #2a2a2a, #000)',
+                        border: '2px solid #555',
+                        color: '#fff',
                         cursor: 'pointer',
                         transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)', 
-                        filter: activeLeague === 'NHL' ? 'drop-shadow(0px 0px 8px rgba(0, 212, 255, 0.6))' : 'grayscale(1) opacity(0.25)',
+                        boxShadow: activeLeague === 'NHL' ? '0px 0px 12px rgba(0, 212, 255, 0.6)' : 'none',
+                        borderColor: activeLeague === 'NHL' ? 'rgba(0, 212, 255, 0.8)' : '#333',
+                        opacity: activeLeague === 'NHL' ? 1 : 0.4,
                         transform: activeLeague === 'NHL' ? 'scale(1.1)' : 'scale(0.85)',
                         pointerEvents: activeLeague === 'NHL' ? 'none' : 'auto' 
                     }}
-                />
+                >
+                    NHL
+                </div>
 
-                {/* LIIGA LOGO */}
-                <img 
-                    src="./liiga-logo.png"
-                    alt="Liiga"
+                {/* TYYLITELLTY LIIGA-TEKSTILOGO CSS:LLÄ */}
+                <div 
                     onClick={() => setActiveLeague('LIIGA')}
                     style={{
-                        height: '32px', 
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontWeight: '900', fontFamily: 'Arial, sans-serif', fontSize: '1.1rem', letterSpacing: '1px',
+                        padding: '4px 10px', borderRadius: '4px',
+                        background: 'linear-gradient(135deg, #2a2a2a, #000)',
+                        border: '2px solid #555',
+                        color: '#fff',
                         cursor: 'pointer',
                         transition: 'all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-                        filter: activeLeague === 'LIIGA' ? 'drop-shadow(0px 0px 8px rgba(255, 102, 0, 0.8))' : 'grayscale(1) brightness(2) opacity(0.3)',
+                        boxShadow: activeLeague === 'LIIGA' ? '0px 0px 12px rgba(255, 102, 0, 0.8)' : 'none',
+                        borderColor: activeLeague === 'LIIGA' ? 'rgba(255, 102, 0, 0.8)' : '#333',
+                        opacity: activeLeague === 'LIIGA' ? 1 : 0.4,
                         transform: activeLeague === 'LIIGA' ? 'scale(1.15)' : 'scale(0.9)',
                         pointerEvents: activeLeague === 'LIIGA' ? 'none' : 'auto'
                     }}
-                />
+                >
+                    LIIGA
+                </div>
 
             </div>
             

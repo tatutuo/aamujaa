@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations } from '../utils/translations';
+import TeamBadge from './TeamBadge'; // Oletetaan samassa kansiossa!
 
 const GameModal = ({ isOpen, onClose, gameData, onTeamClick, onPlayerClick, language }) => {
     const t = translations[language] || translations.fi;
@@ -189,7 +190,6 @@ const GameModal = ({ isOpen, onClose, gameData, onTeamClick, onPlayerClick, lang
             if (statKey === 'blockedShots') val = skaters.reduce((s, p) => s + (p.blockedShots || 0), 0);
             if (statKey === 'powerPlay') {
                 const ppGoals = skaters.reduce((s, p) => s + (p.powerPlayGoals || 0), 0);
-                // Käytetään käännöstä YVM / PPG
                 val = `${ppGoals} ${t.gmPPG || 'YVM'}`; 
             }
         }
@@ -203,17 +203,16 @@ const GameModal = ({ isOpen, onClose, gameData, onTeamClick, onPlayerClick, lang
                 
                 <span className="close-btn" onClick={onClose} style={{ fontSize: '28px', fontWeight: 'bold', cursor: 'pointer', float: 'right', zIndex: 10 }}>&times;</span>
                 
+                {/* ISOT YLÄLOGOT TURVALLISEKSI */}
                 <div className="modal-score-row" style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', marginBottom: '10px' }}>
                     <div style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => onTeamClick(awayAbbrev)}>
-                        <img src={`https://assets.nhle.com/logos/nhl/svg/${awayAbbrev}_light.svg`} style={{ width: '70px' }} alt="away" />
-                        <h2 style={{ margin: '5px 0' }}>{awayAbbrev}</h2>
+                        <TeamBadge abbrev={awayAbbrev} size={70} style={{ margin: '0 auto' }} />
                     </div>
                     <div style={{ fontSize: '3.5rem', fontWeight: 'bold', fontFamily: "'Teko', sans-serif" }}>
                         {gameData.awayTeam?.score ?? '-'}{" - "}{gameData.homeTeam?.score ?? '-'}
                     </div>
                     <div style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => onTeamClick(homeAbbrev)}>
-                        <img src={`https://assets.nhle.com/logos/nhl/svg/${homeAbbrev}_light.svg`} style={{ width: '70px' }} alt="home" />
-                        <h2 style={{ margin: '5px 0' }}>{homeAbbrev}</h2>
+                        <TeamBadge abbrev={homeAbbrev} size={70} style={{ margin: '0 auto' }} />
                     </div>
                 </div>
 
@@ -223,11 +222,11 @@ const GameModal = ({ isOpen, onClose, gameData, onTeamClick, onPlayerClick, lang
                     </div>
                 )}
 
+                {/* 3 TÄHTEÄ TURVALLISEKSI (Poistettu headshot linkit) */}
                 {threeStars.length > 0 && (
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '15px', marginBottom: '20px', background: 'rgba(255, 215, 0, 0.05)', padding: '10px', borderRadius: '8px', border: '1px solid rgba(255, 215, 0, 0.2)' }}>
                         {threeStars.map((star, i) => {
                             const sName = star.name?.default || `${star.firstName?.default || ''} ${star.lastName?.default || ''}`.trim();
-                            const headshotUrl = star.headshot || `https://assets.nhle.com/mugs/nhl/latest/backgroundless/256/${star.playerId || star.id}.png`;
                             
                             return (
                                 <div 
@@ -240,7 +239,9 @@ const GameModal = ({ isOpen, onClose, gameData, onTeamClick, onPlayerClick, lang
                                     <div style={{ color: '#ffd700', fontSize: '1rem', marginBottom: '4px' }}>
                                         {'⭐'.repeat(star.star || i + 1)}
                                     </div>
-                                    <img src={headshotUrl} alt={sName} style={{ width: '45px', height: '45px', borderRadius: '50%', background: '#222', border: '1px solid #444', objectFit: 'cover' }} />
+                                    <div style={{ width: '45px', height: '45px', borderRadius: '50%', background: '#222', border: '1px solid #444', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto', fontSize: '1.2rem' }}>
+                                        👤
+                                    </div>
                                     <div style={{ fontSize: '0.7rem', color: '#fff', fontWeight: 'bold', marginTop: '6px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80px', margin: '4px auto 0' }}>
                                         {sName}
                                     </div>
@@ -250,7 +251,6 @@ const GameModal = ({ isOpen, onClose, gameData, onTeamClick, onPlayerClick, lang
                     </div>
                 )}
 
-                {/* VÄLILEHDET - Käännökset lisätty! */}
                 <div style={{ display: 'flex', gap: '5px', marginBottom: '20px', borderBottom: '1px solid #333', paddingBottom: '10px' }}>
                     <button 
                         onClick={() => setActiveView('events')}
@@ -276,7 +276,6 @@ const GameModal = ({ isOpen, onClose, gameData, onTeamClick, onPlayerClick, lang
                     <div className="loading" style={{ textAlign: 'center', padding: '30px', color: 'var(--accent-blue)' }}>{t.gmLoading}</div>
                 ) : (
                     <>
-                        {/* ================= TAPAHTUMAT ================= */}
                         {activeView === 'events' && (
                             <div style={{ marginBottom: '20px', fontSize: '0.9rem' }}>
                                 {sortedPeriods.length > 0 ? (
@@ -293,13 +292,12 @@ const GameModal = ({ isOpen, onClose, gameData, onTeamClick, onPlayerClick, lang
                                                 {period.events.map((event, eIdx) => {
                                                     const d = event.data;
                                                     const teamAbbrev = d.teamAbbrev?.default;
-                                                    const logo = `https://assets.nhle.com/logos/nhl/svg/${teamAbbrev}_light.svg`;
                                                     
                                                     if (event.type === 'goal') {
                                                         const strength = (d.strength || '').toUpperCase();
                                                         const mod = (d.goalModifier || '').toUpperCase();
                                                         let badge = '';
-                                                        // Käytetään käännöksiä maalityypeille!
+                                                        
                                                         if (strength === 'PP') badge = <span style={{ color: '#ffaa00', fontSize: '0.75rem', fontWeight: 'bold', marginLeft: '8px' }}>{t.gmBadgePP || 'YV'}</span>;
                                                         if (strength === 'SH') badge = <span style={{ color: '#00d4ff', fontSize: '0.75rem', fontWeight: 'bold', marginLeft: '8px' }}>{t.gmBadgeSH || 'AV'}</span>;
                                                         if (mod === 'EN' || d.emptyNet) badge = <span style={{ color: '#aaa', fontSize: '0.75rem', fontWeight: 'bold', marginLeft: '8px' }}>{t.gmBadgeEN || 'TM'}</span>;
@@ -308,7 +306,8 @@ const GameModal = ({ isOpen, onClose, gameData, onTeamClick, onPlayerClick, lang
                                                         return (
                                                             <div key={eIdx} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #222' }}>
                                                                 <span style={{ color: '#ccc', width: '50px', fontSize: '0.8rem' }}>{event.time}</span>
-                                                                <img src={logo} style={{ width: '25px', height: '25px', marginRight: '10px' }} alt="team" />
+                                                                {/* TAPAHTUMALOGOT TURVALLISEKSI */}
+                                                                <TeamBadge abbrev={teamAbbrev} size={25} style={{ marginRight: '10px' }} />
                                                                 <div>
                                                                     <span 
                                                                         style={{ color: '#4ade80', fontWeight: 'bold', cursor: 'pointer', transition: 'color 0.2s' }}
@@ -356,7 +355,8 @@ const GameModal = ({ isOpen, onClose, gameData, onTeamClick, onPlayerClick, lang
                                                         return (
                                                             <div key={eIdx} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #222' }}>
                                                                 <span style={{ color: '#ffaa00', width: '50px', fontSize: '0.8rem', fontWeight: 'bold' }}>{event.time}</span>
-                                                                <img src={logo} style={{ width: '25px', height: '25px', marginRight: '10px' }} alt="team" />
+                                                                {/* TAPAHTUMALOGOT TURVALLISEKSI */}
+                                                                <TeamBadge abbrev={teamAbbrev} size={25} style={{ marginRight: '10px' }} />
                                                                 <div>
                                                                     <span 
                                                                         style={{ color: '#fff', fontWeight: 'bold', cursor: playerId ? 'pointer' : 'default', transition: 'color 0.2s' }}
@@ -384,19 +384,16 @@ const GameModal = ({ isOpen, onClose, gameData, onTeamClick, onPlayerClick, lang
                             </div>
                         )}
 
-                        {/* ================= TILASTOT ================= */}
                         {activeView === 'stats' && (
                             <div style={{ animation: 'fadeIn 0.3s' }}>
                                 <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '8px', border: '1px solid #333' }}>
                                     
                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontWeight: 'bold', fontSize: '1.1rem' }}>
                                         <span style={{ width: '65px', textAlign: 'left' }}>{awayAbbrev}</span>
-                                        {/* Käännetty tilasto-otsikko */}
                                         <span style={{ flex: 1, textAlign: 'center', color: '#888', fontSize: '0.8rem', textTransform: 'uppercase' }}>{t.gmStatTitle || 'Tilasto'}</span>
                                         <span style={{ width: '65px', textAlign: 'right' }}>{homeAbbrev}</span>
                                     </div>
 
-                                    {/* Käännetyt sarakkeet */}
                                     <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #222', alignItems: 'center' }}>
                                         <span style={{ width: '65px', textAlign: 'left', fontSize: '1.3rem', fontWeight: 'bold', color: '#fff', whiteSpace: 'nowrap' }}>{getSOG('awayTeam')}</span>
                                         <span style={{ flex: 1, textAlign: 'center', color: '#ccc', fontSize: '0.9rem' }}>{t.gmStatSOG || 'Laukaukset (SOG)'}</span>
@@ -425,7 +422,6 @@ const GameModal = ({ isOpen, onClose, gameData, onTeamClick, onPlayerClick, lang
                             </div>
                         )}
 
-                        {/* ================= KOKOONPANOT ================= */}
                         {activeView === 'rosters' && (
                             <div style={{ background: 'rgba(0,0,0,0.3)', padding: '15px', borderRadius: '8px', border: '1px solid #333', animation: 'fadeIn 0.3s' }}>
                                 <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>

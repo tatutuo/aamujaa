@@ -1,4 +1,5 @@
 import React from 'react';
+import TeamBadge from './TeamBadge'; // LISÄTTY
 
 const LiigaGameCard = ({ game, onClick, favTeams }) => {
     if (!game || !game.homeTeam || !game.awayTeam) return null;
@@ -6,7 +7,6 @@ const LiigaGameCard = ({ game, onClick, favTeams }) => {
     const away = game.awayTeam;
     const home = game.homeTeam;
 
-    // POMMINVARMA SUOSIKKITUTKA (Totesit juuri, että tämä toimii!)
     const isFavMatch = (rawName, teamId) => {
         if (!favTeams || !Array.isArray(favTeams)) return false;
         
@@ -68,6 +68,13 @@ const LiigaGameCard = ({ game, onClick, favTeams }) => {
         statusText = `ALKAA ${startTime}`;
     }
 
+    // LYHENTEET BADGELLE (Otetaan max 3-4 ekaa kirjainta, että mahtuu pyörylään, paitsi HIFK jne)
+    const getBadgeAbbrev = (name) => {
+        if (name === 'HIFK' || name === 'HPK' || name === 'JYP' || name === 'TPS') return name;
+        if (name === 'KIEKKO-ESPOO') return 'K-E';
+        return name.substring(0, 3); 
+    };
+
     return (
         <div 
             className={`game-card ${isLive && !isFav ? 'live liiga-card-border' : ''}`} 
@@ -79,7 +86,6 @@ const LiigaGameCard = ({ game, onClick, favTeams }) => {
                 marginBottom: '10px',
                 background: '#111',
                 transition: 'transform 0.2s',
-                // CSS HACK: Outline ja tärkeät borderit varmistavat kultareunat riippumatta global.css tiedostosta!
                 outline: isFav ? '2px solid #ffd700' : 'none',
                 outlineOffset: '-2px',
                 borderColor: isFav ? '#ffd700' : '#333',
@@ -96,8 +102,9 @@ const LiigaGameCard = ({ game, onClick, favTeams }) => {
 
             {/* KOTIJOUKKUE */}
             <div className="compact-team-row">
-                <img src={home.logos?.lightBg || home.logos?.darkBg} className="compact-logo" style={{ width: '24px', height: '24px', marginLeft: '4px', objectFit: 'contain' }} alt={homeName} />
-                <div style={{ flex: 1, display: 'flex', alignItems: 'baseline', gap: '4px', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                <TeamBadge abbrev={getBadgeAbbrev(homeName)} size={24} style={{ marginLeft: '4px' }} />
+                
+                <div style={{ flex: 1, display: 'flex', alignItems: 'baseline', gap: '4px', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: '6px' }}>
                     <span className="compact-name" style={{ color: isFavHome ? '#ffd700' : '#fff', textShadow: isFavHome ? '0 0 8px rgba(255,215,0,0.5)' : 'none' }}>
                         {homeName}
                     </span>
@@ -108,8 +115,9 @@ const LiigaGameCard = ({ game, onClick, favTeams }) => {
 
             {/* VIERASJOUKKUE */}
             <div className="compact-team-row" style={{ marginTop: '8px' }}>
-                <img src={away.logos?.lightBg || away.logos?.darkBg} className="compact-logo" style={{ width: '24px', height: '24px', marginLeft: '4px', objectFit: 'contain' }} alt={awayName} />
-                <div style={{ flex: 1, display: 'flex', alignItems: 'baseline', gap: '4px', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                <TeamBadge abbrev={getBadgeAbbrev(awayName)} size={24} style={{ marginLeft: '4px' }} />
+
+                <div style={{ flex: 1, display: 'flex', alignItems: 'baseline', gap: '4px', overflow: 'hidden', whiteSpace: 'nowrap', marginLeft: '6px' }}>
                     <span className="compact-name" style={{ color: isFavAway ? '#ffd700' : '#fff', textShadow: isFavAway ? '0 0 8px rgba(255,215,0,0.5)' : 'none' }}>
                         {awayName}
                     </span>

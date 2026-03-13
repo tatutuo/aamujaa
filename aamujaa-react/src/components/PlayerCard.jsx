@@ -1,5 +1,6 @@
 import React from 'react';
 import { translations } from '../utils/translations';
+import TeamBadge from './TeamBadge'; // TUOTU UUSI KOMPONENTTI
 
 // --- APUFUNKTIO: ---
 const lyhennaKortinNimi = (kokoNimi) => {
@@ -37,10 +38,7 @@ const PlayerCard = ({ player, onClick, variant = 'fin', favPlayers, toggleFavPla
     const isFantasy = fantasyTeam?.some(f => f.id === player.id);
     const isLive = player.fullGameData && (player.fullGameData.gameState === 'LIVE' || player.fullGameData.gameState === 'CRIT');
 
-    // AJETAAN NIMI APUFUNKTION LÄPI!
     const { first: firstName, last: lastName } = lyhennaKortinNimi(player.name);
-
-    const teamLogoUrl = player.team ? `https://assets.nhle.com/logos/nhl/svg/${player.team}_light.svg` : null;
 
     const toiStr = player.stats?.toi || player.stats?.timeOnIce || player.stats?.skaterStats?.timeOnIce || player.stats?.goalieStats?.timeOnIce;
     const hasPlayed = toiStr && toiStr !== "00:00" && toiStr !== "0:00" && toiStr !== "0" && toiStr !== "";
@@ -112,16 +110,18 @@ const PlayerCard = ({ player, onClick, variant = 'fin', favPlayers, toggleFavPla
     const getPlusMinusColor = (pm) => pm > 0 ? '#4ade80' : (pm < 0 ? '#ff4444' : '#fff');
     const getPtsColor = (pts) => pts > 0 ? '#4ade80' : '#fff';
 
-    // --- UUSI YHDEN RIVIN YLÄTUNNISTE ---
+    // --- UUSI YHDEN RIVIN YLÄTUNNISTE (LOGOT KORVATTU TEAMBADGELLA) ---
     const renderHeader = () => (
         <div style={{ marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
             <button onClick={(e) => { e.stopPropagation(); toggleFavPlayer(player.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.3rem', padding: '0', color: isFav ? '#ff4444' : '#555', flexShrink: 0 }}>
                 {isFav ? '♥' : '♡'}
             </button>
             
-            {/* Logo ja Nimi samalla rivillä, rivittyy nätisti jos aivan pakko */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: '6px', flex: 1, minWidth: 0 }}>
-                {teamLogoUrl && <img src={teamLogoUrl} style={{ width: '18px', height: '18px', flexShrink: 0, filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.2))' }} alt={player.team} />}
+                
+                {/* TEAMBADGE PAIKALLEEN */}
+                {player.team && <TeamBadge abbrev={player.team} size={20} />}
+                
                 <span style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#fff', textAlign: 'center', lineHeight: '1.2' }}>
                     {firstName} {lastName}
                     {isLive && <span style={{ color: '#ff4444', fontSize: '0.65rem', marginLeft: '4px', display: 'inline-block', animation: 'pulse 1s infinite' }}>🔴</span>}

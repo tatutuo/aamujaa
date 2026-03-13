@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations } from '../utils/translations';
+import TeamBadge from './TeamBadge'; // TUOTU UUSI KOMPONENTTI
 
 const PredictionModal = ({ isOpen, onClose, onPlayerClick, language }) => {
     const t = translations[language] || translations.fi;
@@ -121,7 +122,7 @@ const PredictionModal = ({ isOpen, onClose, onPlayerClick, language }) => {
 };
 
 // ==========================================
-// OTTELUENNUSTE NÄKYMÄ (Ei arvaa enää tarkkaa tulosta!)
+// OTTELUENNUSTE NÄKYMÄ (KORVATTU TEAMBADGELLA)
 // ==========================================
 const MatchView = ({ matches, actualScores, t }) => {
     if (!matches || matches.length === 0) {
@@ -142,10 +143,8 @@ const MatchView = ({ matches, actualScores, t }) => {
                 
                 let isHit = false;
                 if (isFinal) {
-                    // NYT TARKISTETAAN OSUVATKO PROSENTIT (Suosikki vs Voittaja)
                     const predictedHomeWin = m.homeWinProb > m.awayWinProb;
                     const actualHomeWin = realHomeScore > realAwayScore;
-                    // Jos prosentit tasan (50-50), katsotaan kumpaa xG oikeasti suosi piilossa (m.homeScore > m.awayScore)
                     if (m.homeWinProb === m.awayWinProb) {
                          isHit = (m.homeScore > m.awayScore) === actualHomeWin;
                     } else {
@@ -153,7 +152,6 @@ const MatchView = ({ matches, actualScores, t }) => {
                     }
                 }
 
-                // Käännös-apufunktio perusteluille
                 const renderReason = (r) => {
                     let text = t[r.key] || r.key; 
                     if (r.val) text = `${text} (${r.val})`;
@@ -169,7 +167,6 @@ const MatchView = ({ matches, actualScores, t }) => {
                             </div>
                         )}
 
-                        {/* VOITTOPROSENTIT */}
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '8px', marginTop: isFinal ? '8px' : '0' }}>
                             <div style={{ width: '85%', background: '#000', borderRadius: '20px', overflow: 'hidden', display: 'flex', border: '1px solid #333', position: 'relative', height: '22px' }}>
                                 <div style={{ width: `${m.homeWinProb}%`, background: m.homeWinProb > m.awayWinProb ? '#00d4ff' : '#444', transition: 'width 1s' }}></div>
@@ -183,7 +180,6 @@ const MatchView = ({ matches, actualScores, t }) => {
                             </div>
                         </div>
 
-                        {/* 1X2 JA O/U */}
                         <div style={{ display: 'flex', justifyContent: 'space-around', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', padding: '5px 10px', marginBottom: '15px', fontSize: '0.7rem', color: '#ccc', textAlign: 'center' }}>
                             <div>
                                 <span style={{ color: '#888', display: 'block', fontSize: '0.6rem' }}>{t.predRegTime || '1X2'}</span>
@@ -195,15 +191,15 @@ const MatchView = ({ matches, actualScores, t }) => {
                             </div>
                         </div>
 
-                        {/* JOUKKUEET JA KESKILAATIKKO (SUOSIKKI TAI LOPPUTULOS) */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,204,0,0.2)', paddingBottom: '12px', marginBottom: '12px' }}>
+                            
+                            {/* KOTIJOUKKUE TEAMBADGE */}
                             <div style={{ textAlign: 'center', flex: 1 }}>
-                                <img src={`https://assets.nhle.com/logos/nhl/svg/${homeAbbrev}_light.svg`} style={{ width: '45px', height: '45px' }} alt={homeAbbrev} />
+                                <TeamBadge abbrev={homeAbbrev} size={45} style={{ margin: '0 auto' }} />
                                 <div style={{ fontWeight: 'bold', color: '#fff', fontSize: '1.1rem', marginTop: '4px' }}>{homeAbbrev}</div>
                             </div>
                             
                             <div style={{ flex: 1, textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '5px' }}>
-                                
                                 {!isFinal ? (
                                     <div style={{ background: 'rgba(255, 204, 0, 0.1)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255, 204, 0, 0.3)', width: '100%' }}>
                                         <div style={{ fontSize: '0.6rem', color: '#ffcc00', letterSpacing: '1px' }}>{t.predFav || 'SUOSIKKI'}</div>
@@ -219,16 +215,15 @@ const MatchView = ({ matches, actualScores, t }) => {
                                         </div>
                                     </div>
                                 )}
-
                             </div>
 
+                            {/* VIERASJOUKKUE TEAMBADGE */}
                             <div style={{ textAlign: 'center', flex: 1 }}>
-                                <img src={`https://assets.nhle.com/logos/nhl/svg/${awayAbbrev}_light.svg`} style={{ width: '45px', height: '45px' }} alt={awayAbbrev} />
+                                <TeamBadge abbrev={awayAbbrev} size={45} style={{ margin: '0 auto' }} />
                                 <div style={{ fontWeight: 'bold', color: '#fff', fontSize: '1.1rem', marginTop: '4px' }}>{awayAbbrev}</div>
                             </div>
                         </div>
 
-                        {/* PERUSTELUT LÄPI KÄÄNTÄJÄN */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
                             <div style={{ flex: 1, paddingRight: '5px' }}>
                                 {m.homeReasons.map((r, idx) => (
@@ -284,7 +279,6 @@ const InfoView = ({ t }) => {
                 {p5Title && <p style={{ margin: '0' }}><strong>3. {p5Title}:</strong>{p5Text}</p>}
             </div>
 
-            {/* UUSI KOKOONPANO-DISCLAIMER */}
             {t.predInfoP6 && (
                 <div style={{ background: 'rgba(0, 212, 255, 0.05)', padding: '12px', borderRadius: '8px', border: '1px solid rgba(0, 212, 255, 0.2)', color: '#00d4ff', fontSize: '0.85rem', marginBottom: '20px' }}>
                     ℹ️ {t.predInfoP6}
@@ -298,7 +292,7 @@ const InfoView = ({ t }) => {
     );
 };
 
-// --- APUKOMPONENTTI: JOUKKUENÄKYMÄ ---
+// --- APUKOMPONENTTI: JOUKKUENÄKYMÄ (KORVATTU TEAMBADGELLA) ---
 const TeamView = ({ teams = [], language }) => {
     const safeTeams = Array.isArray(teams) ? teams : [];
     const east = safeTeams.filter(t => t.conference === 'Eastern');
@@ -314,7 +308,10 @@ const TeamView = ({ teams = [], language }) => {
                     background: i === 7 ? 'rgba(255, 204, 0, 0.05)' : 'transparent' 
                 }}>
                     <span style={{ width: '25px', color: i < 8 ? '#4ade80' : '#ff4444', fontSize: '0.8rem' }}>{i + 1}.</span>
-                    <img src={`https://assets.nhle.com/logos/nhl/svg/${t.teamAbbrev}_light.svg`} style={{ width: '24px', height: '24px', marginRight: '10px' }} alt={t.teamAbbrev} />
+                    
+                    {/* TEAMBADGE */}
+                    <TeamBadge abbrev={t.teamAbbrev} size={24} style={{ marginRight: '10px' }} />
+                    
                     <span style={{ flex: 1, fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' }}>{t.teamName}</span>
                     <div style={{ textAlign: 'right' }}>
                         <div style={{ color: '#ffcc00', fontWeight: 'bold' }}>{t.projectedPoints} P</div>
@@ -333,7 +330,7 @@ const TeamView = ({ teams = [], language }) => {
     );
 };
 
-// --- APUKOMPONENTTI: PELAAJANÄKYMÄ ---
+// --- APUKOMPONENTTI: PELAAJANÄKYMÄ (KORVATTU TEAMBADGELLA) ---
 const lyhennaNimi = (kokoNimi) => {
     if (!kokoNimi) return "";
     const osat = kokoNimi.split(' ');
@@ -361,7 +358,10 @@ const PlayerView = ({ players = [], t, onPlayerClick, onClose }) => {
                         {i + 1}.
                     </div>
                     <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '6px', paddingLeft: '4px', overflow: 'hidden' }}>
-                        <img src={`https://assets.nhle.com/logos/nhl/svg/${p.team}_light.svg`} style={{ width: '20px', height: '20px', flexShrink: 0 }} alt={p.team} />
+                        
+                        {/* TEAMBADGE PIENENÄ */}
+                        <TeamBadge abbrev={p.team} size={20} />
+                        
                         <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {lyhennaNimi(p.name)}
                         </span>

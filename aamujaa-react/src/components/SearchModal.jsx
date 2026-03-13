@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations } from '../utils/translations';
+import TeamBadge from './TeamBadge'; // TUOTU UUSI KOMPONENTTI
 
 const NHL_TEAMS = [
     { name: "Anaheim Ducks", abbrev: "ANA" }, { name: "Boston Bruins", abbrev: "BOS" }, 
@@ -154,15 +155,19 @@ const SearchModal = ({ isOpen, onClose, onPlayerClick, onTeamClick, language, ac
                                 
                                 {res.abbrev && (
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                        <div style={{ background: '#333', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', color: '#aaa' }}>
-                                            {res.abbrev}
-                                        </div>
+                                        
+                                        {/* KORVATTU NHL LOGO TEAMBADGELLA */}
                                         {res.type === 'JOUKKUE' && activeLeague === 'NHL' && (
-                                            <img src={`https://assets.nhle.com/logos/nhl/svg/${res.abbrev}_light.svg`} style={{ width: '30px' }} alt="logo" />
+                                            <TeamBadge abbrev={res.abbrev} size={30} />
                                         )}
                                         {res.type === 'JOUKKUE' && activeLeague === 'LIIGA' && (
                                             <span style={{ fontSize: '1.5rem' }}>🛡️</span>
                                         )}
+
+                                        <div style={{ background: '#333', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', color: '#aaa' }}>
+                                            {res.abbrev}
+                                        </div>
+
                                     </div>
                                 )}
                             </div>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations } from '../utils/translations';
+import TeamBadge from './TeamBadge'; // TUOTU UUSI KOMPONENTTI
 
 const haeLippu = (maaKoodi) => {
     const liput = {
@@ -23,7 +24,6 @@ const muotoileNimi = (kokoNimi) => {
     return kokoNimi;
 };
 
-// Apufunktio joukkueen lyhenteen kaivamiseen 
 const haeNykyinenJoukkue = (teamAbbrevs) => {
     if (!teamAbbrevs) return "";
     const joukkueet = teamAbbrevs.split(',');
@@ -79,7 +79,6 @@ const TeletextModal = ({ isOpen, onClose, pageType, onPlayerClick, language }) =
     else if (pageType === 'penaltyMinutes') { sivuNumero = '240'; otsikko = t.ttvTitlePim; }
     else if (pageType === 'timeOnIcePerGame') { sivuNumero = '241'; otsikko = t.ttvTitleToi; }
 
-    // --- DYNAAMISET SARAKKEET (FLEXBOX) ---
     let h1 = language === 'fi' ? 'O' : 'GP';
     let h2 = language === 'fi' ? 'M' : 'G';
     let h3 = language === 'fi' ? 'S' : 'A';
@@ -143,10 +142,9 @@ const TeletextModal = ({ isOpen, onClose, pageType, onPlayerClick, language }) =
                             
                             {activeTab === 'skaters' ? (
                                 <>
-                                    {/* SKATERS OTSIKKORIVI */}
                                     <div style={{ display: 'flex', gap: '1ch', color: '#fff', borderBottom: '1px solid #444', paddingBottom: '4px', marginBottom: '8px', fontWeight: 'bold' }}>
                                         <div style={{ width: '3ch' }}></div>
-                                        <div style={{ width: '22px' }}></div> {/* Tila logolle */}
+                                        <div style={{ width: '22px' }}></div> 
                                         <div style={{ flex: 1 }}>{language === 'fi' ? 'PELAAJAT' : 'PLAYERS'}</div>
                                         <div style={{ width: c1, textAlign: 'right' }}>{h1}</div>
                                         <div style={{ width: c2, textAlign: 'right' }}>{h2}</div>
@@ -154,14 +152,11 @@ const TeletextModal = ({ isOpen, onClose, pageType, onPlayerClick, language }) =
                                         {h4 && <div style={{ width: c4, textAlign: 'right' }}>{h4}</div>}
                                     </div>
 
-                                    {/* SKATERS DATARIVIT */}
                                     {data.skaters.slice(0, 50).map((p, i) => {
                                         const lippu = (pageType === 'finns') ? '' : haeLippu(p.nationalityCode);
                                         const nimi = muotoileNimi(p.skaterFullName);
                                         const isD = p.positionCode === 'D';
-                                        
                                         const teamAbbrev = haeNykyinenJoukkue(p.teamAbbrevs);
-                                        const logoUrl = teamAbbrev ? `https://assets.nhle.com/logos/nhl/svg/${teamAbbrev}_light.svg` : null;
                                         
                                         let stat1 = p.goals;
                                         let stat2 = p.assists;
@@ -188,8 +183,9 @@ const TeletextModal = ({ isOpen, onClose, pageType, onPlayerClick, language }) =
                                             >
                                                 <div style={{ width: '3ch', textAlign: 'right', color: '#888' }}>{i + 1}.</div>
                                                 
+                                                {/* NHL LOGO KORVATTU TEAMBADGELLA */}
                                                 <div style={{ width: '22px', display: 'flex', justifyContent: 'center' }}>
-                                                    {logoUrl && <img src={logoUrl} style={{ width: '18px', height: '18px', filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.2))' }} alt={teamAbbrev} />}
+                                                    {teamAbbrev ? <TeamBadge abbrev={teamAbbrev} size={18} /> : null}
                                                 </div>
 
                                                 <div style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -197,7 +193,6 @@ const TeletextModal = ({ isOpen, onClose, pageType, onPlayerClick, language }) =
                                                     {pageType !== 'finns' && lippu && <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>{lippu}</span>}
                                                 </div>
 
-                                                {/* Tilastot */}
                                                 <div style={{ width: c1, textAlign: 'right' }}>{p.gamesPlayed}</div>
                                                 <div style={{ width: c2, textAlign: 'right' }}>{stat1}</div>
                                                 {h3 && <div style={{ width: c3, textAlign: 'right' }}>{stat2}</div>}
@@ -208,25 +203,21 @@ const TeletextModal = ({ isOpen, onClose, pageType, onPlayerClick, language }) =
                                 </>
                             ) : (
                                 <>
-                                    {/* GOALIES OTSIKKORIVI */}
                                     <div style={{ display: 'flex', gap: '1ch', color: '#fff', borderBottom: '1px solid #444', paddingBottom: '4px', marginBottom: '8px', fontWeight: 'bold' }}>
                                         <div style={{ width: '3ch' }}></div>
-                                        <div style={{ width: '22px' }}></div> {/* Tila logolle */}
+                                        <div style={{ width: '22px' }}></div> 
                                         <div style={{ flex: 1 }}>{language === 'fi' ? 'MAALIVAHDIT' : 'GOALIES'}</div>
                                         <div style={{ width: '3ch', textAlign: 'right' }}>{g_h1}</div>
                                         <div style={{ width: '5ch', textAlign: 'right' }}>{g_h2}</div>
                                         <div style={{ width: '5ch', textAlign: 'right' }}>{g_h3}</div>
                                     </div>
 
-                                    {/* GOALIES DATARIVIT */}
                                     {data.goalies.slice(0, 50).map((g, i) => {
                                         const lippu = (pageType === 'finns') ? '' : haeLippu(g.nationalityCode);
                                         const nimi = muotoileNimi(g.goalieFullName);
                                         const gaa = g.goalsAgainstAverage.toFixed(2);
                                         const sv = (g.savePct * 100).toFixed(1);
-
                                         const teamAbbrev = haeNykyinenJoukkue(g.teamAbbrevs);
-                                        const logoUrl = teamAbbrev ? `https://assets.nhle.com/logos/nhl/svg/${teamAbbrev}_light.svg` : null;
 
                                         return (
                                             <div 
@@ -236,15 +227,13 @@ const TeletextModal = ({ isOpen, onClose, pageType, onPlayerClick, language }) =
                                                 onMouseOver={(e) => e.currentTarget.style.background = '#222'}
                                                 onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
                                             >
-                                                {/* Sija */}
                                                 <div style={{ width: '3ch', textAlign: 'right', color: '#888' }}>{i + 1}.</div>
                                                 
-                                                {/* Logo */}
+                                                {/* NHL LOGO KORVATTU TEAMBADGELLA */}
                                                 <div style={{ width: '22px', display: 'flex', justifyContent: 'center' }}>
-                                                    {logoUrl && <img src={logoUrl} style={{ width: '18px', height: '18px', filter: 'drop-shadow(0 0 2px rgba(255,255,255,0.2))' }} alt={teamAbbrev} />}
+                                                    {teamAbbrev ? <TeamBadge abbrev={teamAbbrev} size={18} /> : null}
                                                 </div>
 
-                                                {/* Nimi ja pieni lippu perässä */}
                                                 <div style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                                     <span>{nimi}</span>
                                                     {pageType !== 'finns' && lippu && <span style={{ fontSize: '0.75rem', opacity: 0.8 }}>{lippu}</span>}

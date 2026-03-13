@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations } from '../utils/translations';
+import TeamBadge from './TeamBadge'; // TUOTU UUSI KOMPONENTTI
 
 const TeamModal = ({ isOpen, onClose, teamAbbrev, onPlayerClick, onGameClick, language }) => {
     const t = translations[language] || translations.fi;
@@ -40,8 +41,6 @@ const TeamModal = ({ isOpen, onClose, teamAbbrev, onPlayerClick, onGameClick, la
 
     if (!isOpen || !teamAbbrev) return null;
 
-    const logoUrl = `https://assets.nhle.com/logos/nhl/svg/${teamAbbrev}_light.svg`;
-
     let gamesList = [];
     let forwards = teamData.roster?.forwards || [];
     let defense = teamData.roster?.defensemen || [];
@@ -72,7 +71,10 @@ const TeamModal = ({ isOpen, onClose, teamAbbrev, onPlayerClick, onGameClick, la
                 <span className="close-card-btn" onClick={onClose} style={{ position: 'absolute', right: '15px', top: '10px', fontSize: '2rem', cursor: 'pointer', color: '#888', lineHeight: 1 }}>&times;</span>
                 
                 <div style={{ textAlign: 'center', marginBottom: '20px', paddingTop: '10px' }}>
-                    <img src={logoUrl} style={{ width: '80px' }} alt={teamAbbrev} />
+                    
+                    {/* ISO LOGO KORVATTU TEAMBADGELLA */}
+                    <TeamBadge abbrev={teamAbbrev} size={80} style={{ margin: '0 auto', fontSize: '30px' }} />
+                    
                     <h2 style={{ margin: '10px 0 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                         <button className="fav-sydan" style={{ fontSize: '1.8rem', margin: 0, padding: 0 }}>♡</button>
                         {teamAbbrev}
@@ -116,7 +118,6 @@ const TeamModal = ({ isOpen, onClose, teamAbbrev, onPlayerClick, onGameClick, la
                                     
                                     const isHome = homeTeamStr === teamAbbrev;
                                     const opponent = isHome ? awayTeamStr : homeTeamStr;
-                                    const opponentLogo = `https://assets.nhle.com/logos/nhl/svg/${opponent}_light.svg`;
                                     
                                     const teamScore = isHome ? (g.homeTeam?.score ?? 0) : (g.awayTeam?.score ?? 0);
                                     const oppScore = isHome ? (g.awayTeam?.score ?? 0) : (g.homeTeam?.score ?? 0);
@@ -142,7 +143,10 @@ const TeamModal = ({ isOpen, onClose, teamAbbrev, onPlayerClick, onGameClick, la
                                             
                                             <div style={{ display: 'flex', alignItems: 'center', flex: 1, justifyContent: 'flex-end', gap: '8px' }}>
                                                 <span style={{ color: isHome ? '#aaa' : '#fff' }}>{isHome ? opponent : teamAbbrev}</span>
-                                                <img src={isHome ? opponentLogo : logoUrl} style={{ width: '24px' }} alt="away" />
+                                                
+                                                {/* PIENI LOGO VASEN (Vierasjoukkue) */}
+                                                <TeamBadge abbrev={isHome ? opponent : teamAbbrev} size={24} />
+                                                
                                             </div>
                                             
                                             <div style={{ width: '70px', textAlign: 'center', fontWeight: 'bold', color: resultColor, fontSize: '1rem' }}>
@@ -150,7 +154,10 @@ const TeamModal = ({ isOpen, onClose, teamAbbrev, onPlayerClick, onGameClick, la
                                             </div>
                                             
                                             <div style={{ display: 'flex', alignItems: 'center', flex: 1, justifyContent: 'flex-start', gap: '8px' }}>
-                                                <img src={isHome ? logoUrl : opponentLogo} style={{ width: '24px' }} alt="home" />
+                                                
+                                                {/* PIENI LOGO OIKEA (Kotijoukkue) */}
+                                                <TeamBadge abbrev={isHome ? teamAbbrev : opponent} size={24} />
+                                                
                                                 <span style={{ color: isHome ? '#fff' : '#aaa' }}>{isHome ? teamAbbrev : opponent}</span>
                                             </div>
                                         </div>

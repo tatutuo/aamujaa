@@ -1,11 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import TeamBadge from './TeamBadge'; // LISÄTTY
+
+// Apufunktio
+const getBadgeAbbrev = (name) => {
+    if (!name) return '';
+    let n = name.toUpperCase();
+    if (n.includes(':')) n = n.split(':').pop().trim();
+    if (n === 'HIFK' || n === 'HPK' || n === 'JYP' || n === 'TPS') return n;
+    if (n === 'KIEKKO-ESPOO') return 'K-E';
+    return n.substring(0, 3); 
+};
 
 const LiigaTeamModal = ({ isOpen, onClose, teamAbbrev, onPlayerClick, favTeams, toggleFavTeam}) => {
     const [showRoster, setShowRoster] = useState(false);
     const [teamData, setTeamData] = useState({ schedule: [], roster: [] });
     const [isLoading, setIsLoading] = useState(true);
 
-    // AUTOMAATTINEN PUHDISTAJA HEITTÄÄ ROSKAT POIS HETI!
     const cleanSearchTerm = (term) => {
         if (!term) return '';
         let cleaned = term;
@@ -55,16 +65,6 @@ const LiigaTeamModal = ({ isOpen, onClose, teamAbbrev, onPlayerClick, favTeams, 
     };
     const officialName = TEAM_MAP[safeTeamName] || safeTeamName;
 
-    let teamLogo = '';
-    let fullTeamName = officialName;
-
-    if (teamData.schedule && teamData.schedule.length > 0) {
-        const firstGame = teamData.schedule[0];
-        const isHome = cleanSearchTerm(firstGame.homeTeam?.teamName) === officialName;
-        const tObj = isHome ? firstGame.homeTeam : firstGame.awayTeam;
-        if (tObj) teamLogo = tObj.logos?.lightBg || tObj.logos?.darkBg || '';
-    }
-
     const forwards = teamData.roster.filter(p => p.role === 'ATTACKER' || p.role === 'FORWARD' || p.position === 'HYÖKKÄÄJÄ').sort((a, b) => a.jersey - b.jersey);
     const defense = teamData.roster.filter(p => p.role === 'DEFENSEMAN' || p.role === 'DEFENSE' || p.position === 'PUOLUSTAJA').sort((a, b) => a.jersey - b.jersey);
     const goalies = teamData.roster.filter(p => p.role === 'GOALKEEPER' || p.role === 'GOALIE' || p.position === 'MAALIVAHTI').sort((a, b) => a.jersey - b.jersey);
@@ -90,19 +90,18 @@ const LiigaTeamModal = ({ isOpen, onClose, teamAbbrev, onPlayerClick, favTeams, 
                 <span onClick={onClose} style={{ position: 'absolute', right: '15px', top: '10px', fontSize: '2rem', cursor: 'pointer', color: '#888', lineHeight: 1 }}>&times;</span>
                 
                 <div style={{ textAlign: 'center', marginBottom: '20px', borderBottom: '1px solid #333', paddingBottom: '20px' }}>
-                    {teamLogo ? (
-                        <img src={teamLogo} alt={fullTeamName} style={{ height: '70px', objectFit: 'contain', marginBottom: '10px' }} />
-                    ) : (
-                        <div style={{ fontSize: '3rem', marginBottom: '10px' }}>🛡️</div>
-                    )}
+                    
+                    {/* TEAMBADGE KORVAA LOGON */}
+                    <TeamBadge abbrev={getBadgeAbbrev(officialName)} size={80} style={{ margin: '0 auto 10px auto', fontSize: '30px' }} />
+                    
                     <h2 style={{ margin: '0', color: '#fff', fontSize: '1.8rem', letterSpacing: '2px', textTransform: 'uppercase', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                         <button 
-                            onClick={() => toggleFavTeam && toggleFavTeam(fullTeamName)}
-                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: favTeams?.includes(fullTeamName) ? '#ff4444' : '#555', fontSize: '1.8rem', padding: 0 }}
+                            onClick={() => toggleFavTeam && toggleFavTeam(officialName)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: favTeams?.includes(officialName) ? '#ff4444' : '#555', fontSize: '1.8rem', padding: 0 }}
                         >
-                            {favTeams?.includes(fullTeamName) ? '♥' : '♡'}
+                            {favTeams?.includes(officialName) ? '♥' : '♡'}
                         </button>
-                        {fullTeamName}
+                        {officialName}
                     </h2>
                 </div>
 
@@ -150,8 +149,6 @@ const LiigaTeamModal = ({ isOpen, onClose, teamAbbrev, onPlayerClick, favTeams, 
                                     const isPlayed = g.started || g.ended;
                                     const homeName = cleanSearchTerm(g.homeTeam?.teamName);
                                     const awayName = cleanSearchTerm(g.awayTeam?.teamName);
-                                    const homeLogo = g.homeTeam?.logos?.lightBg || g.homeTeam?.logos?.darkBg || '';
-                                    const awayLogo = g.awayTeam?.logos?.lightBg || g.awayTeam?.logos?.darkBg || '';
                                     
                                     const homeScore = g.homeTeam?.goals;
                                     const awayScore = g.awayTeam?.goals;
@@ -190,7 +187,8 @@ const LiigaTeamModal = ({ isOpen, onClose, teamAbbrev, onPlayerClick, favTeams, 
                                                 <span style={{ color: isHomeTeamOurTeam ? '#fff' : '#aaa', fontWeight: isHomeTeamOurTeam ? 'bold' : 'normal', fontSize: '0.9rem' }}>
                                                     {homeName}
                                                 </span>
-                                                {homeLogo && <img src={homeLogo} alt="home" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />}
+                                                {/* TEAMBADGE (PIENI, KOTI) */}
+                                                <TeamBadge abbrev={getBadgeAbbrev(homeName)} size={20} />
                                             </div>
                                             
                                             <div style={{ width: '80px', textAlign: 'center', fontWeight: 'bold', color: resultColor, fontSize: '1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -199,7 +197,8 @@ const LiigaTeamModal = ({ isOpen, onClose, teamAbbrev, onPlayerClick, favTeams, 
                                             </div>
                                             
                                             <div style={{ display: 'flex', alignItems: 'center', flex: 1, justifyContent: 'flex-start', gap: '8px' }}>
-                                                {awayLogo && <img src={awayLogo} alt="away" style={{ width: '20px', height: '20px', objectFit: 'contain' }} />}
+                                                {/* TEAMBADGE (PIENI, VIERAS) */}
+                                                <TeamBadge abbrev={getBadgeAbbrev(awayName)} size={20} />
                                                 <span style={{ color: isAwayTeamOurTeam ? '#fff' : '#aaa', fontWeight: isAwayTeamOurTeam ? 'bold' : 'normal', fontSize: '0.9rem' }}>
                                                     {awayName}
                                                 </span>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations } from '../utils/translations';
+import TeamBadge from './TeamBadge'; // LISÄTTY TURVALLINEN KOMPONENTTI
 
 const PlayerModal = ({ isOpen, onClose, playerId, favPlayers, toggleFavPlayer, fantasyTeam, toggleFantasyPlayer, language }) => {
     const t = translations[language] || translations.fi;
@@ -76,9 +77,29 @@ const PlayerCardContent = ({ p, favPlayers, toggleFavPlayer, fantasyTeam, toggle
 
     return (
         <>
-            <div style={{ textAlign: 'center', position: 'relative' }}>
-                {p.teamLogo && <img src={p.teamLogo} alt="team-logo" style={{ width: '60px', opacity: 0.3, position: 'absolute', left: 0, top: 0 }} />}
-                <img src={p.headshot} alt="headshot" style={{ width: '100px', borderRadius: '50%', border: '2px solid #333', marginTop: '10px', backgroundColor: '#222' }} />
+            <div style={{ textAlign: 'center', position: 'relative', paddingBottom: '10px' }}>
+                
+                {/* 1. KORJATTU: POISTETTU teamLogo JA KORVATTU TeamBadge-komponentilla */}
+                <div style={{ position: 'absolute', left: 0, top: 0, opacity: 0.8 }}>
+                    {p.currentTeamAbbrev && <TeamBadge abbrev={p.currentTeamAbbrev} size={40} />}
+                </div>
+
+                {/* 2. KORJATTU: POISTETTU headshot-kuva JA KORVATTU TYYLITELLYLLÄ IKONILLA */}
+                <div style={{ 
+                    width: '90px', 
+                    height: '90px', 
+                    borderRadius: '50%', 
+                    border: '2px solid #333', 
+                    margin: '10px auto 0 auto', 
+                    backgroundColor: '#222',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '3rem',
+                    color: '#555'
+                }}>
+                    👤
+                </div>
                 
                 <h2 style={{ margin: '10px 0 5px 0', color: '#fff', fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
                     <button 

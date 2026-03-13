@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { translations } from '../utils/translations';
+import TeamBadge from './TeamBadge'; // TUOTU UUSI KOMPONENTTI
 
 const StandingsPage = ({ onTeamClick, language }) => {
     const t = translations[language] || translations.fi;
@@ -200,8 +201,7 @@ const StandingsPage = ({ onTeamClick, language }) => {
                 formGF: gf,
                 formGA: ga,
                 formDiff: gf - ga,
-                formPts: (w * 2) + otl,
-                logoUrl: `https://assets.nhle.com/logos/nhl/svg/${abbrev}_light.svg`
+                formPts: (w * 2) + otl
             };
         });
 
@@ -245,7 +245,8 @@ const StandingsPage = ({ onTeamClick, language }) => {
                                             style={{ padding: '6px 2px', textAlign: 'left', fontSize: '0.85rem', whiteSpace: 'nowrap', cursor: 'pointer' }}
                                             onClick={() => onTeamClick(team.abbrev)}
                                         >
-                                            <img src={team.logoUrl} style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '6px' }} alt={team.abbrev} />
+                                            {/* NHL LOGO KORVATTU TEAMBADGELLA */}
+                                            <TeamBadge abbrev={team.abbrev} size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
                                             <span style={{ fontWeight: 'bold', color: '#ddd', verticalAlign: 'middle' }}>{team.abbrev}</span>
                                         </td>
                                         <td style={{ padding: '6px 1px', textAlign: 'center', fontSize: '0.8rem', color: '#bbb' }}>{team.formGP}</td>
@@ -268,7 +269,6 @@ const StandingsPage = ({ onTeamClick, language }) => {
         );
     };
 
-    // --- UUSI APUFUNKTIO PIENILLE NAPEILLE ---
     const getFilterBtnStyle = (isActive) => ({
         padding: '5px 14px',
         fontSize: '0.75rem',
@@ -309,8 +309,6 @@ const StandingsPage = ({ onTeamClick, language }) => {
                 <>
                     {activeTab === 'standings' && (
                         <div style={{ animation: 'fadeIn 0.3s' }}>
-                            
-                            {/* UUDET PIENET JA TYYLIKKÄÄT NAPIT */}
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginBottom: '12px' }}>
                                 <button style={getFilterBtnStyle(filter === 'east')} onClick={() => setFilter('east')}>{t.standEast}</button>
                                 <button style={getFilterBtnStyle(filter === 'west')} onClick={() => setFilter('west')}>{t.standWest}</button>
@@ -341,8 +339,6 @@ const StandingsPage = ({ onTeamClick, language }) => {
                                         <tbody>
                                             {data.map((team, i) => {
                                                 const abbrev = team.teamAbbrev?.default || team.teamAbbrev;
-                                                const logoUrl = `https://assets.nhle.com/logos/nhl/svg/${abbrev}_light.svg`;
-                                                
                                                 const borderBottom = i === lastPlayoffIndex ? '2px dashed #ff4444' : '1px solid #222';
                                                 
                                                 const live = liveData[abbrev];
@@ -362,7 +358,8 @@ const StandingsPage = ({ onTeamClick, language }) => {
                                                             style={{ padding: '6px 2px', textAlign: 'left', fontSize: '0.85rem', whiteSpace: 'nowrap', cursor: 'pointer' }}
                                                             onClick={() => onTeamClick(abbrev)}
                                                         >
-                                                            <img src={logoUrl} style={{ width: '18px', height: '18px', verticalAlign: 'middle', marginRight: '6px' }} alt={abbrev} />
+                                                            {/* NHL LOGO KORVATTU TEAMBADGELLA */}
+                                                            <TeamBadge abbrev={abbrev} size={18} style={{ verticalAlign: 'middle', marginRight: '6px' }} />
                                                             <span style={{ fontWeight: 'bold', color: '#ddd', verticalAlign: 'middle' }}>{abbrev}</span>
                                                         </td>
                                                         

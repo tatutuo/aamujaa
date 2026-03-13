@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DateNavigation from './DateNavigation';
 import LiigaGameCard from './LiigaGameCard';
 import LiigaGameModal from './LiigaGameModal';
+import TeamBadge from './TeamBadge'; // LISÄTTY
 
 const LiigaLive = ({ currentView, onPlayerClick, onTeamClick, favTeams, favPlayers, toggleFavPlayer }) => {
     const getLiigaDate = () => {
@@ -27,6 +28,13 @@ const LiigaLive = ({ currentView, onPlayerClick, onTeamClick, favTeams, favPlaye
         if (!rawName) return '';
         if (rawName.includes(':')) return rawName.split(':').pop().toUpperCase(); 
         return rawName.toUpperCase();
+    };
+
+    const getBadgeAbbrev = (name) => {
+        const n = cleanTeamName(name);
+        if (n === 'HIFK' || n === 'HPK' || n === 'JYP' || n === 'TPS') return n;
+        if (n === 'KIEKKO-ESPOO') return 'K-E';
+        return n.substring(0, 3); 
     };
 
     useEffect(() => {
@@ -128,7 +136,8 @@ const LiigaLive = ({ currentView, onPlayerClick, onTeamClick, favTeams, favPlaye
                     <button onClick={(e) => { e.stopPropagation(); toggleFavPlayer(p.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.3rem', padding: '0', color: isFav ? '#ff4444' : '#555' }}>
                         {isFav ? '♥' : '♡'}
                     </button>
-                    <div style={{ textAlign: 'center', flex: 1 }}>
+                    <div style={{ textAlign: 'center', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
+                        {p.team && <TeamBadge abbrev={getBadgeAbbrev(p.team)} size={18} />}
                         <div style={{ fontWeight: 'bold', fontSize: '0.95rem', color: '#fff' }}>{p.firstName ? `${p.firstName.charAt(0)}. ` : ''}{p.lastName}</div>
                     </div>
                 </div>
@@ -169,7 +178,6 @@ const LiigaLive = ({ currentView, onPlayerClick, onTeamClick, favTeams, favPlaye
             <div className="container" style={{ paddingBottom: '80px', animation: 'fadeIn 0.4s' }}>
                 <DateNavigation currentDateObj={currentDateObj} language="fi" onPrevDay={handlePrevDay} onNextDay={handleNextDay} isRefreshing={isLoading} theme="liiga" />
                 
-                {/* OTTELUT */}
                 {isLoading ? (
                     <div className="loading" style={{ textAlign: 'center', padding: '50px', color: '#ff6600', animation: 'pulse 1.5s infinite' }}>Haetaan pelejä...</div>
                 ) : games.length === 0 ? (
@@ -182,7 +190,6 @@ const LiigaLive = ({ currentView, onPlayerClick, onTeamClick, favTeams, favPlaye
                     </div>
                 )}
 
-                {/* OMAT SUOSIKIT RIVI */}
                 {favPlayersData.length > 0 && (
                     <div className="finns-section" style={{ marginBottom: '20px' }}>
                         <h3 className="otsikko-suosikit" style={{ margin: '0 0 10px 10px', fontSize: '1.2rem', color: '#fff' }}>
@@ -194,7 +201,6 @@ const LiigaLive = ({ currentView, onPlayerClick, onTeamClick, favTeams, favPlaye
                     </div>
                 )}
 
-                {/* ILLAN TULIKUUMAT RIVI */}
                 {hotPlayers.length > 0 && (
                     <div className="finns-section" style={{ marginBottom: '20px' }}>
                         <h3 className="otsikko-tulikuumat" style={{ margin: '0 0 10px 10px', fontSize: '1.2rem', color: '#fff' }}>
@@ -240,7 +246,9 @@ const LiigaLive = ({ currentView, onPlayerClick, onTeamClick, favTeams, favPlaye
                                             onMouseOver={(e) => e.target.style.color = '#ff6600'}
                                             onMouseOut={(e) => e.target.style.color = '#fff'}
                                         >
-                                            {team.teamName}
+                                            {/* LISÄTTY TEAMBADGE SARJATAULUKKOON! */}
+                                            <TeamBadge abbrev={getBadgeAbbrev(team.teamName)} size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />
+                                            <span style={{ verticalAlign: 'middle' }}>{cleanTeamName(team.teamName)}</span>
                                         </td>
                                         <td style={{ padding: '10px 4px', textAlign: 'center', color: '#bbb' }}>{team.games}</td>
                                         <td style={{ padding: '10px 4px', textAlign: 'center', color: '#4ade80' }}>{team.wins}</td>
@@ -294,14 +302,15 @@ const LiigaLive = ({ currentView, onPlayerClick, onTeamClick, favTeams, favPlaye
                                     <tr key={idx} style={{ borderBottom: '1px solid #222' }}>
                                         <td style={{ padding: '10px 4px', textAlign: 'center', color: '#888', fontWeight: 'bold' }}>{idx + 1}.</td>
                                         <td 
-                                            style={{ padding: '10px 4px', textAlign: 'left', cursor: 'pointer' }}
+                                            style={{ padding: '10px 4px', textAlign: 'left', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
                                             onClick={() => onPlayerClick(p.id)}
                                         >
-                                            <div style={{ fontWeight: 'bold', color: '#fff', transition: 'color 0.2s' }} onMouseOver={e => e.target.style.color = '#ff6600'} onMouseOut={e => e.target.style.color = '#fff'}>
-                                                {p.lastName} {p.firstName}
-                                            </div>
-                                            <div style={{ fontSize: '0.7rem', color: '#888', textTransform: 'uppercase' }}>
-                                                {p.teamId}
+                                            {/* LISÄTTY TEAMBADGE TILASTOIHIN! */}
+                                            <TeamBadge abbrev={getBadgeAbbrev(p.teamId)} size={20} />
+                                            <div>
+                                                <div style={{ fontWeight: 'bold', color: '#fff', transition: 'color 0.2s' }} onMouseOver={e => e.target.style.color = '#ff6600'} onMouseOut={e => e.target.style.color = '#fff'}>
+                                                    {p.lastName} {p.firstName}
+                                                </div>
                                             </div>
                                         </td>
                                         <td style={{ padding: '10px 4px', textAlign: 'center', color: statTab === 'goals' ? '#ff6600' : '#ccc', fontWeight: statTab === 'goals' ? 'bold' : 'normal' }}>{p.goals || 0}</td>

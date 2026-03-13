@@ -1,6 +1,48 @@
 import React, { useState, useEffect } from 'react';
 import { translations } from '../utils/translations';
 
+// 1. LISÄTTY: NHL-joukkueiden päävärit (turvallinen tapa näyttää tiimit)
+const teamColors = {
+    BOS: '#FFB81C', BUF: '#002654', DET: '#CE1126', FLA: '#C8102E',
+    MTL: '#AF1E2D', OTT: '#C52032', TBL: '#002868', TOR: '#00205B',
+    CAR: '#CE1126', CBJ: '#002654', NJD: '#CE1126', NYI: '#00539B',
+    NYR: '#0038A8', PHI: '#F74902', PIT: '#FCB514', WSH: '#041E42',
+    CHI: '#CF0A2C', COL: '#6F263D', DAL: '#006847', MIN: '#154734',
+    NSH: '#FFB81C', STL: '#002F87', WPG: '#041E42', UTA: '#01265b',
+    ANA: '#F47A38', CGY: '#C8102E', EDM: '#FF4C00', LAK: '#111111',
+    SJS: '#006D75', SEA: '#001628', VAN: '#00205B', VGK: '#B4975A'
+};
+
+// 2. LISÄTTY: Uusi turvallinen logokomponentti kuvien tilalle
+const TeamBadge = ({ abbrev, className, onClick }) => {
+    const bgColor = teamColors[abbrev] || '#444'; // Oletusväri harmaa, jos tiimiä ei löydy
+    return (
+        <div 
+            className={className}
+            onClick={onClick}
+            title={abbrev}
+            style={{
+                backgroundColor: bgColor,
+                color: '#fff',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                fontWeight: 'bold',
+                cursor: onClick ? 'pointer' : 'default',
+                border: '2px solid rgba(255,255,255,0.2)',
+                textShadow: '1px 1px 2px rgba(0,0,0,0.8)',
+                width: '40px', // Voit muokata kokoa css:ssä tai tässä
+                height: '40px',
+                fontSize: '14px',
+                flexShrink: 0
+            }}
+        >
+            {abbrev}
+        </div>
+    );
+};
+
 const CalendarPage = ({ onTeamClick, language }) => {
     const t = translations[language] || translations.fi; 
     
@@ -115,13 +157,12 @@ const CalendarPage = ({ onTeamClick, language }) => {
             ) : (
                 <>
                     <div className="quick-jump-row">
+                        {/* 3. LISÄTTY: TeamBadge korvaa NHL:n kuvat pikanavigaatiossa */}
                         {scheduleData.teams.map(team => (
-                            <img 
+                            <TeamBadge
                                 key={`jump-${team.abbrev}`}
-                                src={`https://assets.nhle.com/logos/nhl/svg/${team.abbrev}_light.svg`} 
-                                className="quick-logo" 
-                                alt={team.abbrev}
-                                title={team.abbrev}
+                                abbrev={team.abbrev}
+                                className="quick-logo"
                                 onClick={() => scrollToTeam(team.abbrev)}
                             />
                         ))}
@@ -136,7 +177,9 @@ const CalendarPage = ({ onTeamClick, language }) => {
                                     style={{ cursor: 'pointer' }}
                                     onClick={() => onTeamClick && onTeamClick(team.abbrev)}
                                 >
-                                    <img src={`https://assets.nhle.com/logos/nhl/svg/${team.abbrev}_light.svg`} className="sched-logo" alt={team.abbrev} />
+                                    {/* 4. LISÄTTY: TeamBadge korvaa NHL:n kuvat otsikossa */}
+                                    <TeamBadge abbrev={team.abbrev} className="sched-logo" />
+                                    
                                     <span className="sched-team-name">{team.abbrev}</span>
                                     <span className="sched-stats">
                                         🏒 {team.gamesCount} | 🏠 {team.homeGames} | ✈️ {team.awayGames}

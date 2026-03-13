@@ -1,5 +1,6 @@
 import React from 'react';
 import { translations } from '../utils/translations';
+import TeamBadge from './TeamBadge'; // Oletetaan että on samassa kansiossa!
 
 const GameCard = ({ game, onClick, favTeams, toggleFavTeam, language }) => {
     if (!game || !game.homeTeam || !game.awayTeam) return null;
@@ -37,7 +38,7 @@ const GameCard = ({ game, onClick, favTeams, toggleFavTeam, language }) => {
                 <span className={`compact-status ${isLive ? 'live-text' : ''}`}>{statusText}</span>
             </div>
 
-            {/* KOTIJOUKKUE ENSIN (Ylhäällä) */}
+            {/* KOTIJOUKKUE */}
             <div className="compact-team-row" style={{ marginBottom: '6px', display: 'flex', alignItems: 'center' }}>
                 <button 
                     className={`fav-sydan ${isFavHome ? 'aktiivinen' : ''}`} 
@@ -46,9 +47,10 @@ const GameCard = ({ game, onClick, favTeams, toggleFavTeam, language }) => {
                 >
                     {isFavHome ? '♥' : '♡'}
                 </button>
-                <img src={`https://assets.nhle.com/logos/nhl/svg/${homeAbbrev}_light.svg`} className="compact-logo" style={{ width: '24px', height: '24px', marginRight: '6px', flexShrink: 0 }} alt={homeAbbrev} />
+
+                {/* TURVALLINEN LOGO */}
+                <TeamBadge abbrev={homeAbbrev} size={24} style={{ marginRight: '6px' }} />
                 
-                {/* Nimi ja (KOTI) pakotettu samalle riville */}
                 <div style={{ flex: 1, display: 'flex', alignItems: 'baseline', gap: '4px', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                     <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>{homeAbbrev}</span>
                     <span style={{ fontSize: '0.6rem', color: '#666', fontWeight: 'normal' }}>{t.gcHome || '(KOTI)'}</span>
@@ -57,7 +59,7 @@ const GameCard = ({ game, onClick, favTeams, toggleFavTeam, language }) => {
                 <span className="compact-score" style={{ fontSize: '1.3rem', marginLeft: '4px' }}>{game.homeTeam.score !== undefined ? game.homeTeam.score : '-'}</span>
             </div>
 
-            {/* VIERASJOUKKUE TOISENA (Alhaalla) */}
+            {/* VIERASJOUKKUE */}
             <div className="compact-team-row" style={{ display: 'flex', alignItems: 'center' }}>
                 <button 
                     className={`fav-sydan ${isFavAway ? 'aktiivinen' : ''}`} 
@@ -66,9 +68,10 @@ const GameCard = ({ game, onClick, favTeams, toggleFavTeam, language }) => {
                 >
                     {isFavAway ? '♥' : '♡'}
                 </button>
-                <img src={`https://assets.nhle.com/logos/nhl/svg/${awayAbbrev}_light.svg`} className="compact-logo" style={{ width: '24px', height: '24px', marginRight: '6px', flexShrink: 0 }} alt={awayAbbrev} />
+
+                {/* TURVALLINEN LOGO */}
+                <TeamBadge abbrev={awayAbbrev} size={24} style={{ marginRight: '6px' }} />
                 
-                {/* Nimi ja (VIERAS) pakotettu samalle riville */}
                 <div style={{ flex: 1, display: 'flex', alignItems: 'baseline', gap: '4px', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                     <span style={{ fontSize: '1rem', fontWeight: 'bold', color: '#fff' }}>{awayAbbrev}</span>
                     <span style={{ fontSize: '0.6rem', color: '#666', fontWeight: 'normal' }}>{t.gcAway || '(VIERAS)'}</span>
