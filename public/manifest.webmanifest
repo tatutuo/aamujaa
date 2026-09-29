@@ -1,0 +1,41 @@
+{
+  "name": "Aamujää — NHL-tilastot",
+  "short_name": "Aamujää",
+  "description": "NHL-ottelut, tilastot, suosikkipelaajat ja ennusteet suomeksi. Ei mainoksia, ei seurantaa.",
+  "id": "/hockey/",
+  "start_url": "/hockey/",
+  "scope": "/hockey/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0a0a",
+  "theme_color": "#0a0a0a",
+  "lang": "fi",
+  "dir": "ltr",
+  "categories": ["sports", "news"],
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Tilastot",
+      "short_name": "Tilastot",
+      "url": "/hockey/?view=stats"
+    },
+    {
+      "name": "Sarjataulukko",
+      "short_name": "Sarja",
+      "url": "/hockey/?view=standings"
+    }
+  ]
+}

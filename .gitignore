@@ -1,2 +1,33 @@
+# Riippuvuudet
 node_modules
+
+# Build
+dist
+dist-ssr
+*.local
+
+# Ympäristömuuttujat ja salaisuudet — EI KOSKAAN versionhallintaan
 .env
+.env.*
+!.env.example
+
+# Palvelimen tietokanta
+server/data
+
+# Lokit
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Editorit
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

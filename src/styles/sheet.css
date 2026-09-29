@@ -1,0 +1,193 @@
+/**
+ * Alhaalta liukuvan paneelin tyylit.
+ *
+ * Mobiilissa paneeli nousee alhaalta ja jättää yläreunaan raon, jotta käyttäjä
+ * näkee mistä tuli. Työpöydällä sama komponentti näkyy keskitettynä korttina.
+ */
+
+.sheet-root {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.sheet-backdrop {
+    position: absolute;
+    inset: 0;
+    border: none;
+    padding: 0;
+    background: rgba(3, 5, 8, 0.62);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    cursor: default;
+    animation: sheet-fade var(--duration-base) var(--ease-out);
+}
+
+.sheet-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 720px;
+    max-height: calc(100dvh - var(--space-6));
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-bottom: none;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    box-shadow: var(--shadow-sheet);
+    animation: sheet-rise var(--duration-slow) var(--ease-out);
+    overflow: hidden;
+    /* Paneeli palautuu paikalleen pehmeästi, mutta seuraa sormea viiveettä. */
+    transition: transform var(--duration-base) var(--ease-out);
+}
+
+.sheet-panel.is-dragging {
+    transition: none;
+}
+
+.sheet-panel.is-full {
+    max-height: calc(100dvh - var(--space-5));
+    min-height: 82dvh;
+}
+
+/* Ohut korostusviiva paneelin yläreunassa kertoo mistä näkymästä on kyse. */
+.sheet-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--sheet-accent), transparent);
+    opacity: 0.85;
+}
+
+.sheet-grip-area {
+    flex-shrink: 0;
+    padding: var(--space-3) var(--space-4) var(--space-3);
+    /* Vetoalue ei saa laukaista selaimen omaa vieritystä. */
+    touch-action: none;
+    cursor: grab;
+}
+
+.sheet-grip-area:active {
+    cursor: grabbing;
+}
+
+.sheet-grip {
+    width: 42px;
+    height: 4px;
+    margin: 0 auto var(--space-3);
+    border-radius: var(--radius-pill);
+    background: var(--border-strong);
+}
+
+.sheet-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.sheet-titles {
+    min-width: 0;
+}
+
+.sheet-title {
+    margin: 0;
+    font-size: var(--text-xl);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.sheet-subtitle {
+    margin: var(--space-1) 0 0;
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.sheet-header-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+.sheet-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    background: var(--surface-raised);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color var(--duration-fast), border-color var(--duration-fast);
+}
+
+.sheet-close:hover {
+    color: var(--text-primary);
+    border-color: var(--border-strong);
+}
+
+.sheet-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: var(--space-2) var(--space-4) calc(var(--space-6) + var(--safe-bottom));
+}
+
+@keyframes sheet-rise {
+    from { transform: translateY(6%); opacity: 0; }
+    to   { transform: translateY(0);  opacity: 1; }
+}
+
+@keyframes sheet-fade {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+/* Työpöydällä paneeli on keskitetty kortti, ei alhaalta nouseva levy. */
+@media (min-width: 768px) {
+    .sheet-root {
+        align-items: center;
+        padding: var(--space-5);
+    }
+
+    .sheet-panel {
+        max-height: min(86dvh, 900px);
+        border-radius: var(--radius-lg);
+        border-bottom: 1px solid var(--border-subtle);
+        animation-name: sheet-pop;
+    }
+
+    .sheet-panel.is-full {
+        min-height: 0;
+    }
+
+    /* Työpöydällä vetokahvaa ei tarvita — hiirellä ei vedetä paneelia kiinni. */
+    .sheet-grip {
+        display: none;
+    }
+
+    .sheet-grip-area {
+        cursor: default;
+        padding-top: var(--space-4);
+    }
+
+    .sheet-body {
+        padding-bottom: var(--space-5);
+    }
+
+    @keyframes sheet-pop {
+        from { transform: scale(0.97); opacity: 0; }
+        to   { transform: scale(1);    opacity: 1; }
+    }
+}

@@ -1,0 +1,3234 @@
+/**
+ * Sovelluksen uusi ulkoasu: ilmava korttityyli.
+ *
+ * Nämä tyylit ladataan tokens.css:n jälkeen ja korvaavat vanhat tiiviit tyylit.
+ * Kaikki värit tulevat muuttujista, joten vaalea teema toimii aidosti.
+ */
+
+/* ==========================================================================
+   Perusta
+   ========================================================================== */
+
+html {
+    /*
+      Varaa vierityspalkille tila aina, myös lyhyillä sivuilla. Ilman tätä
+      sisältö siirtyy vaakasuunnassa aina kun palkki ilmestyy tai katoaa —
+      se näkyi selvimmin sarjataulukossa, jossa konferenssin ja divisioonan
+      välillä vaihtaminen liikutti sarakkeita.
+    */
+    scrollbar-gutter: stable;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background: var(--surface-app);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+/* Sovelluksen sisältö mahtuu palkkien väliin myös lovinäytöillä. */
+.app-view {
+    padding-top: calc(58px + var(--safe-top));
+    padding-bottom: calc(78px + var(--safe-bottom));
+}
+
+.container {
+    width: 100%;
+    max-width: 780px;
+    margin: 0 auto;
+    padding: var(--space-4);
+    text-align: left;
+}
+
+/*
+ * Etusivun aamuruskohehku: valo lankeaa sivun ylälaitaan sisällön taakse.
+ *
+ * Tarkoituksella absolute eikä fixed. Sivunvaihdon animaatio antaa
+ * .app-view'lle transformin, ja transform sitoo fixed-elementin siihen
+ * ikkunan sijaan — hehku olisi silloin päätynyt väärään kohtaan ja
+ * liikkunut animaation mukana. Absoluuttinen kerros pysyy paikallaan.
+ */
+.home-container {
+    position: relative;
+}
+
+.home-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    /* Venytetään yli sisennyksen, jotta hehku ulottuu reunasta reunaan. */
+    left: calc(var(--space-4) * -1);
+    right: calc(var(--space-4) * -1);
+    height: 320px;
+    z-index: -1;
+    background: var(--dawn-glow);
+    pointer-events: none;
+}
+
+/* ==========================================================================
+   Yläpalkki
+   ========================================================================== */
+
+.header-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-nav);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-4);
+    padding-top: calc(var(--space-2) + var(--safe-top));
+    background: var(--surface-nav);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Aamuruskon viiva palkin alareunassa — sovelluksen tunnusmerkki. */
+.header-bar::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 2px;
+    background: linear-gradient(90deg, var(--dawn-1), var(--dawn-2) 45%, var(--dawn-3));
+    opacity: 0.75;
+}
+
+.header-wordmark {
+    background: linear-gradient(100deg, var(--dawn-1), var(--dawn-2) 40%, var(--dawn-3));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* Jos liukuvärin leikkaus tekstiin ei ole tuettu, nimi jää tavalliseksi. */
+@supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+    .header-wordmark {
+        background: none;
+        color: var(--text-primary);
+    }
+}
+
+.header-brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 0;
+}
+
+.header-logo {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    box-shadow: var(--shadow-sm);
+}
+
+.header-title {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.header-subtitle {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--accent-text);
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.top-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    background: var(--surface-raised);
+    color: var(--text-secondary);
+    font-size: var(--text-base);
+    cursor: pointer;
+    transition: border-color var(--duration-fast), transform var(--duration-fast);
+}
+
+.top-icon-btn:hover {
+    border-color: var(--border-strong);
+}
+
+.top-icon-btn:active {
+    transform: scale(0.94);
+}
+
+/* ==========================================================================
+   Alanavigaatio
+   ========================================================================== */
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-nav);
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-2);
+    padding-bottom: calc(var(--space-2) + var(--safe-bottom));
+    background: var(--surface-nav);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.nav-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    min-height: 52px;
+    padding: var(--space-2) 2px;
+    border: none;
+    background: transparent;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: color var(--duration-fast);
+}
+
+.nav-item .nav-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+    /* Kiinteä korkeus pitää tekstirivin samalla tasolla joka painikkeessa,
+       vaikka emojin oma korkeus vaihtelee alustoittain. */
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-item .nav-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-transform: uppercase;
+    /* Pisin nimi (KALENTERI) ei saa venyttää saraketta eri levyiseksi. */
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/*
+  Aktiivinen välilehti merkitään ohuella viivalla painikkeen yläreunassa ja
+  korostusvärillä. Aiempi täytetty tausta jäi tekstin alle epätasaisena
+  laatikkona, koska sen leveys vaihteli nimen pituuden mukaan.
+*/
+.nav-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 0;
+    height: 3px;
+    border-radius: var(--radius-pill);
+    background: var(--accent);
+    transform: translateX(-50%);
+    transition: width var(--duration-base) var(--ease-out);
+}
+
+.nav-item.active {
+    color: var(--accent-text);
+}
+
+.nav-item.active::before {
+    width: 28px;
+}
+
+/*
+  Aktiivista ikonia ei skaalata eikä siirretä. Skaalaus muutti ikonin laatikon
+  korkeutta, jolloin aktiivisen välilehden ikoni ja teksti asettuivat eri
+  tasolle kuin muiden — palkki näytti vinolta. Korostus hoituu värillä ja
+  yläreunan viivalla.
+*/
+
+/* ==========================================================================
+   Päivämääränavigaatio
+   ========================================================================== */
+
+.date-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-5);
+}
+
+.date-nav-label {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: var(--text-tertiary);
+}
+
+.date-nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    width: 100%;
+}
+
+.date-nav-arrow,
+.sched-filter-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    background: var(--surface-card);
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color var(--duration-fast), color var(--duration-fast);
+}
+
+.date-nav-arrow:hover,
+.sched-filter-btn:hover {
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+}
+
+.sched-filter-btn.active {
+    background: var(--accent-soft);
+    border-color: transparent;
+    color: var(--accent-text);
+}
+
+.date-nav-current {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-lg);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.date-nav-refresh {
+    border: none;
+    background: none;
+    padding: var(--space-1);
+    color: var(--text-tertiary);
+    font-size: var(--text-base);
+    cursor: pointer;
+}
+
+.date-nav-refresh.is-spinning {
+    animation: spin 1s linear infinite;
+}
+
+/* ==========================================================================
+   Ottelukortti
+   ========================================================================== */
+
+/*
+ * Ottelut kahtena sarakkeena jo puhelimessa, jotta illan kierros näkyy
+ * vierittämättä. Leveällä näytöllä kolme rinnakkain. minmax(0, 1fr) sallii
+ * sarakkeen kutistua sisältöään kapeammaksi — ilman sitä pitkä sisältö
+ * venyttäisi yhden sarakkeen ja rikkoisi ruudukon.
+ */
+.games-container {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-2);
+    margin-bottom: var(--space-6);
+}
+
+@media (min-width: 620px) {
+    .games-container {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: var(--space-3);
+    }
+}
+
+/* Lataus-, virhe- ja "ei otteluita" -tilat koko leveydelle, ei yhteen sarakkeeseen. */
+.games-container > :not(.game-card-v2) {
+    grid-column: 1 / -1;
+}
+
+.game-card-v2 {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    transition: transform var(--duration-base) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out),
+                border-color var(--duration-fast);
+}
+
+.game-card-v2:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
+}
+
+.game-card-v2.is-live {
+    border-color: rgba(244, 63, 94, 0.35);
+}
+
+.game-card-v2.is-fav {
+    border-color: rgba(251, 191, 36, 0.4);
+}
+
+.gc-main {
+    position: relative;
+    padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+}
+
+/* Koko kortin peittävä avausnappi taustalla. Suosikkitähdet piirtyvät sen
+   päälle omana kerroksenaan, joten kumpikaan ei ole toisen sisällä. */
+.gc-open {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    width: 100%;
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+}
+
+.gc-open:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -3px;
+    border-radius: var(--radius-md);
+}
+
+.gc-status,
+.gc-teams {
+    position: relative;
+    z-index: 1;
+    /* Sisältö ei saa varastaa klikkausta avausnapilta... */
+    pointer-events: none;
+}
+
+.gc-teams {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* ...paitsi suosikkitähti, joka tarvitsee omat klikkauksensa. */
+.gc-fav {
+    pointer-events: auto;
+}
+
+.gc-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    max-width: 100%;
+    margin: var(--space-1) 0 var(--space-1);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-pill);
+    background: var(--surface-sunken);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+}
+
+.gc-status-live {
+    background: var(--live-soft);
+    color: var(--live);
+}
+
+.gc-status-upcoming {
+    background: var(--accent-soft);
+    color: var(--accent-text);
+}
+
+.gc-live-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--live);
+    animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+.gc-team {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+}
+
+/* Hävinnyt joukkue himmennetään, jotta lopputuloksen näkee vilkaisulla. */
+.gc-team.is-loser .gc-abbrev,
+.gc-team.is-loser .gc-score {
+    color: var(--text-tertiary);
+}
+
+
+.gc-abbrev {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--text-base);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+}
+
+
+.gc-fav {
+    border: none;
+    background: none;
+    padding: 0;
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    transition: color var(--duration-fast), transform var(--duration-fast);
+}
+
+.gc-fav.is-active {
+    color: var(--gold);
+}
+
+.gc-fav:active {
+    transform: scale(1.2);
+}
+
+.gc-score {
+    min-width: 22px;
+    font-size: var(--text-xl);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+}
+
+/* --- Maalintekijät suoraan kortissa --- */
+
+/* ==========================================================================
+   Osiot ja vaakalistat
+   ========================================================================== */
+
+.finns-section {
+    margin-bottom: var(--space-6);
+}
+
+.finns-section h3 {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+}
+
+/*
+ * Vaakalista, jossa kortit napsahtavat paikalleen.
+ *
+ * Kaksi asiaa on tarkoituksellisia:
+ *
+ * 1. `scroll-padding-inline`. Ilman sitä selain napsauttaa ensimmäisen kortin
+ *    kiinni vierityskehyksen reunaan ja ohittaa `padding-inline`-arvon —
+ *    lista rullautui heti 16 pikseliä sivuun ja eka kortti liimautui ruudun
+ *    vasempaan reunaan otsikon linjan ulkopuolelle.
+ *
+ * 2. Kortin leveys lasketaan niin, että puhelimeen mahtuu tasan kaksi korttia
+ *    ja kolmannesta jää kapea kaista näkyviin. Pelkkä kiinteä leveys jätti
+ *    puolitoista korttia näkyviin, mikä näytti vahingolta. Kaista puolestaan
+ *    kertoo että listaa voi selata — ilman sitä käyttäjä ei arvaa sitä.
+ */
+.h-scroll-wrapper {
+    display: flex;
+    gap: var(--space-3);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    padding-bottom: var(--space-2);
+    /* Kortit saavat vierittyä ruudun reunaan asti ilman että sisältö leikkautuu. */
+    margin-inline: calc(var(--space-4) * -1);
+    padding-inline: var(--space-4);
+    scroll-padding-inline: var(--space-4);
+}
+
+.h-scroll-wrapper > * {
+    scroll-snap-align: start;
+    /* Kaksi korttia + 20 px kurkistus kolmanteen. Leveämmällä näytöllä
+       kortti ei kasva yli luonnollisen kokonsa, jolloin niitä mahtuu useampi. */
+    flex: 0 0 min(208px, calc((100% - var(--space-3) - 20px) / 2));
+}
+
+.h-scroll-wrapper::-webkit-scrollbar {
+    height: 0;
+}
+
+/* ==========================================================================
+   Tilat
+   ========================================================================== */
+
+.loading,
+.empty-state {
+    padding: var(--space-5);
+    color: var(--text-tertiary);
+    font-size: var(--text-sm);
+}
+
+.error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    padding: var(--space-5);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    color: var(--negative);
+    font-size: var(--text-sm);
+}
+
+.error-state p {
+    margin: 0;
+}
+
+.goal-alert {
+    position: fixed;
+    top: calc(var(--safe-top) + var(--space-2));
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200000;
+    width: min(92vw, 520px);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--live);
+    color: #fff;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    animation: slide-down var(--duration-slow) var(--ease-out);
+}
+
+.app-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(96px + var(--safe-bottom));
+    transform: translateX(-50%);
+    z-index: 200000;
+    width: max-content;
+    max-width: 90vw;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    background: var(--surface-raised);
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+    text-align: center;
+    box-shadow: var(--shadow-lg);
+    animation: slide-up var(--duration-base) var(--ease-out);
+}
+
+/* ==========================================================================
+   Joukkuemerkki
+   ========================================================================== */
+
+.team-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    width: var(--badge-size, 40px);
+    height: var(--badge-size, 40px);
+    font-size: var(--badge-font-size, 16px);
+    border-radius: 50%;
+    border: 2px solid transparent;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    box-shadow: var(--shadow-sm);
+    padding: 0;
+    line-height: 1;
+}
+
+button.team-badge {
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   Liike
+   ========================================================================== */
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0.3; }
+}
+
+@keyframes slide-down {
+    from { transform: translate(-50%, -16px); opacity: 0; }
+    to   { transform: translate(-50%, 0);     opacity: 1; }
+}
+
+@keyframes slide-up {
+    from { transform: translate(-50%, 12px); opacity: 0; }
+    to   { transform: translate(-50%, 0);    opacity: 1; }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ==========================================================================
+   Haku
+   ========================================================================== */
+
+.search-overlay {
+    position: fixed;
+    inset: 0;
+    display: block;
+    padding: 0;
+    background: var(--surface-app);
+    animation: sheet-fade var(--duration-fast) var(--ease-out);
+}
+
+.search-panel {
+    width: 100%;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: calc(var(--space-4) + var(--safe-top)) var(--space-4) var(--space-4);
+}
+
+.search-input-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+.search-input {
+    flex: 1;
+    min-width: 0;
+    padding: var(--space-4);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: var(--text-lg);
+    outline: none;
+    transition: border-color var(--duration-fast);
+}
+
+.search-input:focus {
+    border-color: var(--accent);
+}
+
+.search-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    background: var(--surface-card);
+    color: var(--text-secondary);
+    font-size: var(--text-xl);
+    line-height: 1;
+    cursor: pointer;
+}
+
+.search-results {
+    max-height: calc(100dvh - 140px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+
+.search-status {
+    padding: var(--space-5);
+    color: var(--text-tertiary);
+    font-size: var(--text-sm);
+    text-align: center;
+}
+
+.search-status-error {
+    color: var(--negative);
+}
+
+.search-result {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    margin-bottom: var(--space-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--duration-fast), background var(--duration-fast);
+}
+
+.search-result:hover,
+.search-result:focus-visible {
+    border-color: var(--border-strong);
+    background: var(--surface-card-hover);
+}
+
+.search-result-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.search-result-type {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.search-result-type.is-player { color: var(--accent-text); }
+.search-result-type.is-team   { color: var(--gold); }
+
+.search-result-name {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.search-result-team {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+.search-result-abbrev {
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--surface-sunken);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--text-tertiary);
+}
+
+/* Kosketuskohteiden vähimmäiskoko (esteettömyyssuositus) */
+.top-icon-btn,
+.nav-item,
+.sched-filter-btn {
+    min-height: 44px;
+}
+
+/*
+ * Ottelukortin suosikkitähti: 32 px kosketusalue 44 px:n sijaan. Täysikokoinen
+ * alue teki joukkuerivistä niin korkean, ettei kahta korttia mahtunut
+ * rinnakkain. Tähti on toissijainen toiminto — kortti itse on yksi iso
+ * napautusalue, ja suosikin voi lisätä myös joukkuekortista.
+ */
+.gc-fav {
+    min-width: 32px;
+    min-height: 32px;
+}
+
+/* ==========================================================================
+   Pelaajakortti
+   ========================================================================== */
+
+.player-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding: var(--space-3);
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--duration-base) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out),
+                border-color var(--duration-fast);
+}
+
+.player-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
+}
+
+/* Korttivariantit erottuvat ohuella värivihjeellä, ei kokonaan eri taustalla. */
+.player-card.pc-hot     { border-color: rgba(244, 63, 94, 0.35); }
+.player-card.pc-fantasy { border-color: rgba(251, 191, 36, 0.35); }
+.player-card.pc-fav     { border-color: rgba(56, 189, 248, 0.3); }
+
+.pc-open {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    border: none;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    border-radius: var(--radius-md);
+}
+
+.pc-open:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -3px;
+}
+
+.pc-header,
+.pc-stats,
+.pc-status,
+.pc-empty,
+.pc-actions {
+    position: relative;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Vaihtonapit omalla rivillään, oikeaan reunaan tasattuna. */
+.pc-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-1);
+    margin-bottom: var(--space-1);
+}
+
+.pc-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    padding-bottom: var(--space-2);
+    margin-bottom: var(--space-3);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.pc-icon-btn {
+    flex-shrink: 0;
+    padding: var(--space-1);
+    border: none;
+    background: none;
+    font-size: 1rem;
+    line-height: 1;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    pointer-events: auto;
+    transition: color var(--duration-fast), transform var(--duration-fast);
+}
+
+.pc-icon-btn.is-fav     { color: var(--live); }
+.pc-icon-btn.is-fantasy { color: var(--gold); }
+.pc-icon-btn:active     { transform: scale(1.2); }
+
+.pc-identity {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    flex: 1;
+    min-width: 0;
+}
+
+.pc-name {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pc-live {
+    margin-left: var(--space-1);
+    font-size: 0.55rem;
+    color: var(--live);
+    animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+.pc-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+}
+
+.pc-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    /* Ruudukon solu saa kutistua sisältöään pienemmäksi. Ilman tätä
+       kaksi saraketta vaativat yhteensä enemmän tilaa kuin kortissa on,
+       ja sisältö vuotaa reunan yli kapealla näytöllä. */
+    min-width: 0;
+    padding: var(--space-2) var(--space-1);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+}
+
+.pc-stat-label {
+    max-width: 100%;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1.2;
+    color: var(--text-tertiary);
+    text-align: center;
+    /* Otsikot on lyhennetty mahtumaan yhdelle riville (ks. CARD_LABELS).
+       Kesken sanan kääriytyminen näytti rikkinäiseltä, joten se estetään
+       kokonaan — jos otsikko ei mahdu, se on väärä otsikko eikä tyyliasia. */
+    white-space: nowrap;
+}
+
+.pc-stat-value {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.pc-stat-positive .pc-stat-value { color: var(--positive); }
+.pc-stat-negative .pc-stat-value { color: var(--negative); }
+.pc-stat-accent   .pc-stat-value { color: var(--accent-text); }
+.pc-stat-gold     .pc-stat-value { color: var(--gold); }
+
+.pc-status {
+    margin: 0 0 var(--space-3);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-align: center;
+    color: var(--text-tertiary);
+}
+
+.pc-empty {
+    margin: auto 0;
+    padding: var(--space-4) 0;
+    font-size: var(--text-sm);
+    text-align: center;
+    color: var(--text-tertiary);
+}
+
+/* ==========================================================================
+   Sarjataulukko
+   ========================================================================== */
+
+/*
+  Kiinteä sarakeleveys. Ilman tätä selain mitoittaa sarakkeet sisällön mukaan,
+  jolloin luvut hyppäävät sivusuunnassa aina kun konferenssia tai divisioonaa
+  vaihdetaan — esimerkiksi kolminumeroinen pistemäärä leventää saraketta.
+*/
+.standings-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+
+.standings-table th,
+.standings-table td {
+    padding: var(--space-2) 2px;
+    text-align: center;
+}
+
+.standings-table th:nth-child(1),
+.standings-table td:nth-child(1) { width: 30px; }
+
+.standings-table th:nth-child(2),
+.standings-table td:nth-child(2) {
+    width: auto;
+    text-align: left;
+}
+
+.standings-table th:nth-child(n+3),
+.standings-table td:nth-child(n+3) { width: 34px; }
+
+/* Piste- ja maaliero-sarakkeet tarvitsevat hieman enemmän tilaa. */
+.standings-table th:nth-last-child(-n+2),
+.standings-table td:nth-last-child(-n+2) { width: 42px; }
+
+/* ==========================================================================
+   Ennustepaneeli
+   ========================================================================== */
+
+.pred {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.pred-datenav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+
+.pred-accuracy {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    text-align: center;
+}
+
+.pred-accuracy .is-good { color: var(--positive); font-weight: 600; }
+.pred-accuracy .is-weak { color: var(--gold); font-weight: 600; }
+
+.pred-accuracy-hint {
+    color: var(--text-tertiary);
+    font-weight: 400;
+}
+
+/* Välilehdet: sama pillerityyli kuin muualla sovelluksessa, ei enää
+   kirkkaan keltaisia laatikoita mustalla pohjalla. */
+.pred-tabs {
+    display: flex;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+}
+
+.pred-tab {
+    flex: 1;
+    min-width: 0;
+    padding: var(--space-2) var(--space-1);
+    border: none;
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: background var(--duration-fast), color var(--duration-fast);
+}
+
+.pred-tab.active {
+    background: var(--surface-card);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+/* --- Ennustekortit --- */
+
+.pred-match {
+    padding: var(--space-4);
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-3);
+}
+
+.pred-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-1);
+    border-radius: var(--radius-sm);
+}
+
+.pred-row + .pred-row {
+    border-top: 1px solid var(--border-subtle);
+}
+
+.pred-rank {
+    width: 24px;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+
+.pred-name {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pred-value {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+}
+
+.pred-info h4 {
+    margin: var(--space-4) 0 var(--space-2);
+    font-size: var(--text-base);
+    color: var(--text-primary);
+}
+
+.pred-info p {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-sm);
+    line-height: 1.65;
+    color: var(--text-secondary);
+}
+
+/*
+  Taulukon oma vieritysalue varaa palkille tilan aina. 16 joukkueen
+  konferenssinäkymä ylittää säiliön korkeuden ja 8 joukkueen divisioona ei —
+  ilman varausta sarakkeet siirtyivät 8 pikseliä joka vaihdolla.
+*/
+.standings-table-container,
+.standings-table-container > div,
+.season-table-container {
+    scrollbar-gutter: stable;
+}
+
+/* ==========================================================================
+   Yleiset paneelisisällöt
+   ========================================================================== */
+
+.prose p {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-base);
+    line-height: 1.65;
+    color: var(--text-secondary);
+}
+
+.block-btn {
+    width: 100%;
+    margin: var(--space-3) 0;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface-sunken);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: var(--text-base);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--duration-fast), border-color var(--duration-fast);
+}
+
+.block-btn:hover { border-color: var(--accent); }
+
+.block-btn.active {
+    background: var(--accent-soft);
+    border-color: transparent;
+    color: var(--accent-text);
+}
+
+.primary-btn {
+    width: 100%;
+    padding: var(--space-4);
+    border: none;
+    border-radius: var(--radius-md);
+    background: var(--accent);
+    color: #04121a;
+    font-family: inherit;
+    font-size: var(--text-base);
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity var(--duration-fast), transform var(--duration-fast);
+}
+
+.primary-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.primary-btn:not(:disabled):active { transform: scale(0.98); }
+
+/* --- Käyttöohjeet --- */
+
+.guide-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    animation: sheet-fade var(--duration-base) var(--ease-out);
+}
+
+.guide-item {
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--border-strong);
+}
+
+.guide-item h4 {
+    margin: 0 0 var(--space-1);
+    font-size: var(--text-base);
+    color: var(--text-primary);
+}
+
+.guide-item p {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.guide-live     { border-left-color: var(--live); }
+.guide-accent   { border-left-color: var(--accent); }
+.guide-positive { border-left-color: var(--positive); }
+.guide-gold     { border-left-color: var(--gold); }
+
+.info-footer {
+    margin-top: var(--space-5);
+    padding: var(--space-4);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+
+.info-dev {
+    margin: 0 0 var(--space-2);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.info-thanks {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--text-tertiary);
+}
+
+/* --- Päivitykset --- */
+
+.update-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin: 0;
+    padding-left: var(--space-5);
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+}
+
+.update-list li::marker { color: var(--gold); }
+
+/* --- Asetukset --- */
+
+.settings-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+
+.settings-label {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+}
+
+.segmented {
+    display: flex;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+}
+
+.segmented-btn {
+    flex: 1;
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background var(--duration-fast), color var(--duration-fast);
+}
+
+.segmented-btn.active {
+    background: var(--surface-card);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.settings-links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-5);
+}
+
+.settings-link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-sunken);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: var(--text-base);
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color var(--duration-fast), background var(--duration-fast);
+}
+
+.settings-link:hover {
+    border-color: var(--border-strong);
+    background: var(--surface-card-hover);
+}
+
+.settings-link-icon { font-size: 1.1rem; }
+
+.settings-link-chevron {
+    margin-left: auto;
+    font-size: 1.3rem;
+    color: var(--text-tertiary);
+}
+
+.settings-link-gold .settings-link-icon     { filter: none; }
+.settings-link-accent   { border-left: 3px solid var(--accent); }
+.settings-link-gold     { border-left: 3px solid var(--gold); }
+.settings-link-positive { border-left: 3px solid var(--positive); }
+
+/* --- Lomakkeet --- */
+
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.field-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+}
+
+.field-count {
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+    font-variant-numeric: tabular-nums;
+}
+
+.field-input {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface-sunken);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: var(--text-base);
+    outline: none;
+    transition: border-color var(--duration-fast);
+}
+
+.field-input:focus { border-color: var(--accent); }
+.field-input:disabled { opacity: 0.6; }
+
+.field-textarea {
+    resize: vertical;
+    min-height: 120px;
+    line-height: 1.6;
+}
+
+.form-status {
+    margin: 0;
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    text-align: center;
+}
+
+.form-status.is-success { background: rgba(52, 211, 153, 0.12); color: var(--positive); }
+.form-status.is-error   { background: rgba(251, 113, 133, 0.12); color: var(--negative); }
+.form-status.is-info    { background: var(--surface-sunken); color: var(--text-secondary); }
+
+/* ==========================================================================
+   Sivujen otsikot ja tilastoruudukko
+   ========================================================================== */
+
+.page-title {
+    margin: 0 0 var(--space-5);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.page-main-title {
+    margin: 0 0 var(--space-4);
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.section-title {
+    margin: var(--space-6) 0 var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+}
+
+.stat-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+}
+
+.stat-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    min-height: 96px;
+    padding: var(--space-4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    color: var(--text-primary);
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    transition: transform var(--duration-base) var(--ease-out),
+                box-shadow var(--duration-base) var(--ease-out),
+                border-color var(--duration-fast);
+}
+
+.stat-tile:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
+}
+
+.stat-tile-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.stat-tile-label {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    line-height: 1.3;
+}
+
+/* Kristallipallo erottuu kultaisella vihjeellä, ei kokonaan eri ulkoasulla. */
+.stat-tile.is-featured {
+    border-color: rgba(251, 191, 36, 0.4);
+    background: linear-gradient(160deg, var(--gold-soft), var(--surface-card) 60%);
+}
+
+.stat-tile.is-featured .stat-tile-label {
+    color: var(--gold);
+}
+
+/* Vanhat pörssinapit noudattavat samaa ulkoasua, jos niitä on vielä käytössä. */
+.porssi-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+    min-height: 96px;
+    padding: var(--space-4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   Ennustepaneelin sisältö
+   ========================================================================== */
+
+.pred-matches {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.pred-match {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+}
+
+.pred-match.is-hit  { border-color: rgba(52, 211, 153, 0.4); }
+.pred-match.is-miss { border-color: rgba(251, 113, 133, 0.35); }
+
+.pred-verdict {
+    position: absolute;
+    top: calc(var(--space-3) * -1);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 2px var(--space-3);
+    border-radius: var(--radius-pill);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.pred-verdict.is-hit  { background: var(--positive); color: #04211a; }
+.pred-verdict.is-miss { background: var(--negative); color: #2a0710; }
+
+.pred-teams {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.pred-team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.pred-team-abbrev {
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.pred-verdict-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 110px;
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+.pred-verdict-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+}
+
+.pred-verdict-value {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--gold);
+    font-variant-numeric: tabular-nums;
+}
+
+.pred-verdict-sub {
+    font-size: 10px;
+    color: var(--text-tertiary);
+}
+
+/* --- Voittotodennäköisyyspalkki --- */
+
+.pred-bar {
+    position: relative;
+    height: 26px;
+    border-radius: var(--radius-pill);
+    background: var(--surface-sunken);
+    overflow: hidden;
+}
+
+.pred-bar-fill {
+    height: 100%;
+    background: var(--accent-soft);
+    border-right: 2px solid var(--accent);
+    transition: width var(--duration-slow) var(--ease-out);
+}
+
+.pred-bar-labels {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-3);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* --- Tunnusluvut --- */
+
+.pred-facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+    gap: var(--space-3);
+    margin: 0;
+    padding: var(--space-3);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+.pred-facts dt {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+}
+
+.pred-facts dd {
+    margin: 2px 0 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.pred-facts .is-ot   { color: var(--gold); }
+.pred-facts .is-good { color: var(--positive); }
+
+/* --- Perustelut --- */
+
+.pred-reasons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    font-size: var(--text-xs);
+}
+
+.pred-reasons ul {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.pred-reasons ul.is-away { text-align: right; }
+
+.pred-reasons li::before {
+    content: '+ ';
+    font-weight: 700;
+}
+
+.pred-reasons li.is-minus::before { content: '− '; }
+
+.pred-reasons li.is-plus  { color: var(--positive); }
+.pred-reasons li.is-minus { color: var(--negative); }
+
+/* --- Taulukot paneelin sisällä --- */
+
+.pred-table {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.pred-table-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-2) var(--space-2);
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+}
+
+.pred-table .pred-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    padding: var(--space-2);
+    border: none;
+    border-radius: var(--radius-sm);
+    background: none;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--duration-fast);
+}
+
+.pred-table .pred-row:hover { background: var(--surface-sunken); }
+
+/* Playoff-viiva: kahdeksannen ja yhdeksännen väliin. */
+.pred-table .pred-row.is-cutoff {
+    border-top: 2px dashed var(--border-strong);
+    padding-top: var(--space-3);
+    cursor: default;
+}
+
+.pred-rank.is-top      { color: var(--gold); font-weight: 700; }
+.pred-rank.is-playoff  { color: var(--positive); }
+.pred-rank.is-out      { color: var(--text-tertiary); }
+
+.pred-name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.pred-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 68px;
+    flex-shrink: 0;
+    text-align: center;
+}
+
+.pred-col strong {
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.pred-col small {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+
+.pred-col.is-highlight {
+    padding: var(--space-1) var(--space-2);
+    background: var(--gold-soft);
+    border-radius: var(--radius-sm);
+}
+
+.pred-col.is-highlight strong { color: var(--gold); }
+
+.pred-conferences {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+/* --- Miten ennuste syntyy --- */
+
+.pred-info h4 {
+    margin: var(--space-5) 0 var(--space-3);
+    font-size: var(--text-base);
+    color: var(--text-primary);
+}
+
+.prose-lead {
+    margin: 0;
+    font-size: var(--text-base);
+    line-height: 1.65;
+    color: var(--text-secondary);
+}
+
+.pred-steps {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    margin: 0;
+    padding-left: var(--space-5);
+    font-size: var(--text-sm);
+    line-height: 1.65;
+    color: var(--text-secondary);
+}
+
+.pred-steps li::marker {
+    color: var(--gold);
+    font-weight: 700;
+}
+
+.pred-steps strong { color: var(--text-primary); }
+
+.pred-caveat {
+    margin: var(--space-5) 0 0;
+    padding: var(--space-4);
+    background: var(--surface-sunken);
+    border-left: 3px solid var(--gold);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+/* ==========================================================================
+   Kalenterisivu
+   ========================================================================== */
+
+.sched-filter-container {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.sched-filter-container .sched-filter-btn { flex: 1; }
+
+.date-picker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    padding: var(--space-3);
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+}
+
+.date-input {
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface-sunken);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: var(--text-base);
+    cursor: pointer;
+}
+
+.quick-jump-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    padding: var(--space-3);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+}
+
+.sched-card {
+    margin-bottom: var(--space-3);
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.sched-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--duration-fast);
+}
+
+.sched-header:hover { background: var(--surface-card-hover); }
+
+.sched-team-name {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.sched-stats {
+    margin-left: auto;
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    white-space: nowrap;
+}
+
+.sched-days {
+    display: flex;
+    gap: var(--space-2);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding: 0 var(--space-4) var(--space-4);
+}
+
+.sched-days::-webkit-scrollbar { height: 0; }
+
+.sched-day-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    flex-shrink: 0;
+    min-width: 62px;
+    padding: var(--space-2);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    background: var(--surface-sunken);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.sched-date {
+    font-size: 10px;
+    color: var(--text-tertiary);
+}
+
+.sched-day-box.day-home { border-color: rgba(52, 211, 153, 0.35); color: var(--positive); }
+.sched-day-box.day-away { border-color: rgba(56, 189, 248, 0.3); color: var(--accent-text); }
+.sched-day-box.day-off  { color: var(--text-tertiary); opacity: 0.6; }
+
+/* ==========================================================================
+   Teksti-TV
+   ==========================================================================
+   Retrohenki säilyy — monospace, tiivis taulukko ja vihreä ylätunniste — mutta
+   pinnat tulevat teemamuuttujista. Aiemmin näkymä oli lukittu mustaksi
+   !important-säännöillä, jolloin se ei toiminut vaaleassa teemassa lainkaan.
+*/
+
+.tekstitv-container,
+.tekstitv-screen {
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: 'Courier New', Courier, monospace;
+    overflow-x: hidden;
+}
+
+.standings-table-container {
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    overflow-y: auto;
+}
+
+.standings-table-container th {
+    color: var(--text-tertiary);
+    border-bottom: 1px solid var(--border-subtle);
+    font-weight: 600;
+}
+
+.standings-table-container td {
+    color: var(--text-secondary);
+}
+
+.sched-team-name { color: var(--text-primary); }
+.sched-stats     { color: var(--text-tertiary); background: none; border: none; }
+.sched-date      { color: var(--text-tertiary); }
+
+/* Suosikkimerkinnät noudattavat samaa väripalettia kuin muu sovellus. */
+.fav-sydan.aktiivinen { color: var(--live); text-shadow: none; }
+.fav-tahti.aktiivinen { color: var(--gold); text-shadow: none; }
+
+.kultareunus {
+    border-color: rgba(251, 191, 36, 0.45);
+    box-shadow: none;
+}
+
+/* Juokseva tulos maaliaikajanalla. Oma luokkansa, koska käänteinen väritys
+   (tumma teksti vaalealla) ei voi tulla teemamuuttujista suoraan — ne
+   kääntyisivät teeman mukana ja tekisivät merkinnästä lukukelvottoman. */
+.score-chip {
+    display: inline-block;
+    margin-left: var(--space-2);
+    padding: 2px var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent);
+    color: var(--accent-text);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Pelitön päivä
+   ========================================================================== */
+
+.no-games {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-5) var(--space-4);
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    text-align: center;
+}
+
+.no-games-title {
+    margin: 0;
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.no-games-next {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--accent-text);
+    font-weight: 600;
+}
+
+.no-games-countdown {
+    color: var(--text-tertiary);
+    font-weight: 400;
+}
+
+.no-games-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: var(--space-2) 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.no-games-list li {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    padding: var(--space-2);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.no-games-more {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+}
+
+/* ==========================================================================
+   Laukauskartta
+   ========================================================================== */
+
+.shotmap {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.shotmap-filters {
+    display: flex;
+    gap: var(--space-1);
+    padding: var(--space-1);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+}
+
+.shotmap-teams {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
+
+.shotmap-team {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.shotmap-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+/* --- Kaukalo --- */
+
+.shotmap-rink {
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-md);
+    /* Kaukalo on aina vaalea myös tummassa teemassa: jää on valkoista, ja
+       joukkuevärit erottuvat siltä selvästi paremmin kuin tummalta pohjalta. */
+    background: #eef3f8;
+}
+
+.rink-surface {
+    fill: #eef3f8;
+    stroke: #b9c6d4;
+    stroke-width: 0.8;
+}
+
+.rink-line {
+    stroke-width: 0.7;
+}
+
+.rink-line.is-centre  { stroke: #d4696e; }
+.rink-line.is-blue    { stroke: #6d8dc4; stroke-width: 1.4; }
+.rink-line.is-goal    { stroke: #d4696e; stroke-width: 0.5; }
+.rink-line.is-faceoff { stroke: #d4696e; stroke-width: 0.4; }
+
+.rink-net {
+    fill: #93a3b5;
+}
+
+.shot {
+    cursor: pointer;
+    transition: r var(--duration-fast);
+}
+
+.shot.is-selected {
+    stroke: var(--text-primary);
+    stroke-width: 1.6;
+}
+
+.shot.is-miss,
+.shot.is-blocked {
+    opacity: 0.55;
+}
+
+/* --- Yksityiskohdat --- */
+
+.shotmap-detail {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-md);
+}
+
+.shotmap-detail-main {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.shotmap-shooter {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--accent-text);
+    font-family: inherit;
+    font-size: var(--text-base);
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+}
+
+.shotmap-shooter:disabled {
+    color: var(--text-primary);
+    cursor: default;
+}
+
+.shotmap-detail-meta {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+}
+
+.shotmap-video {
+    flex-shrink: 0;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-pill);
+    background: var(--live-soft);
+    color: var(--live);
+    font-size: var(--text-sm);
+    font-weight: 700;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.shotmap-hint {
+    margin: 0;
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    text-align: center;
+}
+
+.shotmap-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--space-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+}
+
+.shotmap-legend li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.legend-marker {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text-tertiary);
+}
+
+.legend-marker.is-goal    { background: var(--text-tertiary); }
+.legend-marker.is-save    { background: none; }
+.legend-marker.is-miss    { background: none; opacity: 0.55; width: 8px; height: 8px; }
+.legend-marker.is-blocked { background: none; opacity: 0.55; width: 7px; height: 7px; }
+
+/* ==========================================================================
+   Pelaajan muotokäyrä
+   ========================================================================== */
+
+.player-form-section {
+    margin-top: var(--space-5);
+}
+
+.form-chart {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.form-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+}
+
+.form-season {
+    font-weight: 700;
+    color: var(--accent-text);
+}
+
+/* Pylväät: yksi per ottelu, vanhin vasemmalla. */
+.form-bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+    height: 72px;
+    padding: var(--space-2);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
+
+.form-bars::-webkit-scrollbar { height: 0; }
+
+.form-bar {
+    display: flex;
+    align-items: flex-end;
+    flex: 1 0 4px;
+    min-width: 4px;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    cursor: pointer;
+}
+
+.form-bar-fill {
+    width: 100%;
+    /* Pisteettömälle ottelulle jää ohut viiva, jotta rytmi näkyy. */
+    height: max(2px, var(--height));
+    border-radius: 1px;
+    background: var(--border-strong);
+    transition: background var(--duration-fast);
+}
+
+.form-bar.has-points .form-bar-fill {
+    background: var(--accent);
+}
+
+.form-bar:hover .form-bar-fill {
+    background: var(--accent-text);
+}
+
+.form-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+    margin: 0;
+}
+
+.form-stats > div {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: var(--space-2);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+.form-stats dt {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+}
+
+.form-stats dd {
+    margin: 0;
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.form-streak {
+    margin: 0;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--accent-soft);
+    color: var(--accent-text);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    text-align: center;
+}
+
+/* ==========================================================================
+   Edistyneet tilastot
+   ========================================================================== */
+
+.adv {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.adv-views {
+    display: flex;
+    gap: var(--space-2);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    margin-inline: calc(var(--space-4) * -1);
+    padding-inline: var(--space-4);
+    padding-bottom: var(--space-1);
+}
+
+.adv-views::-webkit-scrollbar { height: 0; }
+
+.adv-view {
+    flex-shrink: 0;
+    padding: var(--space-2) var(--space-4);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    background: var(--surface-card);
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.adv-view.active {
+    background: var(--accent-soft);
+    border-color: transparent;
+    color: var(--accent-text);
+}
+
+/* Selitys sille mitä mittari tarkoittaa — ilman sitä luvut ovat pelkkiä numeroita. */
+.adv-hint {
+    margin: 0;
+    padding: var(--space-3);
+    background: var(--surface-sunken);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+/*
+ * Edistyneiden tilastojen taulukko.
+ *
+ * Otsikot ovat omalla rivillään eivätkä toistu jokaisella rivillä. Aiemmin
+ * jokainen luku kantoi oman otsikkonsa, jolloin 40 rivin listassa sama teksti
+ * toistui 120 kertaa — se söi tilan nimeltä ja teki listasta sekavan.
+ *
+ * Otsikko- ja datarivit käyttävät samaa ruudukkoa, joten sarakkeet ovat
+ * linjassa. Sarakkeiden määrä tulee komponentilta --adv-metrics-muuttujana.
+ */
+/* Fantasy-pisteet pelaajakortissa — päivän saldo, päivittyy ottelun aikana. */
+.pc-fantasy {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-1);
+    margin: var(--space-2) 0 0;
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+    background: var(--gold-soft);
+    color: var(--gold);
+}
+
+.pc-fantasy.is-negative {
+    background: var(--live-soft);
+    color: var(--negative);
+}
+
+.pc-fantasy-value {
+    font-size: var(--text-lg);
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+}
+
+.pc-fantasy-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    opacity: 0.8;
+}
+
+/* Kapteenivalinta fantasy-modaalissa: kapteeni saa pisteensä 1,3 kertoimella. */
+.fm-captain {
+    padding: var(--space-2) var(--space-4);
+    margin-bottom: var(--space-4);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+}
+
+.fm-captain.is-captain {
+    border-color: var(--gold);
+    background: var(--gold-soft);
+    color: var(--gold);
+}
+
+.adv-table {
+    display: flex;
+    flex-direction: column;
+}
+
+.adv-head,
+.adv-row {
+    display: grid;
+    /*
+     * Lukusarakkeet fr-yksiköinä eivätkä max-contentina: otsikkorivi ja
+     * datarivit ovat erillisiä ruudukkoja, ja sisältöön perustuva leveys
+     * ratkeaisi niissä eri tavalla — sarakkeet eivät osuisi kohdakkain.
+     * fr riippuu vain käytettävissä olevasta leveydestä, joka on sama.
+     */
+    grid-template-columns:
+        18px
+        minmax(0, 1fr)
+        repeat(var(--adv-metrics, 3), minmax(44px, 0.42fr));
+    align-items: center;
+    gap: 6px;
+    text-align: left;
+}
+
+.adv-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: var(--space-2);
+    border-bottom: 1px solid var(--border-strong);
+    /* Läpinäkymätön tausta, koska rivit vierivät otsikon alta. */
+    background: var(--surface-card);
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--text-tertiary);
+}
+
+/* Otsikkorivin solut perivät otsikon typografian, eivät datarivin. */
+.adv-head .adv-rank,
+.adv-head .adv-name {
+    font: inherit;
+    color: inherit;
+    letter-spacing: inherit;
+}
+
+/*
+ * Otsikko saa kääriytyä kahdelle riville. Se piirretään vain kerran, joten
+ * lisäkorkeus ei maksa mitään — ja näin pidemmätkin otsikot ("W% johdossa")
+ * näkyvät kokonaan sen sijaan että katkeaisivat.
+ */
+.adv-col {
+    text-align: right;
+    line-height: 1.25;
+    hyphens: auto;
+}
+
+.adv-cell {
+    text-align: right;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+
+.adv-row {
+    width: 100%;
+    padding: var(--space-3) var(--space-2);
+    border: none;
+    border-bottom: 1px solid var(--border-subtle);
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.adv-row:disabled { cursor: default; }
+.adv-row:not(:disabled):hover { background: var(--surface-sunken); }
+
+.adv-rank {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+
+.adv-name {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/*
+ * Joukkuemerkki pillinä ympyrän sijaan, jotta kolmikirjaiminen lyhenne mahtuu
+ * sisään. Kiinteä leveys pitää pelaajien nimet linjassa riviltä toiselle.
+ */
+.adv-badge {
+    width: 32px;
+    height: 18px;
+    border-radius: var(--radius-pill);
+    border-width: 1px;
+    font-size: 10px;
+    letter-spacing: 0;
+}
+
+/* Nimi saa kutistua, mutta katkeaa siististi kolmella pisteellä. */
+.adv-person {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ==========================================================================
+   Avausruutu
+   ========================================================================== */
+
+.splash {
+    position: fixed;
+    inset: 0;
+    z-index: 999999;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: none;
+    background: #000;
+    cursor: pointer;
+    opacity: 1;
+    transition: opacity 400ms ease-out;
+}
+
+.splash.is-leaving {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/*
+  `cover` täyttää ruudun kokonaan riippumatta kuvan ja näytön kuvasuhteesta.
+  Aiempi `contain` jätti mustat palkit sivuille pystynäytöllä.
+*/
+.splash-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    animation: splash-settle 2.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.splash-hint {
+    position: relative;
+    margin-bottom: calc(var(--space-7) + var(--safe-bottom));
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-pill);
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    color: rgba(255, 255, 255, 0.85);
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    animation: splash-hint-in 900ms 500ms both;
+}
+
+/* Zoom alkaa hieman yli täyden koon, jottei reunoille synny tyhjää. */
+@keyframes splash-settle {
+    from { transform: scale(1.08); }
+    to   { transform: scale(1); }
+}
+
+@keyframes splash-hint-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ==========================================================================
+   Uutta-kortti
+   ========================================================================== */
+
+.whats-new {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+    padding: var(--space-4);
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    /* Vaimea korostusliukuväri erottaa kortin muusta sisällöstä ilman
+       että se huutaa — sama ilmava tyyli kuin muualla. */
+    background: linear-gradient(150deg, var(--accent-soft), var(--surface-card) 65%);
+    box-shadow: var(--shadow-sm);
+    animation: sheet-fade var(--duration-slow) var(--ease-out);
+}
+
+/* Sama aamuruskoraita kuin yläpalkissa sitoo kortin uuteen ilmeeseen. */
+.whats-new::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--dawn-1), var(--dawn-2) 45%, var(--dawn-3));
+}
+
+.whats-new-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+}
+
+.whats-new-badge {
+    display: inline-block;
+    margin-bottom: var(--space-2);
+    padding: 2px var(--space-3);
+    border-radius: var(--radius-pill);
+    background: linear-gradient(100deg, var(--dawn-1), var(--dawn-2));
+    color: var(--dawn-on);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+.whats-new-title {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.whats-new-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    border: none;
+    border-radius: var(--radius-pill);
+    background: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+}
+
+.whats-new-close:hover { color: var(--text-primary); }
+
+.whats-new-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.whats-new-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.whats-new-ok {
+    align-self: flex-start;
+    padding: var(--space-2) var(--space-5);
+    border: none;
+    border-radius: var(--radius-pill);
+    background: var(--accent);
+    color: #04121a;
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* ==========================================================================
+   Joukkuevärit ottelukortissa
+   ========================================================================== */
+
+/*
+  Ohut kaksivärinen nauha kortin yläreunassa. Tuo joukkueiden värit sivulle
+  ilman että korttien taustaa värjätään — kokonaan värjätty lista olisi
+  levoton eikä sopisi ilmavaan tyyliin.
+*/
+.gc-colours {
+    display: block;
+    height: 3px;
+    background: linear-gradient(
+        90deg,
+        var(--away-colour) 0%,
+        var(--away-colour) 48%,
+        var(--home-colour) 52%,
+        var(--home-colour) 100%
+    );
+    opacity: 0.9;
+}
+
+.game-card-v2.is-fav .gc-colours {
+    height: 4px;
+}
+
+/* ==========================================================================
+   Ottelunäkymä
+   ========================================================================== */
+
+.gm-score {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) 0 var(--space-4);
+}
+
+.gm-score-team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: var(--text-base);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.gm-score-numbers {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+    font-size: var(--text-3xl);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.gm-score-dash { color: var(--text-tertiary); font-size: var(--text-xl); }
+
+.gm-tabs {
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+}
+
+.gm-tabs::-webkit-scrollbar { height: 0; }
+.gm-tabs .pred-tab { flex: 0 0 auto; padding-inline: var(--space-4); }
+
+/*
+  Kiinteä vähimmäiskorkeus. Tämä estää paneelia kutistumasta puoleen ruutuun
+  kevyemmällä välilehdellä — aiemmin "Tilastot" jäi puoliväliin kun
+  "Kokoonpanot" täytti ruudun.
+*/
+.gm-body {
+    min-height: 58dvh;
+    padding-top: var(--space-4);
+}
+
+.gm-period {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-4) 0 var(--space-2);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+}
+
+.gm-event {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+.gm-event.is-goal { background: var(--surface-sunken); }
+
+.gm-event-time {
+    width: 42px;
+    flex-shrink: 0;
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+
+.gm-event-main {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.gm-event-player {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+}
+
+.gm-event-player:not(:disabled):hover { color: var(--accent-text); }
+.gm-event-player:disabled { cursor: default; }
+
+.gm-event-assists {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gm-penalty-min {
+    flex-shrink: 0;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--gold);
+}
+
+.gm-stats { display: flex; flex-direction: column; gap: var(--space-1); }
+
+.gm-stat-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+}
+
+.gm-stat-row:nth-child(odd) { background: var(--surface-sunken); }
+.gm-stat-row.is-total { background: var(--accent-soft); }
+
+.gm-stat-value {
+    font-size: var(--text-base);
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+}
+
+.gm-stat-row .gm-stat-value:first-child { text-align: left; }
+.gm-stat-row .gm-stat-value:last-child { text-align: right; }
+
+.gm-stat-label {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    text-align: center;
+    white-space: nowrap;
+}
+
+.gm-period-table {
+    width: 100%;
+    margin-bottom: var(--space-4);
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+
+.gm-period-table th,
+.gm-period-table td {
+    padding: var(--space-2);
+    text-align: center;
+    font-size: var(--text-sm);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.gm-period-table th { color: var(--text-tertiary); font-weight: 600; }
+.gm-period-table td:first-child,
+.gm-period-table th:first-child { text-align: left; font-weight: 700; }
+
+.gm-faceoffs { display: flex; flex-direction: column; gap: var(--space-1); }
+
+.gm-faceoff-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    border-bottom: 1px solid var(--border-subtle);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.gm-faceoff-row:hover { background: var(--surface-sunken); }
+
+.gm-faceoff-name {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.gm-faceoff-record {
+    font-size: var(--text-sm);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
+}
+
+.gm-faceoff-pct {
+    width: 46px;
+    text-align: right;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-tertiary);
+}
+
+.gm-faceoff-pct.is-good { color: var(--positive); }
+
+.gm-faceoff-zones {
+    width: 92px;
+    text-align: right;
+    font-size: 10px;
+    color: var(--text-tertiary);
+    font-variant-numeric: tabular-nums;
+}
+
+.gm-roster-group { margin-bottom: var(--space-4); }
+
+.gm-roster-group h5 {
+    margin: 0 0 var(--space-2);
+    font-size: var(--text-xs);
+    font-weight: 700;
+    color: var(--accent-text);
+}
+
+.gm-roster-players {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.gm-roster-player {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    background: var(--surface-sunken);
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: var(--text-xs);
+    cursor: pointer;
+}
+
+.gm-roster-player:hover { border-color: var(--accent); color: var(--text-primary); }
+
+.gm-roster-number { color: var(--text-tertiary); font-variant-numeric: tabular-nums; }
+.gm-roster-points { color: var(--positive); font-weight: 700; }
+
+.gm-info { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.gm-info-pair {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.gm-info-text {
+    margin: 0;
+    font-size: var(--text-sm);
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.gm-info-muted { color: var(--text-tertiary); font-size: var(--text-xs); }
+
+.gm-note {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-xs);
+    line-height: 1.55;
+    color: var(--text-tertiary);
+}
+
+.gm-scratches { margin-bottom: var(--space-3); }
+.gm-scratches strong {
+    display: block;
+    margin-bottom: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--accent-text);
+}
+
+.gm-series { display: flex; flex-direction: column; gap: var(--space-1); }
+
+.gm-series-game {
+    display: flex;
+    justify-content: space-between;
+    padding: var(--space-2);
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    font-variant-numeric: tabular-nums;
+}
