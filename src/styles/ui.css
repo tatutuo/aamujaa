@@ -1,0 +1,487 @@
+/**
+ * pucknower — yleiskäyttöiset käyttöliittymäosat: valitsin, sirut, paneelit.
+ */
+
+/* --- Valitsin --- */
+
+.segmented {
+    display: flex;
+    width: fit-content;
+    gap: 2px;
+    max-width: 100%;
+    padding: 3px;
+    border-radius: 12px;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.segmented::-webkit-scrollbar { display: none; }
+
+.segmented-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    padding: 7px 12px;
+    border: none;
+    border-radius: 9px;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background var(--duration-fast), color var(--duration-fast);
+}
+
+.segmented-option:hover { color: var(--text-primary); }
+
+.segmented-option.is-selected {
+    background: var(--surface-raised);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-sm);
+}
+
+.segmented-sm .segmented-option {
+    padding: 5px 10px;
+    font-size: var(--text-xs);
+}
+
+/* --- Paneeli: asetusryhmät ja vastaavat --- */
+
+.panel {
+    padding: var(--space-4);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+}
+
+.panel + .panel { margin-top: var(--space-3); }
+
+.panel-title {
+    margin: 0 0 4px;
+    font-size: var(--text-base);
+    font-weight: 700;
+}
+
+.panel-hint {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+}
+
+/* --- Korostusvärin valinta --- */
+
+.swatch-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 6px;
+}
+
+.swatch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 4px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    background: var(--surface-sunken);
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+}
+
+.swatch-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.18);
+}
+
+.swatch.is-selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--text-primary);
+}
+
+.swatch-wide {
+    grid-column: span 2;
+}
+
+/* --- Suodatinsirut --- */
+
+.chips {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    /* Vieritettävä rivi ulottuu reunaan asti, mutta sisältö alkaa linjassa. */
+    margin: 0 calc(var(--space-4) * -1);
+    padding: 2px var(--space-4);
+}
+
+.chips::-webkit-scrollbar { display: none; }
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+    padding: 6px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-pill);
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background var(--duration-fast), color var(--duration-fast), border-color var(--duration-fast);
+}
+
+.chip:hover { color: var(--text-primary); border-color: var(--text-tertiary); }
+
+.chip.is-selected {
+    background: var(--accent-soft);
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+    color: var(--accent-text);
+}
+
+.chip-count {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    opacity: 0.75;
+}
+
+/* --- Valintalista --- */
+
+.select {
+    appearance: none;
+    padding: 7px 30px 7px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    background:
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23929aa6' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")
+        no-repeat right 10px center,
+        var(--surface-card);
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.season-picker {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* --- Hakukenttä --- */
+
+.search-field {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    padding: 0 10px;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    background: var(--surface-card);
+    color: var(--text-tertiary);
+}
+
+.search-field:focus-within {
+    border-color: var(--accent);
+}
+
+.search-field input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 0;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--text-sm);
+}
+
+.search-field input::-webkit-search-cancel-button { display: none; }
+
+.search-clear {
+    display: inline-flex;
+    padding: 4px;
+    border: none;
+    border-radius: 6px;
+    background: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+}
+
+/* --- Työkalurivi taulukon yläpuolella --- */
+
+.toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.toolbar-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.toolbar-row .search-field {
+    flex: 1 1 180px;
+}
+
+.notice {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 var(--space-3);
+    padding: 9px 12px;
+    border-radius: 10px;
+    background: var(--accent-soft);
+    color: var(--accent-text);
+    font-size: var(--text-sm);
+    font-weight: 550;
+}
+
+.loading-line {
+    height: 2px;
+    margin: -2px 0 0;
+    overflow: hidden;
+    border-radius: 2px;
+}
+
+.loading-line::after {
+    content: '';
+    display: block;
+    width: 35%;
+    height: 100%;
+    background: var(--accent);
+    animation: loading-slide 1s ease-in-out infinite;
+}
+
+@keyframes loading-slide {
+    from { transform: translateX(-100%); }
+    to   { transform: translateX(300%); }
+}
+
+.skeleton {
+    border-radius: var(--radius-md);
+    background: linear-gradient(90deg, var(--surface-card) 0%, var(--surface-card-hover) 50%, var(--surface-card) 100%);
+    background-size: 200% 100%;
+    animation: skeleton 1.3s ease-in-out infinite;
+}
+
+@keyframes skeleton {
+    from { background-position: 100% 0; }
+    to   { background-position: -100% 0; }
+}
+
+/* --- Omat --- */
+
+.mine-section + .mine-section { margin-top: var(--space-6); }
+
+.mine-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.mine-title {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: 750;
+}
+
+.mine-empty {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.team-picker {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+    gap: 6px;
+    margin-bottom: var(--space-3);
+}
+
+.team-pick {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 6px;
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    background: var(--surface-card);
+    color: var(--text-secondary);
+    font: inherit;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.team-pick.is-selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--text-primary);
+}
+
+/* --- Tilastoruudut --- */
+
+.stat-tiles {
+    display: grid;
+    grid-template-columns: repeat(var(--tile-columns, 3), minmax(0, 1fr));
+    gap: 6px;
+}
+
+.stat-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    min-width: 0;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+}
+
+.stat-tile-value {
+    font-size: var(--text-xl);
+    font-weight: 750;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.stat-tile-label {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+
+.stat-tile-sub {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--accent-text);
+}
+
+.stat-tile.tone-accent .stat-tile-value { color: var(--accent-text); }
+.stat-tile.tone-positive .stat-tile-value { color: var(--positive); }
+.stat-tile.tone-negative .stat-tile-value { color: var(--negative); }
+.stat-tile.tone-gold .stat-tile-value { color: var(--gold); }
+
+/* --- Osio kortin sisällä --- */
+
+.card-section { margin-top: var(--space-5); }
+
+.card-section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-2);
+}
+
+.card-section-title {
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+}
+
+/* --- Tietosirut (ikä, pituus, draft …) --- */
+
+.facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.fact {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: var(--radius-pill);
+    background: var(--surface-sunken);
+    border: 1px solid var(--border-subtle);
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.fact svg { color: var(--text-tertiary); flex: none; }
+
+.fact strong { color: var(--text-primary); font-weight: 700; }
+
+/* --- Palkinnot --- */
+
+.awards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.award {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: var(--gold-soft);
+    color: var(--gold);
+    font-size: var(--text-xs);
+    font-weight: 700;
+}
+
+/* --- Sydän otsikossa --- */
+
+.icon-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-pill);
+    background: var(--surface-raised);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color var(--duration-fast), border-color var(--duration-fast), background var(--duration-fast);
+}
+
+.icon-toggle:hover { color: var(--text-primary); border-color: var(--border-strong); }
+
+.icon-toggle.is-on {
+    color: var(--live);
+    border-color: color-mix(in srgb, var(--live) 45%, transparent);
+    background: var(--live-soft);
+}

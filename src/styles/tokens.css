@@ -1,66 +1,67 @@
 /**
- * Designjärjestelmän perusta.
+ * pucknower — designjärjestelmän perusta.
  *
- * Kaikki värit, välit, pyöristykset ja varjot yhdessä paikassa. Aiemmin nämä
- * oli kirjoitettu käsin jokaiseen komponenttiin inline-tyyleinä, minkä takia
- * vaalea teema oli puoliksi rikki: kovakoodattu `color: '#fff'` pysyy valkoisena
- * myös valkoisella taustalla.
+ * Kaikki värit, välit, pyöristykset ja varjot yhdessä paikassa. Komponentit
+ * lukevat vain näitä muuttujia, joten teema ja korostusväri vaihtuvat
+ * koskematta yhteenkään komponenttiin.
  *
- * Ilmava korttityyli: isot pinnat, pehmeät varjot, reilusti tyhjää tilaa.
+ * Ilme on lainattu evohall-3d:stä (syyskuu 2026): grafiittinen pohja ja
+ * kelluvat lasipinnat, joiden läpi sisältö kuultaa sumeana. Pohja on
+ * tarkoituksella grafiittia eikä mustaa — Aamujään #08090c oli niin tumma,
+ * että kortit ja taulukot hukkuivat siihen.
  */
 
 :root {
-    /* --- Pinnat --- */
-    --surface-app: #08090c;
-    --surface-card: #14161b;
-    --surface-card-hover: #1b1e25;
-    --surface-raised: #1e222a;
-    --surface-sunken: #0d0f13;
-    --surface-nav: rgba(12, 14, 18, 0.88);
+    /* --- Pinnat (grafiitti, tummimmasta vaaleimpaan) --- */
+    --surface-app: #1a1d21;
+    --surface-sunken: #1f2226;
+    --surface-card: #25292e;
+    --surface-card-hover: #2c3036;
+    --surface-raised: #2f343a;
+    --surface-nav: rgba(26, 29, 33, 0.82);
+
+    /* --- Lasi ---
+       Sama resepti kuin evohallin alapalkissa: puoliksi läpinäkyvä harmaa,
+       sumennus ja ohut vaalea reuna. Sumennus tasoittaa taustan kuvion mutta
+       ei kirkkautta, joten tekstiä tuetaan kevyellä varjolla. */
+    --glass-bg: rgba(46, 50, 56, 0.72);
+    --glass-bg-strong: rgba(40, 44, 50, 0.88);
+    --glass-border: rgba(255, 255, 255, 0.12);
+    --glass-blur: blur(22px) saturate(130%);
+    --glass-shadow: 0 10px 34px rgba(0, 0, 0, 0.42);
+    --glass-text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
 
     /* --- Reunat --- */
     --border-subtle: rgba(255, 255, 255, 0.07);
     --border-strong: rgba(255, 255, 255, 0.14);
 
-    /* --- Teksti --- */
-    --text-primary: #f2f4f8;
-    --text-secondary: #a9b2c1;
-    /* Nostettu #646d7d:stä: aiempi arvo jäi kontrastisuhteeseen ~3.4:1, mikä
-       alittaa saavutettavuussuosituksen 4.5:1. Numerot taulukoissa olivat
-       vaikealukuisia. */
-    --text-tertiary: #8b95a7;
+    /* --- Teksti ---
+       Mitattu: tertiäärinen harmaa korttipintaa (#25292e) vasten 5,2:1 ja
+       sovelluksen pohjaa vasten 6,0:1, eli suositus 4,5:1 täyttyy myös
+       taulukoiden pienessä tekstissä. */
+    --text-primary: #eceef1;
+    --text-secondary: #b3bac4;
+    --text-tertiary: #929aa6;
 
-    /* --- Korostukset --- */
-    --accent: #38bdf8;
-    --accent-soft: rgba(56, 189, 248, 0.14);
-    --accent-text: #7dd3fc;
+    /* --- Korostus ---
+       Oletus on jääsininen. Kun käyttäjä valitsee suosikkijoukkueen,
+       SettingsContext korvaa nämä joukkueen väristä lasketuilla arvoilla
+       (ks. utils/colour.js), joten mikään muu ei viittaa korostuksen sävyyn
+       suoraan. */
+    --accent: #7cc8f5;
+    --accent-strong: #3fa9e6;
+    --accent-soft: rgba(124, 200, 245, 0.15);
+    --accent-text: #a5dafa;
+    --on-accent: #0b1b27;
 
-    /* --- Aamurusko ---
-       Sovelluksen tunnusväri: auringonnousu jään yllä. Tämä on se sävy, josta
-       vanha käyttäjä huomaa heti että ilme on uusittu. Hehku piirretään
-       etusivun ylälaitaan ja nimen "Aamujää" liukuväriksi. */
-    --dawn-1: #f472b6;
-    --dawn-2: #fb923c;
-    --dawn-3: #38bdf8;
-    /* Teksti aamuruskopinnan päällä. Tummassa teemassa sävyt ovat vaaleita,
-       joten teksti on tumma; vaaleassa teemassa päinvastoin. */
-    --dawn-on: #1a0a12;
-    --dawn-glow: radial-gradient(
-        120% 100% at 50% 0%,
-        rgba(244, 114, 182, 0.20) 0%,
-        rgba(251, 146, 60, 0.11) 32%,
-        rgba(56, 189, 248, 0.07) 58%,
-        transparent 78%
-    );
+    --live: #f5566f;
+    --live-soft: rgba(245, 86, 111, 0.15);
 
-    --live: #f43f5e;
-    --live-soft: rgba(244, 63, 94, 0.14);
+    --gold: #f4c04f;
+    --gold-soft: rgba(244, 192, 79, 0.14);
 
-    --gold: #fbbf24;
-    --gold-soft: rgba(251, 191, 36, 0.13);
-
-    --positive: #34d399;
-    --negative: #fb7185;
+    --positive: #4fd49a;
+    --negative: #f58a9a;
 
     /* --- Välit (4 px:n ruudukko) --- */
     --space-1: 4px;
@@ -72,21 +73,26 @@
     --space-7: 48px;
 
     /* --- Pyöristykset --- */
+    --radius-xs: 6px;
     --radius-sm: 10px;
-    --radius-md: 16px;
-    --radius-lg: 22px;
-    --radius-xl: 28px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
     --radius-pill: 999px;
 
-    /* --- Varjot: pehmeitä ja matalakontrastisia --- */
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
-    --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.5);
-    --shadow-sheet: 0 -8px 40px rgba(0, 0, 0, 0.6);
+    /* --- Varjot --- */
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.28);
+    --shadow-md: 0 6px 20px rgba(0, 0, 0, 0.32);
+    --shadow-lg: 0 16px 44px rgba(0, 0, 0, 0.45);
+    --shadow-sheet: 0 -8px 40px rgba(0, 0, 0, 0.55);
 
-    /* --- Typografia --- */
-    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-numeric: 'Inter', system-ui, sans-serif;
+    /* --- Typografia ---
+       Inter isännöidään itse (@fontsource), ei Google Fontsista: kolmannen
+       osapuolen fonttipyyntö paljastaisi käyttäjän IP:n, ja sovellus lupaa
+       ettei seurantaa ole. Numeroissa tasaleveät luvut (tnum), jotta
+       taulukoiden sarakkeet pysyvät linjassa. */
+    --font-body: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-numeric: 'Inter Variable', 'Inter', system-ui, sans-serif;
 
     --text-xs: 0.6875rem;
     --text-sm: 0.8125rem;
@@ -104,64 +110,67 @@
 
     /* --- Kerrokset --- */
     --z-nav: 3000;
+    --z-menu: 3100;
     --z-sheet: 99000;
+
+    /* --- Taulukoiden tiiviys (asetuksista) --- */
+    --row-pad-y: 9px;
 
     /* Turva-alueet lovinäytöille ja eleputkelle (Android/iOS) */
     --safe-top: env(safe-area-inset-top, 0px);
     --safe-bottom: env(safe-area-inset-bottom, 0px);
+
+    color-scheme: dark;
+}
+
+:root[data-density='compact'] {
+    --row-pad-y: 6px;
 }
 
 /**
- * Vaalea teema.
- *
- * Nyt aidosti käytettävä: kaikki pinnat, tekstit ja reunat vaihtuvat, koska
- * komponentit lukevat muuttujia eivätkä kovakoodattuja värejä.
+ * Vaalea teema. Lasi muuttuu maitomaiseksi: sama sumennus, vaalea pohja.
  */
 :root[data-theme='light'] {
-    --surface-app: #f4f6fa;
+    --surface-app: #eef1f5;
+    --surface-sunken: #e6eaf0;
     --surface-card: #ffffff;
-    --surface-card-hover: #f8fafc;
+    --surface-card-hover: #f6f8fb;
     --surface-raised: #ffffff;
-    --surface-sunken: #eef1f6;
-    --surface-nav: rgba(255, 255, 255, 0.9);
+    --surface-nav: rgba(238, 241, 245, 0.85);
 
-    --border-subtle: rgba(15, 23, 42, 0.09);
-    --border-strong: rgba(15, 23, 42, 0.16);
+    --glass-bg: rgba(255, 255, 255, 0.72);
+    --glass-bg-strong: rgba(255, 255, 255, 0.9);
+    --glass-border: rgba(15, 23, 42, 0.1);
+    --glass-shadow: 0 10px 30px rgba(15, 23, 42, 0.14);
+    --glass-text-shadow: none;
 
-    --text-primary: #0f172a;
-    --text-secondary: #4a556e;
-    /* Tummennettu #8792a8:sta samasta syystä kuin tummassa teemassa. */
-    --text-tertiary: #616c85;
+    --border-subtle: rgba(15, 23, 42, 0.08);
+    --border-strong: rgba(15, 23, 42, 0.15);
 
-    --accent: #0284c7;
-    --accent-soft: rgba(2, 132, 199, 0.11);
-    --accent-text: #0369a1;
+    --text-primary: #111827;
+    --text-secondary: #475063;
+    --text-tertiary: #5d6679;
 
-    /* Vaaleassa teemassa hehku on hennompi ja sävyt tummempia, jotta ne
-       erottuvat valkoiselta pinnalta eivätkä puuroudu. */
-    --dawn-1: #db2777;
-    --dawn-2: #ea580c;
-    --dawn-3: #0284c7;
-    --dawn-on: #ffffff;
-    --dawn-glow: radial-gradient(
-        120% 100% at 50% 0%,
-        rgba(219, 39, 119, 0.13) 0%,
-        rgba(234, 88, 12, 0.09) 32%,
-        rgba(2, 132, 199, 0.06) 58%,
-        transparent 78%
-    );
+    /* #0b7fc0 jäi valkoista vasten 4,4:1 — hieman alle pienen tekstin rajan. */
+    --accent: #0971aa;
+    --accent-strong: #0a6ea6;
+    --accent-soft: rgba(9, 113, 170, 0.11);
+    --accent-text: #0a6ea6;
+    --on-accent: #ffffff;
 
-    --live: #e11d48;
-    --live-soft: rgba(225, 29, 72, 0.1);
+    --live: #dc2e4b;
+    --live-soft: rgba(220, 46, 75, 0.1);
 
-    --gold: #b45309;
-    --gold-soft: rgba(180, 83, 9, 0.11);
+    --gold: #b0710b;
+    --gold-soft: rgba(176, 113, 11, 0.11);
 
-    --positive: #059669;
-    --negative: #dc2626;
+    --positive: #0b8a5a;
+    --negative: #cf2f45;
 
     --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-    --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
-    --shadow-lg: 0 12px 40px rgba(15, 23, 42, 0.14);
+    --shadow-md: 0 6px 20px rgba(15, 23, 42, 0.08);
+    --shadow-lg: 0 16px 44px rgba(15, 23, 42, 0.14);
     --shadow-sheet: 0 -8px 40px rgba(15, 23, 42, 0.16);
+
+    color-scheme: light;
 }

@@ -61,8 +61,8 @@ const query = (params) => {
 };
 
 export const api = {
-    /** Päivän kooste: ottelut, tulikuumat ja seurattavat pelaajat yhdellä kutsulla. */
-    day: (date, region, opts) => request(`/api/nhl/day${query({ date, region })}`, opts),
+    /** Päivän kooste: ottelut, tulikuumat ja seurattujen maiden pelaajat yhdellä kutsulla. */
+    day: (date, nations, opts) => request(`/api/nhl/day${query({ date, nations: nations?.length ? nations.join(',') : undefined })}`, opts),
 
     score: (date, opts) => request(`/api/nhl/score${query({ date })}`, opts),
     game: (id, opts) => request(`/api/nhl/game/${id}`, opts),
@@ -84,7 +84,12 @@ export const api = {
     calendar: (date, opts) => request(`/api/nhl/calendar/${date}`, opts),
     schedule: (params, opts) => request(`/api/nhl/schedule${query(params)}`, opts),
 
-    standings: (opts) => request('/api/nhl/standings', opts),
+    /** Sarjataulukko; ilman kautta kuluva (ennen avausta edellisen kauden lopputilanne). */
+    standings: (season, opts) => request(`/api/nhl/standings${query({ season })}`, opts),
+
+    /** Tilastotaulukko kokonaisena: 'skaters' | 'goalies' | 'teams' tai xG-versiot ('xg-skaters' …). */
+    statsTable: (category, { season, gameType } = {}, opts) =>
+        request(`/api/nhl/stats/${category}${query({ season, gameType })}`, opts),
 
     teams: (opts) => request('/api/nhl/teams', opts),
     team: (abbrev, opts) => request(`/api/nhl/team/${abbrev}`, opts),
@@ -105,20 +110,39 @@ export const api = {
 
     leaders: (params, opts) => request(`/api/nhl/leaders${query(params)}`, opts),
 
-    /** Mitkä edistyneiden tilastojen näkymät ovat olemassa. */
-    advancedViews: (opts) => request('/api/nhl/advanced', opts),
-    advanced: (category, view, params, opts) =>
-        request(`/api/nhl/advanced/${category}/${view}${query(params)}`, opts),
+    /** NHL EDGE -kärkilistat: 'speed' | 'shot' | 'distance' | 'zone' | 'teams'. */
+    edgeLeaders: (category, { pos, season, gameType } = {}, opts) =>
+        request(`/api/nhl/edge/leaders/${category}${query({ pos, season, gameType })}`, opts),
+    /** Pelaajan EDGE-luvut persentiileineen. */
+    edgePlayer: (id, isGoalie, opts) => request(`/api/nhl/edge/player/${id}${query({ goalie: isGoalie ? 1 : undefined })}`, opts),
+
+    /** Loukkaantumiset (ESPN). */
+    injuries: (opts) => request('/api/nhl/injuries', opts),
+
+    /** Pudotuspelikaavio päättymisvuodelta (2026 = kausi 2025–26). */
+    playoffs: (year, opts) => request(`/api/nhl/playoffs${query({ year })}`, opts),
+    playoffSeries: (season, letter, opts) => request(`/api/nhl/playoffs/${season}/${letter}`, opts),
+
+    /** Kaikkien aikojen pelaajat maittain ja maan palkinnot. */
+    nationCareers: (code, gameType, opts) => request(`/api/nhl/history/nation/${code}${query({ gameType })}`, opts),
+    nationAwards: (code, opts) => request(`/api/nhl/history/nation/${code}/awards`, opts),
+    cupHistory: (opts) => request('/api/nhl/history/cup', opts),
+    trophies: (opts) => request('/api/nhl/history/trophies', opts),
+    awardWinners: (trophyId, opts) => request(`/api/nhl/history/award/${trophyId}`, opts),
+
+    draftPicks: (year, opts) => request(`/api/nhl/draft/picks${query({ year })}`, opts),
+    draftRankings: (year, category, opts) => request(`/api/nhl/draft/rankings${query({ year, category })}`, opts),
 
     predictions: (date, opts) => request(`/api/nhl/predictions${query({ date })}`, opts),
     predictionDates: (opts) => request('/api/nhl/predictions/dates', opts),
     predictionAccuracy: (days, opts) => request(`/api/nhl/predictions/accuracy${query({ days })}`, opts),
 
-    sendFeedback: async (viesti, lahettaja) => {
+    /** Palaute: { type: 'bug'|'idea'|'other', message, contact, technical, website }. */
+    sendFeedback: async (feedback) => {
         const res = await fetch(`${BASE}/api/palaute`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ viesti, lahettaja }),
+            body: JSON.stringify(feedback),
         });
         const body = await res.json().catch(() => ({}));
         if (!res.ok) throw new ApiError(body.error ?? 'Lähetys epäonnistui', res.status);

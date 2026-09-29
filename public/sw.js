@@ -14,9 +14,12 @@
  * käytännössä riittää että tämä tiedosto muuttuu julkaisun yhteydessä.
  */
 
-const VERSION = 'v3';
-const SHELL_CACHE = `aamujaa-shell-${VERSION}`;
-const API_CACHE = `aamujaa-api-${VERSION}`;
+const VERSION = 'v1';
+const SHELL_CACHE = `pucknower-shell-${VERSION}`;
+const API_CACHE = `pucknower-api-${VERSION}`;
+
+/** Tämän version välimuistit. Kaikki muut — myös Aamujään vanhat — poistetaan. */
+const CURRENT_CACHES = new Set([SHELL_CACHE, API_CACHE]);
 
 const SHELL_ASSETS = [
     './',
@@ -25,7 +28,7 @@ const SHELL_ASSETS = [
     './icon-192.png',
     './icon-512.png',
     './icon-maskable-512.png',
-    './splash.png',
+    './icon.svg',
 ];
 
 // Näitä ei kannata säilyttää: live-tulokset vanhenevat sekunneissa.
@@ -63,7 +66,7 @@ self.addEventListener('activate', (event) => {
         caches.keys()
             .then((keys) => Promise.all(
                 keys
-                    .filter((key) => key.startsWith('aamujaa-') && !key.endsWith(VERSION))
+                    .filter((key) => !CURRENT_CACHES.has(key))
                     .map((key) => caches.delete(key)),
             ))
             .then(() => self.clients.claim()),

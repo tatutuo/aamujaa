@@ -131,7 +131,7 @@ app.use((err, req, res, _next) => {
 
 const server = app.listen(config.port, () => {
     const mounted = config.basePath ? ` alipolussa ${config.basePath}` : '';
-    console.log(`Aamujää-palvelin portissa ${config.port}${mounted} (kausi ${getSeasonId()})`);
+    console.log(`pucknower-palvelin portissa ${config.port}${mounted} (kausi ${getSeasonId()})`);
     startScheduler();
 });
 

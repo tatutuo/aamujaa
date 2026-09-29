@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconHeart, IconHeartFilled, IconStar, IconStarFilled } from '@tabler/icons-react';
 import { translations } from '../utils/translations';
 import TeamBadge from './TeamBadge';
 
@@ -106,21 +107,24 @@ const PlayerCard = ({ player, onClick, variant = 'fin', favPlayers, toggleFavPla
                     aria-label={isFav ? 'Poista suosikeista' : 'Lisää suosikkeihin'}
                     aria-pressed={isFav}
                 >
-                    {isFav ? '♥' : '♡'}
+                    {isFav ? <IconHeartFilled size={16} aria-hidden="true" /> : <IconHeart size={16} stroke={2} aria-hidden="true" />}
                 </button>
 
-                <button
-                    type="button"
-                    className={`pc-icon-btn ${isFantasy ? 'is-fantasy' : ''}`}
-                    onClick={(e) => {
-                        e.stopPropagation();
-                        toggleFantasyPlayer({ id: player.id, name: player.name, position: player.position });
-                    }}
-                    aria-label={isFantasy ? 'Poista fantasy-joukkueesta' : 'Lisää fantasy-joukkueeseen'}
-                    aria-pressed={isFantasy}
-                >
-                    {isFantasy ? '★' : '☆'}
-                </button>
+                {/* Fantasy-tähti vain kun ominaisuus on päällä (ks. config/features.js). */}
+                {toggleFantasyPlayer && (
+                    <button
+                        type="button"
+                        className={`pc-icon-btn ${isFantasy ? 'is-fantasy' : ''}`}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            toggleFantasyPlayer({ id: player.id, name: player.name, position: player.position });
+                        }}
+                        aria-label={isFantasy ? 'Poista fantasy-joukkueesta' : 'Lisää fantasy-joukkueeseen'}
+                        aria-pressed={isFantasy}
+                    >
+                        {isFantasy ? <IconStarFilled size={16} aria-hidden="true" /> : <IconStar size={16} stroke={2} aria-hidden="true" />}
+                    </button>
+                )}
             </div>
 
             <header className="pc-header">

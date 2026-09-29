@@ -1,31 +1,47 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-// Järjestys on merkityksellinen: tokenit ensin, sitten vanhat tyylit,
-// ja uusi ulkoasu viimeisenä jotta se voittaa vanhat säännöt.
+// Järjestys on merkityksellinen: tokenit ensin, sitten Aamujäästä perityt
+// tyylit, ja pucknowerin kuori viimeisenä jotta se voittaa vanhat säännöt.
+// Perityt tiedostot poistuvat sitä mukaa kun näkymät rakennetaan uudelleen.
 import './styles/tokens.css';
 import './styles/global.css';
 import './styles/app.css';
 import './styles/sheet.css';
-import TopBar from './components/TopBar';
-import BottomNav from './components/BottomNav';
-import HomePage from './components/HomePage';
-import CalendarPage from './components/CalendarPage';
-import StandingsPage from './components/StandingsPage';
-import StatsPage from './components/StatsPage';
-import SplashScreen from './components/SplashScreen';
+import './styles/ui.css';
+import './styles/table.css';
+import './styles/cards.css';
+import './styles/game.css';
+import './styles/views.css';
+import './styles/shell.css';
 
-// Modaalit
-import SettingsModal from './components/SettingsModal';
-import UpdatesModal from './components/UpdatesModal';
+import TopBar from './components/shell/TopBar';
+import NavBar from './components/shell/NavBar';
+import ComingSoon from './components/shell/ComingSoon';
+import HomePage from './components/HomePage';
+import SettingsView from './views/SettingsView';
+import StandingsView from './views/StandingsView';
+import ScheduleView from './views/ScheduleView';
+import AdvancedView from './views/AdvancedView';
+import EdgeView from './views/EdgeView';
+import InjuriesView from './views/InjuriesView';
+import PlayoffsView from './views/PlayoffsView';
+import NationsView from './views/NationsView';
+import HistoryView from './views/HistoryView';
+import DraftView from './views/DraftView';
+import MineView from './views/MineView';
+import StatsTableView from './views/stats/StatsTableView';
+import { SCORING, GOALIES, TEAMS } from './views/stats/statsViews';
+
 import InfoModal from './components/InfoModal';
 import FeedbackModal from './components/FeedbackModal';
 import SearchModal from './components/SearchModal';
 import PlayerModal from './components/PlayerModal';
 import GameModal from './components/GameModal';
 import TeamModal from './components/TeamModal';
-import TeletextModal from './components/TeletextModal';
 import FantasyModal from './components/FantasyModal';
-import PredictionModal from './components/PredictionModal';
-import AdvancedModal from './components/AdvancedModal';
+
+import { usePersistentState } from './hooks/usePersistentState';
+import { useSettings } from './state/settings';
+import { readPath, routeOf } from './router/routes';
 
 const FANTASY_LIMITS = { G: 1, D: 2, F: 3 };
 
@@ -36,87 +52,46 @@ const positionGroup = (position) => {
     return 'F';
 };
 
-/** localStorage-tila, joka ei kaadu jos tallennettu arvo on rikki. */
-function usePersistentState(key, fallback) {
-    const [value, setValue] = useState(() => {
-        try {
-            const stored = localStorage.getItem(key);
-            return stored === null ? fallback : JSON.parse(stored);
-        } catch {
-            return fallback;
-        }
-    });
-
-    useEffect(() => {
-        try {
-            localStorage.setItem(key, JSON.stringify(value));
-        } catch {
-            // Yksityinen selaus tai täysi kiintiö — ei syytä kaataa sovellusta.
-        }
-    }, [key, value]);
-
-    return [value, setValue];
-}
-
 function App() {
-    const [currentView, setCurrentView] = useState('home');
+    const { settings, language, favTeams, favPlayers, toggleFavTeam, toggleFavPlayer } = useSettings();
+    // Fantasy on käyttäjän valinta (Asetukset), oletuksena pois.
+    const fantasyOn = Boolean(settings.fantasy);
 
-    // Modaalit yhtenä pinona, ei erillisenä "aktiivinen + historia" -parina.
-    // Kahdella tilalla sulkeminen ja avaaminen samassa klikkauksessa
-    // (esim. tilastolistasta pelaajakorttiin) meni ristiin, koska sulkeminen
-    // joutui kutsumaan toista setteriä toisen päivitysfunktion sisältä.
+    // --- Näkymä osoitteesta ---
+    const [path, setPath] = useState(() => readPath());
+
+    // --- Päällekkäiset ikkunat pinona ---
+    // Pino eikä "aktiivinen + historia" -pari: kahdella tilalla sulkeminen ja
+    // avaaminen samassa klikkauksessa (esim. tilastolistasta pelaajakorttiin)
+    // meni ristiin.
     const [modalStack, setModalStack] = useState([]);
 
     const [selectedPlayerId, setSelectedPlayerId] = useState(null);
     const [selectedGame, setSelectedGame] = useState(null);
     const [selectedTeam, setSelectedTeam] = useState(null);
-    const [teletextType, setTeletextType] = useState(null);
 
-    const [theme, setTheme] = usePersistentState('aamujaa_theme', 'dark');
-    const [language, setLanguage] = usePersistentState('aamujaa_lang', 'fi');
-
-    const [favTeams, setFavTeams] = usePersistentState('favTeams', []);
-    const [favPlayers, setFavPlayers] = usePersistentState('favPlayers', []);
+    // Fantasy-joukkue säilyy muistissa, vaikka ominaisuus kytkettäisiin pois.
     const [fantasyTeam, setFantasyTeam] = usePersistentState('fantasyTeam', []);
 
     const [toast, setToast] = useState(null);
 
-    useEffect(() => {
-        document.documentElement.setAttribute('data-theme', theme);
-    }, [theme]);
-
-    useEffect(() => {
-        document.documentElement.lang = language;
-    }, [language]);
-
-    // --- Modaalien navigaatio ---
-
-    /** Avaa modaalin nykyisen päälle — takaisin palaa edelliseen. */
     const navigateToModal = useCallback((modalName) => {
         setModalStack((stack) => [...stack, modalName]);
     }, []);
 
     /**
-     * Sulkee päällimmäisen modaalin. Kulkee selaimen historian kautta, jotta
-     * ruksi ja laitteen takaisin-painike käyttäytyvät täsmälleen samoin.
+     * Sulkee päällimmäisen ikkunan selaimen historian kautta, jotta ruksi ja
+     * laitteen takaisin-painike käyttäytyvät täsmälleen samoin.
      */
     const closeCurrentModal = useCallback(() => {
         window.history.back();
     }, []);
 
-    /** Avaa modaalin tyhjältä pöydältä — käytetään ylä- ja alapalkin napeista. */
-    const forceOpenRootModal = useCallback((modalName) => {
+    const openRootModal = useCallback((modalName) => {
         setModalStack([modalName]);
     }, []);
 
-    /**
-     * Modaalin kerros pinon järjestyksestä.
-     *
-     * Aiemmin jokainen modaali määritteli oman z-indexinsä käsin, ja luvut olivat
-     * ristiriidassa: tilastolista oli 100000 ja pelaajakortti 99999, joten
-     * listasta avattu kortti piirtyi listan alle eikä sitä näkynyt lainkaan.
-     * Kun kerros lasketaan pinosta, päällimmäinen on aina päällimmäinen.
-     */
+    /** Ikkunan kerros pinon järjestyksestä: päällimmäinen on aina päällimmäinen. */
     const layerOf = useCallback(
         (modalName) => {
             const index = modalStack.indexOf(modalName);
@@ -125,22 +100,17 @@ function App() {
         [modalStack],
     );
 
-    /**
-     * Modaali pysyy näkyvissä koko sen ajan kun se on pinossa — ei vain
-     * päällimmäisenä. Näin alle jäävä näkymä säilyttää vierityskohtansa ja
-     * datansa, ja takaisin palaaminen on välitön ilman uutta latausta.
-     */
     const isInStack = useCallback((modalName) => modalStack.includes(modalName), [modalStack]);
 
     /**
-     * Android-laitteen takaisin-painike sulkee modaalin sovelluksesta poistumisen
-     * sijaan. Play Store -julkaisussa tämä on oleellista: ilman sitä takaisin-nappi
-     * sulkisi koko sovelluksen kesken katselun.
+     * Historia: näkymät ja ikkunat samassa pinossa.
      *
-     * Selaimen historia pidetään samassa syvyydessä modaalipinon kanssa. Ainoa
-     * paikka, joka oikeasti poistaa modaalin, on popstate-käsittelijä — myös
-     * ruksista suljettaessa kutsutaan history.back(), jolloin historia ja pino
-     * eivät voi ajautua eri tahtiin.
+     * Näkymän vaihto lisää historiaan merkinnän uudella #-osoitteella ja
+     * syvyydellä 0. Ikkunan avaus lisää merkinnän samalla osoitteella ja
+     * syvyydellä n. Takaisin-painike palaa aina edelliseen merkintään, ja
+     * popstate-käsittelijä lukee siitä molemmat: montako ikkunaa jää auki ja
+     * mikä näkymä on alla. Näin Androidin takaisin sulkee ensin ikkunan ja
+     * vasta sitten palaa edelliseen näkymään — kuten sovelluksessa kuuluu.
      */
     const modalDepth = modalStack.length;
     const historyDepth = useRef(0);
@@ -154,14 +124,36 @@ function App() {
     }, [modalDepth]);
 
     useEffect(() => {
-        const onPopState = () => {
-            historyDepth.current = Math.max(0, historyDepth.current - 1);
-            setModalStack((stack) => stack.slice(0, -1));
+        const onPopState = (event) => {
+            const depth = event.state?.modalDepth ?? 0;
+            historyDepth.current = depth;
+            setModalStack((stack) => stack.slice(0, depth));
+            setPath(readPath());
         };
 
         window.addEventListener('popstate', onPopState);
         return () => window.removeEventListener('popstate', onPopState);
     }, []);
+
+    const navigate = useCallback((nextPath) => {
+        if (nextPath === path && modalDepth === 0) {
+            // Sama näkymä uudelleen: vieritys ylös, kuten sovelluksissa yleensä.
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+        const url = `${window.location.pathname}${window.location.search}#${nextPath}`;
+        window.history.pushState({ modalDepth: 0 }, '', url);
+        historyDepth.current = 0;
+        setModalStack([]);
+        setPath(nextPath);
+        window.scrollTo(0, 0);
+    }, [path, modalDepth]);
+
+    const handleAction = useCallback((action) => {
+        if (action === 'search') openRootModal('search');
+        else if (action === 'info') openRootModal('info');
+        else if (action === 'feedback') openRootModal('feedback');
+    }, [openRootModal]);
 
     const handleOpenPlayer = useCallback((id) => {
         setSelectedPlayerId(id);
@@ -183,26 +175,7 @@ function App() {
         navigateToModal('fantasy');
     }, [navigateToModal]);
 
-    const handleOpenTeletext = useCallback((type) => {
-        if (type === 'ai_predictions') {
-            forceOpenRootModal('predictions');
-        } else if (type === 'advanced') {
-            forceOpenRootModal('advanced');
-        } else {
-            setTeletextType(type);
-            forceOpenRootModal('teletext');
-        }
-    }, [forceOpenRootModal]);
-
-    // --- Suosikit ja fantasy ---
-
-    const toggleFavTeam = useCallback((abbrev) => {
-        setFavTeams((prev) => (prev.includes(abbrev) ? prev.filter((t) => t !== abbrev) : [...prev, abbrev]));
-    }, [setFavTeams]);
-
-    const toggleFavPlayer = useCallback((playerId) => {
-        setFavPlayers((prev) => (prev.includes(playerId) ? prev.filter((p) => p !== playerId) : [...prev, playerId]));
-    }, [setFavPlayers]);
+    // --- Fantasy (taustalla) ---
 
     const toggleFantasyPlayer = useCallback((player) => {
         setFantasyTeam((prev) => {
@@ -214,8 +187,6 @@ function App() {
             const taken = prev.filter((p) => positionGroup(p.position) === group).length;
 
             if (taken >= FANTASY_LIMITS[group]) {
-                // Aiemmin tämä oli alert() — modaalin päällä se on Androidilla
-                // erityisen töksähtävä. Nyt viesti näytetään sovelluksen sisällä.
                 const labels = language === 'fi'
                     ? { G: 'maalivahti', D: 'puolustajaa', F: 'hyökkääjää' }
                     : { G: 'goalie', D: 'defensemen', F: 'forwards' };
@@ -232,11 +203,6 @@ function App() {
         });
     }, [setFantasyTeam, language]);
 
-    /**
-     * Kapteenin valinta. Hockey GM:n säännöissä kapteeni saa pisteensä 1,3
-     * kertoimella, joten ilman valintaa pisteet eivät voi täsmätä. Kapteeneja
-     * on kerrallaan yksi: saman pelaajan napautus poistaa kapteeniuden.
-     */
     const toggleCaptain = useCallback((playerId) => {
         setFantasyTeam((prev) => prev.map((p) => ({
             ...p,
@@ -250,136 +216,119 @@ function App() {
         return () => clearTimeout(timer);
     }, [toast]);
 
-    const renderView = () => {
-        const shared = { language, onPlayerClick: handleOpenPlayer, onTeamClick: handleOpenTeam };
+    // Fantasy-toiminnot annetaan eteenpäin vain kun ominaisuus on päällä;
+    // ilman niitä kortit eivät näytä fantasy-tähteä lainkaan.
+    const fantasyProps = fantasyOn
+        ? { fantasyTeam, toggleFantasyPlayer }
+        : { fantasyTeam: [], toggleFantasyPlayer: undefined };
 
-        switch (currentView) {
-            case 'calendar':
-                return <CalendarPage {...shared} />;
-            case 'standings':
-                return <StandingsPage {...shared} favTeams={favTeams} />;
-            case 'stats':
-                return <StatsPage onOpenTeletext={handleOpenTeletext} language={language} />;
-            case 'home':
-            default:
+    const renderView = () => {
+        switch (path) {
+            case '/':
                 return (
                     <HomePage
                         onPlayerClick={handleOpenPlayer}
                         onGameClick={handleOpenGame}
-                        onFantasyClick={handleOpenFantasy}
+                        onFantasyClick={fantasyOn ? handleOpenFantasy : undefined}
                         favTeams={favTeams}
                         toggleFavTeam={toggleFavTeam}
                         favPlayers={favPlayers}
                         toggleFavPlayer={toggleFavPlayer}
-                        fantasyTeam={fantasyTeam}
-                        toggleFantasyPlayer={toggleFantasyPlayer}
+                        {...fantasyProps}
                         language={language}
                     />
                 );
+            case '/taulukot/sarjataulukko':
+                return <StandingsView onTeamClick={handleOpenTeam} />;
+            case '/taulukot/ohjelma':
+                return <ScheduleView onTeamClick={handleOpenTeam} onGameClick={handleOpenGame} />;
+            case '/tilastot/pisteporssi':
+                return <StatsTableView config={SCORING} onPlayerClick={handleOpenPlayer} />;
+            case '/tilastot/maalivahdit':
+                return <StatsTableView config={GOALIES} onPlayerClick={handleOpenPlayer} />;
+            case '/tilastot/joukkueet':
+                return <StatsTableView config={TEAMS} onTeamClick={handleOpenTeam} />;
+            case '/taulukot/pudotuspelit':
+                return <PlayoffsView onTeamClick={handleOpenTeam} onGameClick={handleOpenGame} />;
+            case '/taulukot/loukkaantumiset':
+                return <InjuriesView onPlayerClick={handleOpenPlayer} onTeamClick={handleOpenTeam} />;
+            case '/tilastot/edistyneet':
+                return <AdvancedView onPlayerClick={handleOpenPlayer} onTeamClick={handleOpenTeam} />;
+            case '/tilastot/nopeudet':
+                return <EdgeView onPlayerClick={handleOpenPlayer} onTeamClick={handleOpenTeam} />;
+            case '/tilastot/kansalliset':
+                return <NationsView onPlayerClick={handleOpenPlayer} />;
+            case '/lisaa/historia':
+                return <HistoryView onPlayerClick={handleOpenPlayer} onTeamClick={handleOpenTeam} />;
+            case '/lisaa/draft':
+                return <DraftView />;
+            case '/omat':
+                return <MineView onPlayerClick={handleOpenPlayer} onTeamClick={handleOpenTeam} />;
+            case '/lisaa/asetukset':
+                return <SettingsView />;
+            default:
+                return <ComingSoon route={routeOf(path)} language={language} />;
         }
     };
 
     return (
-        <>
-            <SplashScreen language={language} />
+        <div className="app-container">
+            <TopBar onHome={() => navigate('/')} />
 
-            <div className="app-container">
-                <TopBar
-                    onOpenSettings={() => forceOpenRootModal('settings')}
-                    onOpenSearch={() => forceOpenRootModal('search')}
-                    language={language}
-                />
+            <main className="app-view" key={path}>{renderView()}</main>
 
-                <main className="app-view active-view">{renderView()}</main>
+            <NavBar path={path} language={language} onNavigate={navigate} onAction={handleAction} />
 
-                <BottomNav currentView={currentView} setCurrentView={setCurrentView} language={language} />
+            {toast && <div className="app-toast" role="status">{toast}</div>}
 
-                {toast && <div className="app-toast" role="status">{toast}</div>}
+            <InfoModal isOpen={isInStack('info')}
+                zIndex={layerOf('info')} onClose={closeCurrentModal} language={language}
+                onFeedback={() => navigateToModal('feedback')} />
+            <FeedbackModal isOpen={isInStack('feedback')}
+                zIndex={layerOf('feedback')} onClose={closeCurrentModal} language={language} path={path} />
 
-                <SettingsModal
-                    isOpen={isInStack('settings')}
-                    zIndex={layerOf('settings')}
-                    onClose={closeCurrentModal}
-                    onChangeModal={navigateToModal}
-                    currentTheme={theme}
-                    onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-                    language={language}
-                    setLanguage={setLanguage}
-                />
+            <SearchModal
+                isOpen={isInStack('search')}
+                zIndex={layerOf('search')}
+                onClose={closeCurrentModal}
+                onPlayerClick={handleOpenPlayer}
+                onTeamClick={handleOpenTeam}
+                language={language}
+            />
 
-                <UpdatesModal isOpen={isInStack('updates')}
-                    zIndex={layerOf('updates')} onClose={closeCurrentModal} language={language} />
-                <InfoModal isOpen={isInStack('info')}
-                    zIndex={layerOf('info')} onClose={closeCurrentModal} language={language} />
-                <FeedbackModal isOpen={isInStack('feedback')}
-                    zIndex={layerOf('feedback')} onClose={closeCurrentModal} language={language} />
+            <PlayerModal
+                isOpen={isInStack('player')}
+                zIndex={layerOf('player')}
+                onClose={closeCurrentModal}
+                playerId={selectedPlayerId}
+                favPlayers={favPlayers}
+                toggleFavPlayer={toggleFavPlayer}
+                {...fantasyProps}
+                onGameClick={handleOpenGame}
+                language={language}
+            />
 
-                <SearchModal
-                    isOpen={isInStack('search')}
-                    zIndex={layerOf('search')}
-                    onClose={closeCurrentModal}
-                    onPlayerClick={handleOpenPlayer}
-                    onTeamClick={handleOpenTeam}
-                    language={language}
-                />
+            <GameModal
+                isOpen={isInStack('game')}
+                zIndex={layerOf('game')}
+                onClose={closeCurrentModal}
+                gameData={selectedGame}
+                onTeamClick={handleOpenTeam}
+                onPlayerClick={handleOpenPlayer}
+                language={language}
+            />
 
-                <PlayerModal
-                    isOpen={isInStack('player')}
-                    zIndex={layerOf('player')}
-                    onClose={closeCurrentModal}
-                    playerId={selectedPlayerId}
-                    favPlayers={favPlayers}
-                    toggleFavPlayer={toggleFavPlayer}
-                    fantasyTeam={fantasyTeam}
-                    toggleFantasyPlayer={toggleFantasyPlayer}
-                    language={language}
-                />
+            <TeamModal
+                isOpen={isInStack('team')}
+                zIndex={layerOf('team')}
+                onClose={closeCurrentModal}
+                teamAbbrev={selectedTeam}
+                onPlayerClick={handleOpenPlayer}
+                onGameClick={handleOpenGame}
+                language={language}
+            />
 
-                <GameModal
-                    isOpen={isInStack('game')}
-                    zIndex={layerOf('game')}
-                    onClose={closeCurrentModal}
-                    gameData={selectedGame}
-                    onTeamClick={handleOpenTeam}
-                    onPlayerClick={handleOpenPlayer}
-                    language={language}
-                />
-
-                <TeamModal
-                    isOpen={isInStack('team')}
-                    zIndex={layerOf('team')}
-                    onClose={closeCurrentModal}
-                    teamAbbrev={selectedTeam}
-                    onPlayerClick={handleOpenPlayer}
-                    onGameClick={handleOpenGame}
-                    language={language}
-                />
-
-                <TeletextModal
-                    isOpen={isInStack('teletext')}
-                    zIndex={layerOf('teletext')}
-                    onClose={closeCurrentModal}
-                    pageType={teletextType}
-                    onPlayerClick={handleOpenPlayer}
-                    language={language}
-                />
-
-                <PredictionModal
-                    isOpen={isInStack('predictions')}
-                    zIndex={layerOf('predictions')}
-                    onClose={closeCurrentModal}
-                    onPlayerClick={handleOpenPlayer}
-                    language={language}
-                />
-
-                <AdvancedModal
-                    isOpen={isInStack('advanced')}
-                    zIndex={layerOf('advanced')}
-                    onClose={closeCurrentModal}
-                    onPlayerClick={handleOpenPlayer}
-                    language={language}
-                />
-
+            {fantasyOn && (
                 <FantasyModal
                     isOpen={isInStack('fantasy')}
                     zIndex={layerOf('fantasy')}
@@ -390,8 +339,8 @@ function App() {
                     toggleCaptain={toggleCaptain}
                     language={language}
                 />
-            </div>
-        </>
+            )}
+        </div>
     );
 }
 

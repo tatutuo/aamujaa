@@ -8,7 +8,15 @@ import { getGameDay, getGamePlayers } from '../services/gameDay.js';
 import { getGameShots, getGameFaceoffs, getGameExtras } from '../services/shots.js';
 import { getPlayerForm } from '../services/playerForm.js';
 import { getFantasyEvents, getFantasyStats } from '../services/fantasy.js';
-import { getAdvancedStats, AVAILABLE_VIEWS } from '../services/advanced.js';
+import { getStatsTable, CATEGORIES } from '../services/stats.js';
+import { getStandings } from '../services/standings.js';
+import { normaliseNation } from '../services/nationality.js';
+import { getXgTable, XG_CATEGORIES } from '../services/moneypuck.js';
+import { getEdgeLeaders, getEdgePlayer, EDGE_CATEGORIES, EDGE_POSITIONS } from '../services/edge.js';
+import { getInjuries } from '../services/injuries.js';
+import { getBracket, getSeriesGames } from '../services/playoffs.js';
+import { getNationCareers, getCupHistory, getAwardWinners, getNationAwards, TROPHIES } from '../services/history.js';
+import { getDraftPicks, getDraftRankings } from '../services/draft.js';
 
 const router = Router();
 
@@ -35,6 +43,23 @@ function gameIdParam(req) {
     return id;
 }
 
+const EURO_NATIONS = ['FIN', 'SWE', 'RUS', 'CZE', 'CHE', 'SVK', 'DEU', 'DNK', 'LVA', 'AUT', 'FRA', 'NOR', 'SVN', 'BLR'];
+
+/**
+ * Seuratut maat: ?nations=FIN,SWE (ISO-koodit, enintään 8). Vanha ?region=en
+ * tarkoittaa Euroopan maita ja oletus on Suomi.
+ */
+function nationsParam(req) {
+    const raw = String(req.query.nations ?? '').toUpperCase();
+    if (/^[A-Z]{3}(,[A-Z]{3}){0,7}$/.test(raw)) return raw.split(',').map(normaliseNation);
+    return req.query.region === 'en' ? EURO_NATIONS : ['FIN'];
+}
+
+/** ?season=20252026, tai undefined (kuluva kausi, ennen avausta edellinen). */
+function seasonParam(req) {
+    return /^\d{8}$/.test(req.query.season ?? '') ? req.query.season : undefined;
+}
+
 function abbrevParam(req) {
     const abbrev = req.params.abbrev?.toUpperCase();
     if (!isValidAbbrev(abbrev)) throw badRequest('Tuntematon joukkuelyhenne');
@@ -51,8 +76,7 @@ function abbrevParam(req) {
  */
 router.get('/day', asyncRoute(async (req, res) => {
     const date = dateParam(req);
-    const region = req.query.region === 'en' ? 'en' : 'fi';
-    const data = await getGameDay(date, region);
+    const data = await getGameDay(date, nationsParam(req));
 
     // Kun ottelut ovat käynnissä, selain saa virkistää usein; muuten harvoin.
     res.set('Cache-Control', data.hasLiveGames ? 'public, max-age=15' : 'public, max-age=120');
@@ -141,24 +165,96 @@ router.get('/player/:id/form', asyncRoute(async (req, res) => {
     res.json(await getPlayerForm(id, season));
 }));
 
-/** Mitkä edistyneiden tilastojen näkymät ovat olemassa. */
-router.get('/advanced', (req, res) => res.json(AVAILABLE_VIEWS));
-
 /**
- * Edistyneet tilastot: Corsi, aloitusvyöhykkeet, per 60 min, fyysinen peli,
- * maalivahtien vakuuttavat ottelut ja lepopäiväjakaumat.
+ * Tilastotaulukko kokonaisena: kenttäpelaajat, maalivahdit tai joukkueet.
+ * Selain lajittelee ja suodattaa, joten tässä ei ole sort- eikä limit-parametria.
+ *
+ * ?season=20252026  kausi; oletuksena kuluva (ennen avausta edellinen)
+ * ?gameType=2|3     runkosarja tai pudotuspelit
  */
-router.get('/advanced/:category/:view', asyncRoute(async (req, res) => {
-    const { category, view } = req.params;
-    if (!AVAILABLE_VIEWS[category]?.includes(view)) {
-        throw badRequest('Tuntematon tilastonäkymä');
-    }
+router.get('/stats/:category', asyncRoute(async (req, res) => {
+    const { category } = req.params;
+    const isXg = XG_CATEGORIES.includes(category);
+    if (!CATEGORIES.includes(category) && !isXg) throw badRequest('Tuntematon tilastoluokka');
 
-    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 100);
-    const season = /^\d{8}$/.test(req.query.season ?? '') ? req.query.season : undefined;
-    const minGames = req.query.minGames ? parseInt(req.query.minGames, 10) : undefined;
+    const season = seasonParam(req);
+    const gameType = req.query.gameType === '3' ? 3 : 2;
 
-    res.json(await getAdvancedStats(category, view, { limit, season, minGames }));
+    // xg-skaters, xg-goalies, xg-teams: odotetut maalit MoneyPuckista.
+    res.json(isXg ? await getXgTable(category, { season, gameType }) : await getStatsTable(category, { season, gameType }));
+}));
+
+// ---------------------------------------------------------------------------
+// NHL EDGE: nopeudet, laukausnopeudet, luistelumatkat
+// ---------------------------------------------------------------------------
+
+router.get('/edge/leaders/:category', asyncRoute(async (req, res) => {
+    const { category } = req.params;
+    if (!EDGE_CATEGORIES.includes(category)) throw badRequest('Tuntematon EDGE-luokka');
+    const pos = EDGE_POSITIONS.includes(req.query.pos) ? req.query.pos : 'all';
+    const gameType = req.query.gameType === '3' ? 3 : 2;
+    res.json(await getEdgeLeaders(category, { pos, season: seasonParam(req), gameType }));
+}));
+
+router.get('/edge/player/:id', asyncRoute(async (req, res) => {
+    const id = req.params.id;
+    if (!/^\d{7}$/.test(id)) throw badRequest('Virheellinen pelaaja-ID');
+    res.json(await getEdgePlayer(id, req.query.goalie === '1'));
+}));
+
+// ---------------------------------------------------------------------------
+// Loukkaantumiset, pudotuspelit, historia ja draft
+// ---------------------------------------------------------------------------
+
+router.get('/injuries', asyncRoute(async (req, res) => {
+    res.json(await getInjuries());
+}));
+
+router.get('/playoffs', asyncRoute(async (req, res) => {
+    const year = /^\d{4}$/.test(req.query.year ?? '') ? Number(req.query.year) : undefined;
+    res.json(await getBracket({ year }));
+}));
+
+router.get('/playoffs/:season/:letter', asyncRoute(async (req, res) => {
+    const { season, letter } = req.params;
+    if (!/^\d{8}$/.test(season) || !/^[A-Oa-o]$/.test(letter)) throw badRequest('Virheellinen sarja');
+    res.json(await getSeriesGames(season, letter));
+}));
+
+router.get('/history/nation/:code', asyncRoute(async (req, res) => {
+    const code = String(req.params.code).toUpperCase();
+    if (!/^[A-Z]{3}$/.test(code)) throw badRequest('Virheellinen maakoodi');
+    const gameType = req.query.gameType === '3' ? 3 : 2;
+    res.json(await getNationCareers(code, gameType));
+}));
+
+router.get('/history/nation/:code/awards', asyncRoute(async (req, res) => {
+    const code = String(req.params.code).toUpperCase();
+    if (!/^[A-Z]{3}$/.test(code)) throw badRequest('Virheellinen maakoodi');
+    res.json(await getNationAwards(code));
+}));
+
+router.get('/history/cup', asyncRoute(async (req, res) => {
+    res.json(await getCupHistory());
+}));
+
+router.get('/history/trophies', (req, res) => res.json(TROPHIES));
+
+router.get('/history/award/:trophyId', asyncRoute(async (req, res) => {
+    const trophyId = Number(req.params.trophyId);
+    if (!TROPHIES.some((t) => t.id === trophyId)) throw badRequest('Tuntematon palkinto');
+    res.json(await getAwardWinners(trophyId));
+}));
+
+router.get('/draft/picks', asyncRoute(async (req, res) => {
+    const year = /^\d{4}$/.test(req.query.year ?? '') ? Number(req.query.year) : undefined;
+    res.json(await getDraftPicks(year));
+}));
+
+router.get('/draft/rankings', asyncRoute(async (req, res) => {
+    const year = /^\d{4}$/.test(req.query.year ?? '') ? Number(req.query.year) : undefined;
+    const category = [1, 2, 3, 4].includes(Number(req.query.category)) ? Number(req.query.category) : 1;
+    res.json(await getDraftRankings(year, category));
 }));
 
 // ---------------------------------------------------------------------------
@@ -173,8 +269,8 @@ router.get('/calendar/:date', asyncRoute(async (req, res) => {
 }));
 
 /**
- * Joukkuekohtainen otteluruudukko seuraaville päiville.
- * Käytetään "kenellä on eniten pelejä" -näkymässä (fantasy-suunnittelu).
+ * Otteluohjelma seuraaville päiville: päivittäiset ottelut ja joukkuekohtainen
+ * yhteenveto (ottelumäärät, koti/vieras, peräkkäiset pelipäivät).
  */
 router.get('/schedule', asyncRoute(async (req, res) => {
     const startDate = req.query.startDate ? req.query.startDate : toDateString();
@@ -241,7 +337,24 @@ router.get('/schedule', asyncRoute(async (req, res) => {
         }
 
         const sortedTeams = Object.values(teams).sort((a, b) => b.gamesCount - a.gamesCount);
-        return { dates: allDates, teams: sortedTeams };
+
+        // Päiväkohtainen otteluluettelo otteluohjelmanäkymälle: vain tarvittavat kentät.
+        const dayList = gamesData.map((day) => ({
+            date: day.date,
+            games: (day.games ?? []).map((g) => ({
+                id: g.id,
+                gameType: g.gameType,
+                gameState: g.gameState,
+                gameScheduleState: g.gameScheduleState,
+                startTimeUTC: g.startTimeUTC,
+                awayTeam: { abbrev: g.awayTeam.abbrev, score: g.awayTeam.score },
+                homeTeam: { abbrev: g.homeTeam.abbrev, score: g.homeTeam.score },
+                periodDescriptor: g.periodDescriptor,
+                gameOutcome: g.gameOutcome,
+            })),
+        }));
+
+        return { dates: allDates, teams: sortedTeams, days: dayList };
     });
 
     res.json(result);
@@ -251,19 +364,13 @@ router.get('/schedule', asyncRoute(async (req, res) => {
 // Sarjataulukko
 // ---------------------------------------------------------------------------
 
+/**
+ * Sarjataulukko. ?season=20252026 hakee kyseisen kauden lopputilanteen;
+ * oletuksena kuluva kausi (ennen avausta edellisen kauden lopputilanne).
+ */
 router.get('/standings', asyncRoute(async (req, res) => {
-    const data = await getOrFetch('standings', TTL.standings, async () => {
-        const raw = await web('/standings/now');
-        const sorted = [...(raw.standings ?? [])].sort(
-            (a, b) => b.points - a.points || b.pointPctg - a.pointPctg,
-        );
-        return {
-            eastern: sorted.filter((t) => t.conferenceName === 'Eastern'),
-            western: sorted.filter((t) => t.conferenceName === 'Western'),
-            league: sorted,
-        };
-    });
-    res.json(data);
+    const season = /^\d{8}$/.test(req.query.season ?? '') ? req.query.season : undefined;
+    res.json(await getStandings({ season }));
 }));
 
 // ---------------------------------------------------------------------------
@@ -455,7 +562,7 @@ async function fetchLeaders(season, region, sortKey, limit) {
     let filter = `seasonId=${season} and gameTypeId=2`;
     if (region === 'fi') filter += ` and nationalityCode='FIN'`;
     if (region === 'en') {
-        filter += ` and nationalityCode in ('FIN','SWE','RUS','CZE','SUI','SVK','GER','DEN','LVA','AUT','FRA','NOR','SLO','BLR')`;
+        filter += ` and nationalityCode in (${EURO_NATIONS.map((c) => `'${c}'`).join(',')})`;
     }
 
     const [skaterRes, goalieRes] = await Promise.all([

@@ -1,7 +1,7 @@
 import { web, mapWithConcurrency } from '../lib/nhlApi.js';
 import { getOrFetch, TTL } from '../lib/cache.js';
 import { getSeasonId } from '../lib/season.js';
-import { getPlayersByRegion } from './nationality.js';
+import { getPlayersByNations } from './nationality.js';
 
 /**
  * Yhden ottelupäivän kooste: ottelut + kaikkien pelanneiden pelaajatilastot.
@@ -226,8 +226,13 @@ async function findNextGameDay(fromDate) {
  * @param {string} date  YYYY-MM-DD
  * @param {string} region 'fi' = suomalaiset, 'en' = eurooppalaiset
  */
-export async function getGameDay(date, region = 'fi') {
-    return getOrFetch(`gameday:${date}:${region}`, TTL.scores, async () => {
+/**
+ * @param {string} date YYYY-MM-DD
+ * @param {string[]} nations seurattavat maat ISO-koodeina, esim. ['FIN', 'SWE']
+ */
+export async function getGameDay(date, nations = ['FIN']) {
+    const codes = [...new Set(nations)].sort();
+    return getOrFetch(`gameday:${date}:${codes.join(',')}`, TTL.scores, async () => {
         const score = await web(`/score/${date}`);
         const games = score?.games ?? [];
 
@@ -246,13 +251,13 @@ export async function getGameDay(date, region = 'fi') {
         const [played, upcoming, regionPlayers] = await Promise.all([
             fetchBoxscores(games),
             fetchUpcomingRosters(games),
-            getPlayersByRegion(region, season).catch(() => new Map()),
+            getPlayersByNations(codes, season).catch(() => new Map()),
         ]);
 
         const playedWithFlag = played.map((p) => ({ ...p, playing: true }));
         const all = [...playedWithFlag, ...upcoming];
 
-        // Seurattavan alueen pelaajat (suomalaiset / eurooppalaiset)
+        // Seurattujen maiden pelaajat
         const tracked = all
             .filter((p) => regionPlayers.has(p.id))
             .map((p) => ({ ...p, nationality: regionPlayers.get(p.id).nationality }));

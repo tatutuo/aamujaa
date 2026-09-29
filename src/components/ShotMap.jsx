@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { teamColors } from '../utils/teamColors';
+import Chips from './ui/Chips';
 
 /**
  * Laukauskartta.
@@ -54,17 +55,12 @@ const ShotMap = ({ data, language = 'fi', onPlayerClick }) => {
     return (
         <div className="shotmap">
             <div className="shotmap-filters">
-                {FILTERS.map((f) => (
-                    <button
-                        key={f.id}
-                        type="button"
-                        className={`pred-tab ${filter === f.id ? 'active' : ''}`}
-                        onClick={() => { setFilter(f.id); setSelected(null); }}
-                        aria-pressed={filter === f.id}
-                    >
-                        {language === 'fi' ? f.fi : f.en}
-                    </button>
-                ))}
+                <Chips
+                    label={language === 'fi' ? 'Laukaukset' : 'Shots'}
+                    value={filter}
+                    onChange={(v) => { setFilter(v); setSelected(null); }}
+                    options={FILTERS.map((f) => ({ value: f.id, label: language === 'fi' ? f.fi : f.en }))}
+                />
             </div>
 
             <div className="shotmap-teams">

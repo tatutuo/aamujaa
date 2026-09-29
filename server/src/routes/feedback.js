@@ -32,29 +32,53 @@ const limiter = rateLimit({
     message: { error: 'Liikaa palautteita. Yritä myöhemmin uudelleen.' },
 });
 
-router.post('/', limiter, async (req, res, next) => {
-    const message = String(req.body?.viesti ?? '').trim();
-    const sender = String(req.body?.lahettaja ?? '').trim().slice(0, MAX_SENDER_LENGTH);
+const TYPES = { bug: 'Virhe', idea: 'Idea', other: 'Muu' };
+const MAX_TECHNICAL_LENGTH = 600;
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-    if (!message) {
-        return res.status(400).json({ error: 'Viesti puuttuu.' });
+router.post('/', limiter, async (req, res, next) => {
+    const body = req.body ?? {};
+
+    // Roskapostiansa: piilotettu kenttä, jonka vain botit täyttävät. Vastataan
+    // kuten onnistuneeseen, jottei botti opi kiertämään ansaa.
+    if (String(body.website ?? '').trim()) {
+        return res.json({ status: 'ok' });
+    }
+
+    // Vanha lomake lähetti kentät nimillä viesti ja lahettaja.
+    const message = String(body.message ?? body.viesti ?? '').trim();
+    const contact = String(body.contact ?? body.lahettaja ?? '').trim().slice(0, MAX_SENDER_LENGTH);
+    const type = TYPES[body.type] ? body.type : 'other';
+    const technical = String(body.technical ?? '').trim().slice(0, MAX_TECHNICAL_LENGTH);
+
+    if (message.length < 5) {
+        return res.status(400).json({ error: 'Viesti on liian lyhyt.' });
     }
     if (message.length > MAX_MESSAGE_LENGTH) {
-        return res.status(400).json({ error: `Viesti on liian pitkä (max ${MAX_MESSAGE_LENGTH} merkkiä).` });
+        return res.status(400).json({ error: `Viesti on liian pitkä (enintään ${MAX_MESSAGE_LENGTH} merkkiä).` });
     }
 
     if (!transporter) {
         console.warn('[palaute] Sähköpostiasetukset puuttuvat, viestiä ei lähetetty');
-        return res.status(503).json({ error: 'Palautteen lähetys ei ole juuri nyt käytössä.' });
+        return res.status(503).json({ error: 'Palautteen lähetys ei ole juuri nyt käytössä. Yritä myöhemmin uudelleen.' });
     }
+
+    const replyTo = EMAIL.test(contact) ? contact : undefined;
+    const lines = [
+        `Aihe: ${TYPES[type]}`,
+        `Lähettäjä: ${contact || 'ei annettu'}`,
+        '',
+        message,
+    ];
+    if (technical) lines.push('', '--- Tekniset tiedot ---', technical);
 
     try {
         await transporter.sendMail({
-            from: `"Aamujää" <${config.mail.user}>`,
+            from: `"pucknower" <${config.mail.user}>`,
             to: config.mail.receiver,
-            replyTo: sender.includes('@') ? sender : undefined,
-            subject: '📩 Uusi palaute Aamujäästä',
-            text: `Lähettäjä: ${sender || 'Anonyymi'}\n\nViesti:\n${message}`,
+            replyTo,
+            subject: `[pucknower] ${TYPES[type]}: ${message.slice(0, 60).replace(/\s+/g, ' ')}${message.length > 60 ? '…' : ''}`,
+            text: lines.join('\n'),
         });
         res.json({ status: 'ok' });
     } catch (err) {

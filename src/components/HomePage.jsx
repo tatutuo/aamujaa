@@ -3,10 +3,12 @@ import DateNavigation from './DateNavigation';
 import GameCard from './GameCard';
 import PlayerCard from './PlayerCard';
 import TeamBadge from './TeamBadge';
-import WhatsNew from './WhatsNew';
 import { translations } from '../utils/translations';
 import { api } from '../utils/api';
 import { scoreSkater, scoreGoalie } from '../utils/fantasy';
+import { IconHeart, IconFlame, IconFlag, IconStar } from '@tabler/icons-react';
+import { useSettings } from '../state/settings';
+import { nationPlural } from '../utils/nations';
 import { toApiDate, getGameDayDate, addDays, isSameDay, formatShort } from '../utils/dates';
 
 /**
@@ -26,6 +28,18 @@ import { toApiDate, getGameDayDate, addDays, isSameDay, formatShort } from '../u
  */
 
 const LIVE_POLL_MS = 20_000;
+
+/** Etusivun osion otsikko: ikoni, nimi ja päivämäärä pienellä. */
+function SectionTitle({ icon, title, meta }) {
+    const Icon = icon;
+    return (
+        <h3 className="home-section-title">
+            <Icon size={18} stroke={2} aria-hidden="true" />
+            {title}
+            {meta && <span className="home-section-meta">{meta}</span>}
+        </h3>
+    );
+}
 
 const HomePage = ({
     onPlayerClick, onGameClick, onFantasyClick,
@@ -55,6 +69,10 @@ const HomePage = ({
     const [goalAlert, setGoalAlert] = useState(null);
     const previousScores = useRef({});
 
+    const { settings } = useSettings();
+    const nations = settings.nationalities?.length ? settings.nationalities : ['FIN'];
+    const nationsKey = nations.join(',');
+
     const apiDate = toApiDate(currentDateObj);
     const isToday = isSameDay(currentDateObj, getGameDayDate());
 
@@ -80,7 +98,7 @@ const HomePage = ({
         const { silent = false, signal } = options;
         if (!silent) setIsLoading(true);
 
-        return api.day(apiDate, language, { signal })
+        return api.day(apiDate, nations, { signal })
             .then((data) => {
                 const alerts = detectGoals(data.games);
                 if (silent && alerts.length > 0) {
@@ -95,7 +113,9 @@ const HomePage = ({
                 setError(err.message);
                 setIsLoading(false);
             });
-    }, [apiDate, language, detectGoals]);
+        // nationsKey pitää riippuvuuden vakaana: sama maalista ei hae uudelleen.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [apiDate, nationsKey, detectGoals]);
 
     // Päivän vaihtuessa nollataan maalivahti, jotta eilisen tulokset eivät
     // näytä "uusilta maaleilta".
@@ -293,15 +313,27 @@ const HomePage = ({
         [seasonStats],
     );
 
+    const fi = language !== 'en';
+    const dateMeta = formatShort(currentDateObj);
+    // Yksi maa: "Suomalaiset". Useampi: "Suomalaiset ja ruotsalaiset" tai yleisnimi.
+    const nationalsTitle = nations.length === 1
+        ? nationPlural(nations[0], language)
+        : nations.length === 2
+            ? `${nationPlural(nations[0], language)} ${fi ? 'ja' : 'and'} ${nationPlural(nations[1], language).toLowerCase()}`
+            : (fi ? 'Seuratut maat' : 'Followed countries');
+    const noNationals = fi
+        ? (nations.length === 1 && nations[0] === 'FIN' ? 'Ei suomalaisia jäällä tällä kierroksella.' : `${nationalsTitle}: ei pelaajia jäällä tällä kierroksella.`)
+        : `${nationalsTitle}: none on ice this round.`;
+
     const cardProps = {
         favPlayers, toggleFavPlayer, fantasyTeam, toggleFantasyPlayer, language,
     };
 
-    const renderSection = (titleClass, title, players, variant, onClick, keyPrefix) => {
+    const renderSection = (icon, title, meta, players, variant, onClick, keyPrefix) => {
         if (players.length === 0) return null;
         return (
-            <section className="finns-section">
-                <h3 className={titleClass}>{title}</h3>
+            <section className="finns-section" key={keyPrefix}>
+                <SectionTitle icon={icon} title={title} meta={meta} />
                 <div className="h-scroll-wrapper">
                     {sortPlayers(players).map((player) => (
                         <PlayerCard
@@ -318,14 +350,13 @@ const HomePage = ({
     };
 
     return (
-        <div className="container home-container">
+        <div className="container">
             {goalAlert && (
                 <div className="goal-alert" role="status" aria-live="polite">
                     {goalAlert}
                 </div>
             )}
 
-            <WhatsNew language={language} />
 
             <DateNavigation
                 currentDateObj={currentDateObj}
@@ -334,6 +365,8 @@ const HomePage = ({
                 onNextDay={() => setCurrentDateObj((d) => addDays(d, 1))}
                 onRefresh={() => load()}
                 isRefreshing={isLoading}
+                isToday={isToday}
+                onToday={() => setCurrentDateObj(getGameDayDate())}
             />
 
             <div className="games-container">
@@ -363,36 +396,59 @@ const HomePage = ({
                 )}
             </div>
 
-            {renderSection('otsikko-fantasy', t.homeFantasyTitle, fantasyList, 'fantasy',
-                (id) => (onFantasyClick ? onFantasyClick(id) : onPlayerClick(id)), 'fantasy')}
-
-            {renderSection('otsikko-suosikit', t.homeFavTitle, favList, 'fav', onPlayerClick, 'fav')}
-
-            {renderSection('otsikko-tulikuumat', `${t.homeHotTitle} (${formatShort(currentDateObj)})`,
-                day.hot.map(withSeasonStats), 'hot', onPlayerClick, 'hot')}
-
-            <section className="finns-section">
-                <h3 className="otsikko-suomalaiset">
-                    {t.homeFinnsTitle} ({formatShort(currentDateObj)})
-                </h3>
-                <div className="h-scroll-wrapper">
-                    {isLoading ? (
-                        <div className="loading">{t.homeFinnsLoading}</div>
-                    ) : day.tracked.length === 0 ? (
-                        <div className="empty-state">{t.homeNoFinns}</div>
-                    ) : (
-                        sortPlayers(day.tracked.map(withSeasonStats)).map((player) => (
-                            <PlayerCard
-                                key={`fin-${player.id}`}
-                                player={player}
-                                variant="fin"
-                                onClick={() => onPlayerClick(player.id)}
-                                {...cardProps}
-                            />
-                        ))
-                    )}
-                </div>
-            </section>
+            {/* Osiot käyttäjän valitsemassa järjestyksessä (Asetukset). */}
+            {settings.homeSections.filter((section) => section.visible).map((section) => {
+                if (section.id === 'fantasy') {
+                    if (!settings.fantasy) return null;
+                    if (fantasyList.length === 0) {
+                        return (
+                            <section className="finns-section" key="fantasy">
+                                <SectionTitle icon={IconStar} title="Fantasy" meta={null} />
+                                <p className="empty-state">
+                                    {fi
+                                        ? 'Joukkueesi on tyhjä. Lisää pelaajia pelaajakortin tähdestä: 1 maalivahti, 2 puolustajaa ja 3 hyökkääjää.'
+                                        : 'Your team is empty. Add players with the star on a player card: 1 goalie, 2 defence, 3 forwards.'}
+                                </p>
+                            </section>
+                        );
+                    }
+                    const teamPoints = fantasyList.reduce((sum, p) => sum + (p.fantasyPoints ?? 0), 0);
+                    return renderSection(IconStar, 'Fantasy', `${teamPoints} p · ${dateMeta}`, fantasyList, 'fantasy',
+                        (id) => (onFantasyClick ? onFantasyClick(id) : onPlayerClick(id)), 'fantasy');
+                }
+                if (section.id === 'favourites') {
+                    return renderSection(IconHeart, fi ? 'Suosikit' : 'Favourites', null, favList, 'fav', onPlayerClick, 'fav');
+                }
+                if (section.id === 'hot') {
+                    return renderSection(IconFlame, fi ? 'Tulikuumat' : 'On fire', dateMeta,
+                        day.hot.map(withSeasonStats), 'hot', onPlayerClick, 'hot');
+                }
+                if (section.id === 'nationals') {
+                    return (
+                        <section className="finns-section" key="nationals">
+                            <SectionTitle icon={IconFlag} title={nationalsTitle} meta={dateMeta} />
+                            <div className="h-scroll-wrapper">
+                                {isLoading ? (
+                                    <div className="loading">{t.homeFinnsLoading}</div>
+                                ) : day.tracked.length === 0 ? (
+                                    <div className="empty-state">{noNationals}</div>
+                                ) : (
+                                    sortPlayers(day.tracked.map(withSeasonStats)).map((player) => (
+                                        <PlayerCard
+                                            key={`fin-${player.id}`}
+                                            player={player}
+                                            variant="fin"
+                                            onClick={() => onPlayerClick(player.id)}
+                                            {...cardProps}
+                                        />
+                                    ))
+                                )}
+                            </div>
+                        </section>
+                    );
+                }
+                return null;
+            })}
         </div>
     );
 };

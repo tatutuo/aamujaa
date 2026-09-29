@@ -1,10 +1,16 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+// Inter isännöidään itse: fonttipyyntö ei lähde Googlelle eikä paljasta
+// käyttäjän IP:tä kolmannelle osapuolelle.
+import '@fontsource-variable/inter';
 import App from './App.jsx';
+import SettingsProvider from './state/SettingsProvider.jsx';
 
 createRoot(document.getElementById('root')).render(
     <StrictMode>
-        <App />
+        <SettingsProvider>
+            <App />
+        </SettingsProvider>
     </StrictMode>,
 );
 

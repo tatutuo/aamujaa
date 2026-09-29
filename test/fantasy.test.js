@@ -88,11 +88,8 @@ describe('maalivahdin torjunnat ja päästetyt', () => {
 });
 
 describe('jäähyt tyypeittäin', () => {
-    /*
-     * Kahden minuutin jäähy on taulukon ainoa rivi, jossa maalivahti ja
-     * kenttäpelaaja eroavat: kenttäpelaaja saa pisteen, maalivahti menettää.
-     */
-    test('kahden minuutin jäähy on kenttäpelaajalle plussaa', () => {
+    /** hockeygm.fi: 2 min jäähy on maalivahdille −1, kenttäpelaajalle +1. */
+    test('kahden minuutin jäähy: kenttäpelaajalle plussaa, maalivahdille miinusta', () => {
         assert.equal(penaltyPoints({ minor: 1 }, false), 1);
         assert.equal(penaltyPoints({ minor: 1 }, true), -1);
     });
@@ -110,6 +107,10 @@ describe('jäähyt tyypeittäin', () => {
     test('kaksoispieni on kaksi pientä', () => {
         assert.equal(penaltyPoints({ minor: 2 }, false), 2);
         assert.equal(penaltyPoints({ minor: 2 }, true), -2);
+    });
+
+    test('maalivahdin katto koskee myös pieniä jäähyjä', () => {
+        assert.equal(penaltyPoints({ minor: 12 }, true), -10);
     });
 
     test('maalivahdin jäähypisteet eivät alita kymmentä', () => {
@@ -194,10 +195,25 @@ describe('kenttäpelaaja', () => {
         assert.equal(pts(r, 'gameWinner'), 2);
     });
 
-    test('voittomaalipisteitä ei anneta pudotuspeleissä', () => {
+    /** Säännöissä vain jatkoaikatappio on rajattu runkosarjaan, ei voittomaali. */
+    test('voittomaalipisteet annetaan myös pudotuspeleissä', () => {
         const r = scoreSkater({ position: 'L', goals: 1, gameWinningGoals: 1, isRegularSeason: false });
-        assert.equal(pts(r, 'gameWinner'), undefined);
-        assert.equal(r.total, 7);
+        assert.equal(pts(r, 'gameWinner'), 2);
+        assert.equal(r.total, 9);
+    });
+
+    /** Voittolaukauskilpailun ratkaiseva maali: voittomaalin pisteet, ei maalia. */
+    test('voittolaukauksen ratkaisija saa voittomaalin pisteet', () => {
+        const r = scoreSkater({ position: 'C', goals: 0, gameWinningGoals: 1 });
+        assert.equal(pts(r, 'goals'), 0);
+        assert.equal(pts(r, 'gameWinner'), 2);
+        assert.equal(r.total, 2);
+    });
+
+    test('kenttäpelaajan pienet jäähyt ovat plussaa, isot miinusta', () => {
+        const r = scoreSkater({ position: 'D', goals: 1, penalties: { minor: 2, otherMajor: 1 } });
+        assert.equal(pts(r, 'penalties'), 2 - 3);
+        assert.equal(r.total, 9 - 1);
     });
 
     test('aloitusrivi puuttuu jos pelaaja ei ottanut aloituksia', () => {
@@ -249,5 +265,23 @@ describe('maalivahti', () => {
 
     test('maalivahdin maali on 25 pistettä', () => {
         assert.equal(pts(scoreGoalie({ goals: 1 }), 'goals'), 25);
+    });
+
+    /** Boxscoren maalivahtirivillä ei ole syöttöjä; palvelin laskee ne maalitapahtumista. */
+    test('maalivahdin syöttö tulee maalitapahtumista', () => {
+        const r = scoreGoalie({ assists: 0, eventAssists: 1, saves: 20, goalsAgainst: 2, decision: 'W' });
+        assert.equal(pts(r, 'assists'), 10);
+        assert.equal(r.total, 10 + 4 + 9 - 2);
+    });
+
+    test('jaettu nollapeli ei ole kummankaan vahdin', () => {
+        const r = scoreGoalie({ saves: 12, goalsAgainst: 0, decision: 'W', fullGame: false });
+        assert.equal(r.breakdown.find((x) => x.key === 'shutout'), undefined);
+    });
+
+    test('maalivahdin jäähyt: pieni −1', () => {
+        const r = scoreGoalie({ saves: 30, goalsAgainst: 2, decision: 'W', penalties: { minor: 1 } });
+        assert.equal(pts(r, 'penalties'), -1);
+        assert.equal(r.total, 4 + 13 - 2 - 1);
     });
 });

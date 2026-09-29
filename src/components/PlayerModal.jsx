@@ -1,14 +1,58 @@
-import React, { useState } from 'react';
-import { translations } from '../utils/translations';
-import TeamBadge from './TeamBadge';
+import React, { useMemo, useState } from 'react';
+import {
+    IconHeart, IconHeartFilled, IconCake, IconMapPin, IconRuler2, IconHandFinger,
+    IconTrophy, IconTicket, IconStar, IconStarFilled,
+} from '@tabler/icons-react';
 import Sheet from './Sheet';
+import PlayerForm from './PlayerForm';
+import DataTable from './ui/DataTable';
+import Segmented from './ui/Segmented';
+import Chips from './ui/Chips';
+import StatTiles from './ui/StatTiles';
 import { api } from '../utils/api';
 import { useFetchWhenOpen } from '../hooks/useModal';
-import PlayerForm from './PlayerForm';
-import { teamColors } from '../utils/teamColors';
+import { teamColors, DEFAULT_TEAM_COLORS } from '../utils/teamColors';
+import { teamNickname } from '../utils/teams';
+import { countryName } from '../utils/nations';
+import { positionName, handedness } from '../utils/positions';
+import { int, dec, pct, signed, seasonLabel, ageFrom, shortDate, longDate } from '../utils/format';
 
-const PlayerModal = ({ isOpen, onClose, playerId, favPlayers, toggleFavPlayer, fantasyTeam, toggleFantasyPlayer, language, zIndex = 99000 }) => {
-    const t = translations[language] || translations.fi;
+/**
+ * Pelaajakortti.
+ *
+ * Aamujään kortti näytti vain NHL-kaudet ja oli rakennettu kokonaan
+ * inline-tyyleillä. NHL:n rajapinta kertoo kuitenkin koko uran kaikissa
+ * sarjoissa — suomalaisella juniorivuodet, Liigan, MM-kisat ja olympialaiset
+ * — sekä palkinnot, draftin ja viisi viimeisintä ottelua. Nyt ne kaikki näkyvät.
+ */
+
+const isGoaliePosition = (position) => position === 'G';
+
+/** Kausittaisen taulukon rivit: yksi per kausi ja joukkue. */
+function seasonRows(player, gameTypeId, nhlOnly) {
+    return (player.seasonTotals ?? [])
+        .filter((s) => s.gameTypeId === gameTypeId && (!nhlOnly || s.leagueAbbrev === 'NHL'))
+        .map((s, i) => ({
+            id: `${s.season}-${s.sequence ?? i}-${s.leagueAbbrev}`,
+            season: s.season,
+            league: s.leagueAbbrev,
+            team: s.teamCommonName?.default ?? s.teamName?.default ?? '',
+            gp: s.gamesPlayed,
+            goals: s.goals,
+            assists: s.assists,
+            points: s.points,
+            wins: s.wins,
+            gaa: s.goalsAgainstAvg,
+            savePct: s.savePctg,
+        }));
+}
+
+export default function PlayerModal({
+    isOpen, onClose, playerId, favPlayers, toggleFavPlayer,
+    fantasyTeam, toggleFantasyPlayer, onGameClick, language, zIndex = 99000,
+}) {
+    const lang = language === 'en' ? 'en' : 'fi';
+    const fi = lang === 'fi';
 
     const { data: player, isLoading, error } = useFetchWhenOpen(
         isOpen && Boolean(playerId),
@@ -16,8 +60,7 @@ const PlayerModal = ({ isOpen, onClose, playerId, favPlayers, toggleFavPlayer, f
         [playerId],
     );
 
-    // Muotokäyrä on oma hakunsa: se ei saa hidastaa itse pelaajakortin
-    // avautumista, ja se päivittyy harvemmin.
+    // Muotokäyrä on oma hakunsa: se ei saa hidastaa itse kortin avautumista.
     const { data: form } = useFetchWhenOpen(
         isOpen && Boolean(playerId),
         (signal) => api.playerForm(playerId, undefined, { signal }),
@@ -26,247 +69,365 @@ const PlayerModal = ({ isOpen, onClose, playerId, favPlayers, toggleFavPlayer, f
 
     const name = player
         ? `${player.firstName?.default ?? ''} ${player.lastName?.default ?? ''}`.trim()
-        : t.pmLoading;
+        : (fi ? 'Ladataan…' : 'Loading…');
 
     const team = player?.currentTeamAbbrev;
-    // Paneelin korostusväri joukkueen väreistä — pieni yksityiskohta, joka
-    // tekee jokaisesta pelaajakortista tunnistettavan.
-    const accent = team ? teamColors[team]?.[0] : undefined;
+    const teamColour = (teamColors[team] ?? DEFAULT_TEAM_COLORS)[0];
+    const isFav = favPlayers?.includes(playerId);
+    const isFantasy = fantasyTeam?.some((f) => f.id === playerId);
+
+    const headerActions = player && (
+        <>
+            {toggleFantasyPlayer && (
+                <button
+                    type="button"
+                    className={`icon-toggle ${isFantasy ? 'is-on' : ''}`}
+                    onClick={() => toggleFantasyPlayer({ id: playerId, name, position: player.position })}
+                    aria-pressed={isFantasy}
+                    aria-label={fi ? 'Fantasy-joukkue' : 'Fantasy team'}
+                >
+                    {isFantasy ? <IconStarFilled size={18} /> : <IconStar size={18} stroke={2} />}
+                </button>
+            )}
+            <button
+                type="button"
+                className={`icon-toggle ${isFav ? 'is-on' : ''}`}
+                onClick={() => toggleFavPlayer(playerId)}
+                aria-pressed={isFav}
+                aria-label={isFav ? (fi ? 'Poista suosikeista' : 'Remove from favourites') : (fi ? 'Lisää suosikiksi' : 'Add to favourites')}
+            >
+                {isFav ? <IconHeartFilled size={18} /> : <IconHeart size={18} stroke={2} />}
+            </button>
+        </>
+    );
 
     return (
         <Sheet
             isOpen={isOpen}
             onClose={onClose}
             zIndex={zIndex}
-            accent={accent}
+            size="full"
+            accent={teamColour}
             title={name}
-            subtitle={player ? [team, player.position, player.sweaterNumber && `#${player.sweaterNumber}`]
-                .filter(Boolean).join(' · ') : undefined}
+            subtitle={player ? [team && teamNickname(team), positionName(player.position, lang)].filter(Boolean).join(' · ') : undefined}
+            headerExtra={headerActions}
         >
             {isLoading ? (
-                <div className="loading">{t.pmLoading}</div>
+                <div className="skeleton" style={{ height: 420 }} />
             ) : error || !player ? (
-                <div className="error-state"><p>{t.pmError}</p></div>
+                <p className="panel-hint">{fi ? 'Pelaajan tietojen haku epäonnistui.' : 'Could not load player.'}</p>
             ) : (
-                <>
-                    <PlayerCardContent
-                        p={player}
-                        favPlayers={favPlayers}
-                        toggleFavPlayer={toggleFavPlayer}
-                        fantasyTeam={fantasyTeam}
-                        toggleFantasyPlayer={toggleFantasyPlayer}
-                        t={t}
-                    />
-
-                    {form && (
-                        <section className="player-form-section">
-                            <h3 className="section-title">
-                                {language === 'fi' ? 'Muoto otteluittain' : 'Form by game'}
-                            </h3>
-                            <PlayerForm data={form} language={language} />
-                        </section>
-                    )}
-                </>
+                <PlayerContent
+                    player={player}
+                    form={form}
+                    teamColour={teamColour}
+                    lang={lang}
+                    onGameClick={onGameClick}
+                />
             )}
         </Sheet>
     );
-};
+}
 
-const PlayerCardContent = ({ p, favPlayers, toggleFavPlayer, fantasyTeam, toggleFantasyPlayer, t }) => {
-    const [seasonType, setSeasonType] = useState('regular'); 
+function PlayerContent({ player, form, teamColour, lang, onGameClick }) {
+    const fi = lang === 'fi';
+    const isGoalie = isGoaliePosition(player.position);
+    const [gameType, setGameType] = useState(2);
+    const [scope, setScope] = useState('NHL');
 
-    const isGoalie = p.position === 'G' || p.position === 'Goalie';
-    
-    const stats = p.featuredStats?.regularSeason?.subSeason || {};
-    const career = p.featuredStats?.regularSeason?.career || {};
-    
-    const targetGameTypeId = seasonType === 'regular' ? 2 : 3;
-    
-    const nhlSeasons = (p.seasonTotals || [])
-        .filter(s => s.leagueAbbrev === 'NHL' && s.gameTypeId === targetGameTypeId)
-        .reverse();
+    const season = player.featuredStats?.season;
+    const current = player.featuredStats?.regularSeason?.subSeason ?? null;
+    const currentPlayoffs = player.featuredStats?.playoffs?.subSeason ?? null;
+    const career = player.careerTotals?.regularSeason ?? null;
 
-    const currentId = p.playerId || p.id;
-    const isFav = favPlayers?.includes(currentId);
-    const isFantasy = fantasyTeam?.some(f => f.id === currentId);
+    const rows = useMemo(() => seasonRows(player, gameType, scope === 'NHL'), [player, gameType, scope]);
+    const hasOtherLeagues = (player.seasonTotals ?? []).some((s) => s.leagueAbbrev !== 'NHL');
+
+    const age = ageFrom(player.birthDate);
+    const draft = player.draftDetails;
+
+    // --- Ruudut ---
+    const skaterTiles = (s) => [
+        { label: fi ? 'Ottelut' : 'Games', value: int(s.gamesPlayed) },
+        { label: fi ? 'Maalit' : 'Goals', value: int(s.goals) },
+        { label: fi ? 'Syötöt' : 'Assists', value: int(s.assists) },
+        { label: fi ? 'Pisteet' : 'Points', value: int(s.points), tone: 'accent' },
+        { label: '+/−', value: signed(s.plusMinus), tone: s.plusMinus > 0 ? 'positive' : s.plusMinus < 0 ? 'negative' : undefined },
+        { label: fi ? 'Pisteet/ottelu' : 'Points/game', value: s.gamesPlayed ? dec(s.points / s.gamesPlayed, 2, lang) : '–' },
+    ];
+
+    const goalieTiles = (s) => [
+        { label: fi ? 'Ottelut' : 'Games', value: int(s.gamesPlayed) },
+        { label: fi ? 'Voitot' : 'Wins', value: int(s.wins), tone: 'accent' },
+        { label: fi ? 'Torjunta-%' : 'Save %', value: pct(s.savePctg, 1, lang) },
+        { label: fi ? 'PÄM' : 'GAA', value: dec(s.goalsAgainstAvg, 2, lang) },
+        { label: fi ? 'Nollapelit' : 'Shutouts', value: int(s.shutouts) },
+        { label: fi ? 'H / JAH' : 'L / OTL', value: `${int(s.losses)} / ${int(s.otLosses)}` },
+    ];
+
+    const tilesFor = (s) => (isGoalie ? goalieTiles(s) : skaterTiles(s));
+
+    // --- Kausittainen taulukko ---
+    const seasonColumn = { key: 'season', label: fi ? 'Kausi' : 'Season', format: (v) => seasonLabel(v).slice(2), width: '52px' };
+    const columns = isGoalie
+        ? [
+            seasonColumn,
+            { key: 'gp', label: fi ? 'O' : 'GP', title: fi ? 'Ottelut' : 'Games', format: int },
+            { key: 'wins', label: fi ? 'V' : 'W', title: fi ? 'Voitot' : 'Wins', format: int },
+            { key: 'gaa', label: fi ? 'PÄM' : 'GAA', title: fi ? 'Päästetyt maalit per ottelu' : 'Goals against average', format: (v) => dec(v, 2, lang), lowerIsBetter: true },
+            { key: 'savePct', label: fi ? 'T%' : 'SV%', title: fi ? 'Torjuntaprosentti' : 'Save percentage', format: (v) => pct(v, 1, lang) },
+        ]
+        : [
+            seasonColumn,
+            { key: 'gp', label: fi ? 'O' : 'GP', title: fi ? 'Ottelut' : 'Games', format: int },
+            { key: 'goals', label: fi ? 'M' : 'G', title: fi ? 'Maalit' : 'Goals', format: int },
+            { key: 'assists', label: fi ? 'S' : 'A', title: fi ? 'Syötöt' : 'Assists', format: int },
+            { key: 'points', label: 'P', title: fi ? 'Pisteet' : 'Points', format: int },
+        ];
+
+    // Palkinnot ryhmiteltynä: "Stanley Cup 2026".
+    const awards = (player.awards ?? []).map((a) => ({
+        name: a.trophy?.default,
+        years: (a.seasons ?? []).map((s) => String(s.seasonId).slice(4)).join(', '),
+    }));
 
     return (
-        <>
-            <div style={{ textAlign: 'center', position: 'relative', paddingBottom: '10px' }}>
-                
-                {/* 1. KORJATTU: POISTETTU teamLogo JA KORVATTU TeamBadge-komponentilla */}
-                <div style={{ position: 'absolute', left: 0, top: 0, opacity: 0.8 }}>
-                    {p.currentTeamAbbrev && <TeamBadge abbrev={p.currentTeamAbbrev} size={40} />}
+        <div className="player-card-v2">
+            {/* Tunnisteosa: pelinumero vesileimana joukkueen värissä. */}
+            <div className="pc2-hero" style={{ '--team': teamColour }}>
+                <div className="pc2-hero-text">
+                    <span className="pc2-team">{player.fullTeamName?.default ?? teamNickname(player.currentTeamAbbrev)}</span>
+                    <span className="pc2-role">
+                        {[positionName(player.position, lang), handedness(player.shootsCatches, isGoalie, lang)].filter(Boolean).join(' · ')}
+                    </span>
                 </div>
+                {player.sweaterNumber && <span className="pc2-number" aria-hidden="true">{player.sweaterNumber}</span>}
+            </div>
 
-                {/* 2. KORJATTU: POISTETTU headshot-kuva JA KORVATTU TYYLITELLYLLÄ IKONILLA */}
-                <div style={{ 
-                    width: '90px', 
-                    height: '90px', 
-                    borderRadius: '50%', 
-                    border: '2px solid var(--border-subtle)', 
-                    margin: '10px auto 0 auto', 
-                    backgroundColor: 'var(--surface-sunken)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: '3rem',
-                    color: 'var(--text-tertiary)'
-                }}>
-                    👤
-                </div>
-                
-                <h2 style={{ margin: '10px 0 5px 0', color: 'var(--text-primary)', fontSize: '1.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '5px' }}>
-                    <button 
-                        className={`fav-sydan ${isFav ? 'aktiivinen' : ''}`} 
-                        onClick={() => toggleFavPlayer(currentId)}
-                        style={{ fontSize: '1.8rem' }}
-                    >
-                        {isFav ? '♥' : '♡'}
-                    </button>
-                    
-                    #{p.sweaterNumber} {p.firstName?.default} {p.lastName?.default}
-                    
-                    <button 
-                        className={`fav-tahti ${isFantasy ? 'aktiivinen' : ''}`} 
-                        onClick={() => toggleFantasyPlayer({ id: currentId, name: `${p.firstName?.default} ${p.lastName?.default}`, position: p.position })}
-                        style={{ fontSize: '1.6rem' }}
-                    >
-                        {isFantasy ? '★' : '☆'}
-                    </button>
-                </h2>
-                <div style={{ color: 'var(--text-tertiary)', fontSize: '0.85rem', marginBottom: '20px' }}>
-                    {p.position} | {p.heightInCentimeters} cm | {p.weightInKilograms} kg | {p.birthCountry}
-                </div>
-            </div>
-            
-            <div style={{ color: 'var(--accent-blue)', fontWeight: 'bold', marginBottom: '8px', fontSize: '0.9rem' }}>{t.pmLatest} (Runkosarja)</div>
-            <div style={{ display: 'flex', justifyContent: 'space-around', background: 'var(--surface-sunken)', padding: '12px', borderRadius: '8px', marginBottom: '20px', border: '1px solid var(--border-subtle)' }}>
-                {isGoalie ? (
-                    <>
-                        <StatBox value={stats.gamesPlayed} label="GP" />
-                        <StatBox value={stats.wins} label="W" color="#4ade80" />
-                        <StatBox value={(stats.goalsAgainstAverage || 0).toFixed(2)} label="GAA" />
-                        <StatBox value={(stats.savePctg || 0).toFixed(3)} label="SV%" color="var(--accent-blue)" />
-                    </>
+            <div className="facts pc2-facts">
+                {age !== null && (
+                    <span className="fact"><IconCake size={14} stroke={2} aria-hidden="true" />
+                        <strong>{age} v</strong> {longDate(player.birthDate, lang)}
+                    </span>
+                )}
+                {(player.birthCity || player.birthCountry) && (
+                    <span className="fact"><IconMapPin size={14} stroke={2} aria-hidden="true" />
+                        {[player.birthCity?.default, countryName(player.birthCountry, lang)].filter(Boolean).join(', ')}
+                    </span>
+                )}
+                {player.heightInCentimeters && (
+                    <span className="fact"><IconRuler2 size={14} stroke={2} aria-hidden="true" />
+                        {player.heightInCentimeters} cm · {player.weightInKilograms} kg
+                    </span>
+                )}
+                {draft ? (
+                    <span className="fact"><IconTicket size={14} stroke={2} aria-hidden="true" />
+                        Draft <strong>{draft.year}</strong> · {draft.overallPick}. ({draft.teamAbbrev})
+                    </span>
                 ) : (
-                    <>
-                        <StatBox value={stats.goals} label={t.pmGoals} />
-                        <StatBox value={stats.assists} label={t.pmAssists} />
-                        <StatBox value={stats.points} label={t.pmPoints} color="var(--accent-blue)" />
-                    </>
+                    <span className="fact"><IconHandFinger size={14} stroke={2} aria-hidden="true" />
+                        {fi ? 'Varaamaton' : 'Undrafted'}
+                    </span>
                 )}
             </div>
-            
-            <div style={{ color: 'var(--gold)', fontWeight: 'bold', marginBottom: '8px', fontSize: '0.9rem' }}>{t.pmCareer} (Runkosarja)</div>
-            <div style={{ display: 'flex', justifyContent: 'space-around', background: 'var(--surface-sunken)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                {isGoalie ? (
-                    <>
-                        <StatBox value={career.gamesPlayed} label="GP" />
-                        <StatBox value={career.wins} label="W" color="#4ade80" />
-                        <StatBox value={(career.goalsAgainstAverage || 0).toFixed(2)} label="GAA" />
-                        <StatBox value={(career.savePctg || 0).toFixed(3)} label="SV%" color="var(--accent-blue)" />
-                    </>
-                ) : (
-                    <>
-                        <StatBox value={career.goals} label={t.pmGoals} />
-                        <StatBox value={career.assists} label={t.pmAssists} />
-                        <StatBox value={career.points} label={t.pmPoints} color="#ffcc00" />
-                        <StatBox value={career.gamesPlayed} label={t.pmGames} />
-                    </>
-                )}
-            </div>
-            
-            <div style={{ marginTop: '30px' }}>
-                
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                    <h3 style={{ margin: '0', fontSize: '0.9rem', color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>{t.pmSeasonBySeason}</h3>
-                    <div style={{ display: 'flex', gap: '5px', background: 'var(--surface-sunken)', padding: '3px', borderRadius: '6px' }}>
-                        <button 
-                            onClick={() => setSeasonType('regular')}
-                            style={{ background: seasonType === 'regular' ? 'var(--accent-blue)' : 'transparent', color: seasonType === 'regular' ? '#000' : 'var(--text-tertiary)', border: 'none', padding: '4px 8px', fontSize: '0.7rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-                        >
-                            {t.pmRegularSeason || "RUNKOSARJA"}
-                        </button>
-                        <button 
-                            onClick={() => setSeasonType('playoffs')}
-                            style={{ background: seasonType === 'playoffs' ? 'var(--accent-blue)' : 'transparent', color: seasonType === 'playoffs' ? '#000' : 'var(--text-tertiary)', border: 'none', padding: '4px 8px', fontSize: '0.7rem', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}
-                        >
-                            {t.pmPlayoffs || "PLAYOFF"}
-                        </button>
+
+            {awards.length > 0 && (
+                <div className="awards pc2-awards">
+                    {awards.map((a) => (
+                        <span key={a.name} className="award">
+                            <IconTrophy size={14} stroke={2} aria-hidden="true" />
+                            {a.name} {a.years}
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            {current && (
+                <section className="card-section">
+                    <div className="card-section-head">
+                        <h3 className="card-section-title">{fi ? 'Kausi' : 'Season'} {seasonLabel(season)}</h3>
+                        {currentPlayoffs?.gamesPlayed > 0 && (
+                            <span className="pc2-note">
+                                {fi ? 'Pudotuspelit' : 'Playoffs'}: {isGoalie
+                                    ? `${currentPlayoffs.gamesPlayed} O · ${pct(currentPlayoffs.savePctg, 1, lang)} %`
+                                    : `${currentPlayoffs.gamesPlayed} O · ${currentPlayoffs.goals}+${currentPlayoffs.assists}=${currentPlayoffs.points}`}
+                            </span>
+                        )}
                     </div>
-                </div>
+                    <StatTiles tiles={tilesFor(current)} />
+                </section>
+            )}
 
-                <div style={{ width: '100%', overflowX: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'auto' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid var(--border-strong)', color: 'var(--text-tertiary)', fontSize: '0.7rem' }}>
-                                <th style={{ padding: '4px 1px', fontWeight: 'normal', textAlign: 'left' }}>{t.pmSeason}</th>
-                                <th style={{ padding: '4px 1px', fontWeight: 'normal', textAlign: 'left' }}>{t.pmTeam}</th>
-                                <th style={{ padding: '4px 1px', fontWeight: 'normal', textAlign: 'center' }}>GP</th>
-                                {isGoalie ? (
-                                    <>
-                                        <th style={{ padding: '4px 1px', fontWeight: 'normal', textAlign: 'center' }}>W</th>
-                                        <th style={{ padding: '4px 1px', fontWeight: 'normal', textAlign: 'center' }}>GAA</th>
-                                        <th style={{ padding: '4px 1px', fontWeight: 'bold', color: 'var(--text-tertiary)', textAlign: 'center' }}>SV%</th>
-                                    </>
-                                ) : (
-                                    <>
-                                        <th style={{ padding: '4px 1px', fontWeight: 'normal', textAlign: 'center' }}>M</th>
-                                        <th style={{ padding: '4px 1px', fontWeight: 'normal', textAlign: 'center' }}>S</th>
-                                        <th style={{ padding: '4px 1px', fontWeight: 'bold', color: 'var(--text-tertiary)', textAlign: 'center' }}>P</th>
-                                    </>
-                                )}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {nhlSeasons.length === 0 ? (
-                                <tr>
-                                    <td colSpan="6" style={{ textAlign: 'center', padding: '20px', color: 'var(--text-tertiary)', fontStyle: 'italic' }}>
-                                        Ei tilastoja tästä kategoriasta.
-                                    </td>
-                                </tr>
-                            ) : (
-                                nhlSeasons.map((s, index) => {
-                                    const seasonStr = s.season.toString();
-                                    const shortSeason = seasonStr.substring(2, 4) + '-' + seasonStr.substring(6, 8);
+            {career && (
+                <section className="card-section">
+                    <div className="card-section-head">
+                        <h3 className="card-section-title">{fi ? 'NHL-ura' : 'NHL career'}</h3>
+                    </div>
+                    <StatTiles tiles={tilesFor(career)} />
+                </section>
+            )}
 
-                                    return (
-                                        <tr key={index} style={{ borderBottom: '1px dashed #333' }}>
-                                            <td style={{ padding: '5px 1px', fontSize: '0.8rem', color: 'var(--text-tertiary)', textAlign: 'left' }}>{shortSeason}</td>
-                                            <td style={{ padding: '5px 1px', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-secondary)', textAlign: 'left' }}>{s.teamName?.default}</td>
-                                            <td style={{ padding: '5px 1px', fontSize: '0.8rem', color: 'var(--text-tertiary)', textAlign: 'center' }}>{s.gamesPlayed || 0}</td>
-                                            
-                                            {isGoalie ? (
-                                                <>
-                                                    <td style={{ padding: '5px 1px', fontSize: '0.8rem', color: 'var(--positive)', textAlign: 'center' }}>{s.wins || 0}</td>
-                                                    <td style={{ padding: '5px 1px', fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center' }}>{(s.goalsAgainstAverage || 0).toFixed(2)}</td>
-                                                    <td style={{ padding: '5px 1px', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--accent-blue)', textAlign: 'center' }}>{(s.savePctg || 0).toFixed(3)}</td>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <td style={{ padding: '5px 1px', fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center' }}>{s.goals || 0}</td>
-                                                    <td style={{ padding: '5px 1px', fontSize: '0.8rem', color: 'var(--text-secondary)', textAlign: 'center' }}>{s.assists || 0}</td>
-                                                    <td style={{ padding: '5px 1px', fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--accent-blue)', textAlign: 'center' }}>{s.points || 0}</td>
-                                                </>
-                                            )}
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
+            <EdgeSection playerId={player.playerId} isGoalie={isGoalie} lang={lang} />
+
+            {player.last5Games?.length > 0 && (
+                <section className="card-section">
+                    <div className="card-section-head">
+                        <h3 className="card-section-title">{fi ? 'Viimeiset ottelut' : 'Last games'}</h3>
+                    </div>
+                    <ul className="recent-games">
+                        {player.last5Games.map((g) => (
+                            <li key={g.gameId}>
+                                <button
+                                    type="button"
+                                    className="recent-game"
+                                    onClick={() => onGameClick?.({
+                                        id: g.gameId,
+                                        homeTeam: { abbrev: g.homeRoadFlag === 'H' ? g.teamAbbrev : g.opponentAbbrev },
+                                        awayTeam: { abbrev: g.homeRoadFlag === 'H' ? g.opponentAbbrev : g.teamAbbrev },
+                                    })}
+                                >
+                                    <span className="recent-date">{shortDate(g.gameDate, lang)}</span>
+                                    <span className="recent-opp">
+                                        <span className="recent-at">{g.homeRoadFlag === 'H' ? 'vs' : '@'}</span>
+                                        <span className="dt-dot" style={{ background: (teamColors[g.opponentAbbrev] ?? DEFAULT_TEAM_COLORS)[0] }} aria-hidden="true" />
+                                        {g.opponentAbbrev}
+                                        {g.gameTypeId === 3 && <span className="dt-tag">PO</span>}
+                                    </span>
+                                    {isGoalie ? (
+                                        <span className="recent-line num">
+                                            {g.decision && <span className={`recent-decision d-${g.decision}`}>{g.decision}</span>}
+                                            {g.shotsAgainst - g.goalsAgainst}/{g.shotsAgainst}
+                                        </span>
+                                    ) : (
+                                        <span className="recent-line num">
+                                            <strong className={g.points > 0 ? 'has-points' : ''}>{g.goals}+{g.assists}</strong>
+                                            <span className="recent-pm">{signed(g.plusMinus)}</span>
+                                        </span>
+                                    )}
+                                    <span className="recent-toi num">{g.toi}</span>
+                                </button>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            )}
+
+            {form?.games?.length > 0 && !isGoalie && (
+                <section className="card-section">
+                    <div className="card-section-head">
+                        <h3 className="card-section-title">{fi ? 'Muoto otteluittain' : 'Form by game'}</h3>
+                    </div>
+                    <PlayerForm data={form} language={lang} />
+                </section>
+            )}
+
+            <section className="card-section">
+                <div className="card-section-head">
+                    <h3 className="card-section-title">{fi ? 'Kausittain' : 'By season'}</h3>
+                    <Segmented
+                        size="sm"
+                        label={fi ? 'Ottelutyyppi' : 'Game type'}
+                        value={gameType}
+                        onChange={setGameType}
+                        options={[
+                            { value: 2, label: fi ? 'Runkosarja' : 'Regular' },
+                            { value: 3, label: fi ? 'Pudotuspelit' : 'Playoffs' },
+                        ]}
+                    />
                 </div>
-            </div>
-        </>
+                {hasOtherLeagues && (
+                    <div style={{ marginBottom: 'var(--space-2)' }}>
+                        <Chips
+                            label={fi ? 'Sarjat' : 'Leagues'}
+                            value={scope}
+                            onChange={setScope}
+                            options={[
+                                { value: 'NHL', label: 'NHL' },
+                                { value: 'all', label: fi ? 'Koko ura' : 'Full career' },
+                            ]}
+                        />
+                    </div>
+                )}
+                <DataTable
+                    key={`${gameType}:${scope}`}
+                    rows={rows}
+                    columns={columns}
+                    identity={{
+                        label: fi ? 'Joukkue' : 'Team',
+                        render: (row) => (
+                            <span className="dt-person-text">
+                                <span className="dt-name">{row.team}</span>
+                                {row.league !== 'NHL' && <span className="dt-meta">{row.league}</span>}
+                            </span>
+                        ),
+                    }}
+                    defaultSort={{ key: 'season', dir: 'desc' }}
+                    showRank={false}
+                    tiesShareRank={false}
+                    pageSize={100}
+                    language={lang}
+                    caption={fi ? 'Tilastot kausittain' : 'Stats by season'}
+                />
+            </section>
+        </div>
     );
-};
+}
 
-const StatBox = ({ value, label, color = 'var(--text-primary)' }) => (
-    <div style={{ textAlign: 'center' }}>
-        <span style={{ display: 'block', fontSize: '1.2rem', fontWeight: 'bold', color: color }}>{value || 0}</span>
-        <span style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)' }}>{label}</span>
-    </div>
-);
+/**
+ * NHL EDGE: pelaajan mittaukset suhteessa liigaan. Palkki kertoo persentiilin
+ * (kuinka suuri osa liigan pelaajista jää alle), viiva liigan keskiarvon.
+ */
+function EdgeSection({ playerId, isGoalie, lang }) {
+    const fi = lang === 'fi';
+    const { data } = useFetchWhenOpen(
+        Boolean(playerId),
+        (signal) => api.edgePlayer(playerId, isGoalie, { signal }),
+        [playerId, isGoalie],
+    );
+    if (!data) return null;
 
-export default PlayerModal;
+    const d1 = (v) => dec(v, 1, lang);
+    const rows = isGoalie
+        ? [
+            { key: 'savePct', label: fi ? 'Torjunta-%' : 'Save %', m: data.savePct, fmt: (v) => pct(v, 1, lang) },
+            { key: 'hdSavePct', label: fi ? 'Vaaralliset, torjunta-%' : 'High-danger save %', m: data.hdSavePct, fmt: (v) => pct(v, 1, lang) },
+            { key: 'gaa', label: fi ? 'Päästetyt / ottelu' : 'Goals against avg', m: data.gaa, fmt: (v) => dec(v, 2, lang) },
+            { key: 'gamesAbove900', label: fi ? 'Ottelut yli ,900' : 'Games above .900', m: data.gamesAbove900, fmt: (v) => `${pct(v, 0, lang)} %` },
+            { key: 'goalSupport', label: fi ? 'Maalituki / ottelu' : 'Goal support', m: data.goalSupport, fmt: (v) => dec(v, 2, lang) },
+        ]
+        : [
+            { key: 'maxSpeed', label: fi ? 'Huippunopeus' : 'Top speed', m: data.maxSpeed, fmt: (v) => `${d1(v)} km/h` },
+            { key: 'bursts20', label: fi ? 'Pyrähdykset yli 32 km/h' : 'Bursts over 20 mph', m: data.bursts20, fmt: int },
+            { key: 'topShot', label: fi ? 'Kovin laukaus' : 'Hardest shot', m: data.topShot, fmt: (v) => `${d1(v)} km/h` },
+            { key: 'distance', label: fi ? 'Luisteltu matka' : 'Distance skated', m: data.distance, fmt: (v) => `${d1(v)} km` },
+            { key: 'ozPct', label: fi ? 'Aika hyökkäysalueella' : 'Offensive-zone time', m: data.ozPct, fmt: (v) => `${pct(v, 1, lang)} %` },
+            { key: 'shots', label: fi ? 'Laukaukset' : 'Shots', m: data.shots, fmt: int },
+        ];
+
+    const visible = rows.filter((r) => r.m && r.m.value != null);
+    if (visible.length === 0) return null;
+
+    return (
+        <section className="card-section">
+            <div className="card-section-head">
+                <h3 className="card-section-title">NHL EDGE {seasonLabel(data.season)}</h3>
+                <span className="pc2-note">{fi ? 'persentiili liigassa' : 'league percentile'}</span>
+            </div>
+            <ul className="edge-list">
+                {visible.map((r) => {
+                    const p = r.m.percentile != null ? Math.round(r.m.percentile * 100) : null;
+                    return (
+                        <li key={r.key} className="edge-item">
+                            <span className="edge-label">{r.label}</span>
+                            <span className="edge-value num">{r.fmt(r.m.value)}</span>
+                            <span className="edge-bar" aria-hidden="true">
+                                <span className={`edge-fill ${p >= 90 ? 'is-elite' : p >= 70 ? 'is-good' : ''}`} style={{ width: `${Math.max(3, p ?? 0)}%` }} />
+                            </span>
+                            <span className="edge-pct num">{p != null ? `${p}.` : '–'}</span>
+                        </li>
+                    );
+                })}
+            </ul>
+        </section>
+    );
+}

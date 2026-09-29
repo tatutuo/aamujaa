@@ -1,128 +1,151 @@
-import React, { useState, useEffect } from 'react';
-import { translations } from '../utils/translations';
+import React, { useEffect, useState } from 'react';
+import { IconSearch, IconX, IconClock, IconChevronRight } from '@tabler/icons-react';
+import Sheet from './Sheet';
 import { api } from '../utils/api';
-import TeamBadge from './TeamBadge';
+import { usePersistentState } from '../hooks/usePersistentState';
+import { teamColors, DEFAULT_TEAM_COLORS } from '../utils/teamColors';
+import { teamNickname } from '../utils/teams';
+import { positionLabel } from '../utils/positions';
 
 /**
- * Haku.
+ * Haku: pelaajat ja joukkueet oman palvelimen kautta.
  *
- * Muutokset vanhaan: joukkuelista tuli aiemmin kahdesta paikasta (tämä tiedosto
- * ja backend), ja pelaajahaku meni suoraan NHL:n hakupalveluun selaimesta ohi
- * oman palvelimen — eli ilman välimuistia ja käyttäjän IP paljastuen kolmannelle
- * osapuolelle. Nyt kaikki tulee omalta backendiltä yhdellä kutsulla.
+ * Tyhjällä kentällä näytetään viimeksi avatut, jotta usein katsottu pelaaja
+ * löytyy kahdella napautuksella ilman kirjoittamista.
  */
-const SearchModal = ({ isOpen, onClose, onPlayerClick, onTeamClick, language, zIndex = 99000 }) => {
-    const t = translations[language] || translations.fi;
-    const [query, setQuery] = useState('');
-    const [results, setResults] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState(null);
 
-    useEffect(() => {
-        if (!isOpen) {
-            setQuery('');
-            setResults([]);
-            setError(null);
-        }
-    }, [isOpen]);
+const RECENT_LIMIT = 8;
+const colourOf = (abbrev) => (teamColors[abbrev] ?? DEFAULT_TEAM_COLORS)[0];
+const keyOf = (r) => `${r.type}-${r.id ?? r.abbrev}`;
 
-    useEffect(() => {
-        if (query.trim().length < 2) {
-            setResults([]);
-            setError(null);
-            return undefined;
-        }
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-            setIsLoading(true);
-            setError(null);
-
-            api.search(query.trim(), { signal: controller.signal })
-                .then((data) => {
-                    setResults(data);
-                    setIsLoading(false);
-                })
-                .catch((err) => {
-                    if (err.name === 'AbortError') return;
-                    setError(err.message);
-                    setResults([]);
-                    setIsLoading(false);
-                });
-        }, 300);
-
-        return () => {
-            clearTimeout(timeoutId);
-            controller.abort();
-        };
-    }, [query]);
-
-    if (!isOpen) return null;
-
-    const handleSelect = (result) => {
-        if (result.type === 'PELAAJA' && onPlayerClick) onPlayerClick(result.id);
-        if (result.type === 'JOUKKUE' && onTeamClick) onTeamClick(result.abbrev);
-        setQuery('');
-    };
+export default function SearchModal({ isOpen, onClose, onPlayerClick, onTeamClick, language, zIndex = 99000 }) {
+    const fi = language !== 'en';
 
     return (
-        <div className="modal-overlay search-overlay" style={{ zIndex }} role="dialog" aria-modal="true">
-            <div className="search-panel">
-                <div className="search-input-row">
-                    <input
-                        autoFocus
-                        type="search"
-                        className="search-input"
-                        placeholder={t.searchPlaceholder}
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        aria-label={t.searchPlaceholder}
-                    />
-                    <button
-                        type="button"
-                        className="search-close"
-                        onClick={onClose}
-                        aria-label={language === 'fi' ? 'Sulje' : 'Close'}
-                    >
-                        &times;
+        <Sheet isOpen={isOpen} onClose={onClose} zIndex={zIndex} size="full" title={fi ? 'Haku' : 'Search'}>
+            {/* Oma komponentti, jotta hakutila nollautuu aina kun paneeli suljetaan. */}
+            {isOpen && <SearchContent fi={fi} language={language} onPlayerClick={onPlayerClick} onTeamClick={onTeamClick} />}
+        </Sheet>
+    );
+}
+
+function SearchContent({ fi, language, onPlayerClick, onTeamClick }) {
+    const [query, setQuery] = useState('');
+    const [state, setState] = useState({ results: [], isLoading: false, error: null, for: '' });
+    const [recent, setRecent] = usePersistentState('pucknower_recent_search', []);
+
+    const trimmed = query.trim();
+
+    useEffect(() => {
+        if (trimmed.length < 2) return undefined;
+        const controller = new AbortController();
+        const timer = setTimeout(() => {
+            setState((s) => ({ ...s, isLoading: true, error: null }));
+            api.search(trimmed, { signal: controller.signal })
+                .then((results) => setState({ results, isLoading: false, error: null, for: trimmed }))
+                .catch((err) => {
+                    if (err.name === 'AbortError') return;
+                    setState({ results: [], isLoading: false, error: err.message, for: trimmed });
+                });
+        }, 250);
+        return () => { clearTimeout(timer); controller.abort(); };
+    }, [trimmed]);
+
+    const open = (result) => {
+        setRecent((list) => [result, ...list.filter((r) => keyOf(r) !== keyOf(result))].slice(0, RECENT_LIMIT));
+        if (result.type === 'PELAAJA') onPlayerClick?.(result.id);
+        else onTeamClick?.(result.abbrev);
+    };
+
+    const searching = trimmed.length >= 2;
+    const results = searching ? state.results : [];
+    const teams = results.filter((r) => r.type === 'JOUKKUE');
+    const players = results.filter((r) => r.type === 'PELAAJA');
+
+    return (
+        <div className="search2">
+            <label className="search-field search2-field">
+                <IconSearch size={18} stroke={1.9} aria-hidden="true" />
+                <input
+                    autoFocus
+                    type="search"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder={fi ? 'Pelaaja tai joukkue' : 'Player or team'}
+                    aria-label={fi ? 'Hae pelaajaa tai joukkuetta' : 'Search players or teams'}
+                    autoComplete="off"
+                    spellCheck={false}
+                    enterKeyHint="search"
+                />
+                {query && (
+                    <button type="button" className="search-clear" onClick={() => setQuery('')} aria-label={fi ? 'Tyhjennä' : 'Clear'}>
+                        <IconX size={14} stroke={2} aria-hidden="true" />
                     </button>
-                </div>
+                )}
+            </label>
 
-                <div className="search-results">
-                    {isLoading && <div className="search-status">{t.searchLoading}</div>}
-                    {error && <div className="search-status search-status-error">{error}</div>}
+            {!searching && (
+                recent.length > 0 ? (
+                    <section className="search2-group">
+                        <div className="card-section-head">
+                            <h3 className="card-section-title">{fi ? 'Viimeksi avatut' : 'Recent'}</h3>
+                            <button type="button" className="link-button search2-clear" onClick={() => setRecent([])}>
+                                {fi ? 'Tyhjennä' : 'Clear'}
+                            </button>
+                        </div>
+                        <ResultList items={recent} fi={fi} language={language} onOpen={open} recentIcon />
+                    </section>
+                ) : (
+                    <p className="panel-hint">{fi ? 'Kirjoita vähintään kaksi kirjainta. Haku löytää myös uransa lopettaneet.' : 'Type at least two letters. Retired players are included.'}</p>
+                )
+            )}
 
-                    {results.map((result) => (
-                        <button
-                            type="button"
-                            key={`${result.type}-${result.id ?? result.abbrev}`}
-                            className="search-result"
-                            onClick={() => handleSelect(result)}
-                        >
-                            <span className="search-result-text">
-                                <span className={`search-result-type ${result.type === 'PELAAJA' ? 'is-player' : 'is-team'}`}>
-                                    {result.type === 'PELAAJA' ? t.searchPlayer : t.searchTeam}
-                                    {result.active === false && (language === 'fi' ? ' · ura päättynyt' : ' · retired')}
-                                </span>
-                                <span className="search-result-name">{result.name}</span>
-                            </span>
+            {searching && state.isLoading && results.length === 0 && <div className="loading-line" />}
+            {searching && state.error && <p className="notice">{state.error}</p>}
 
-                            {result.abbrev && (
-                                <span className="search-result-team">
-                                    {result.type === 'JOUKKUE' && <TeamBadge abbrev={result.abbrev} size={30} />}
-                                    <span className="search-result-abbrev">{result.abbrev}</span>
-                                </span>
-                            )}
-                        </button>
-                    ))}
+            {teams.length > 0 && (
+                <section className="search2-group">
+                    <h3 className="card-section-title">{fi ? 'Joukkueet' : 'Teams'}</h3>
+                    <ResultList items={teams} fi={fi} language={language} onOpen={open} />
+                </section>
+            )}
+            {players.length > 0 && (
+                <section className="search2-group">
+                    <h3 className="card-section-title">{fi ? 'Pelaajat' : 'Players'}</h3>
+                    <ResultList items={players} fi={fi} language={language} onOpen={open} />
+                </section>
+            )}
 
-                    {!isLoading && !error && query.trim().length > 1 && results.length === 0 && (
-                        <div className="search-status">{t.searchNoResults} &ldquo;{query}&rdquo;.</div>
-                    )}
-                </div>
-            </div>
+            {searching && !state.isLoading && !state.error && state.for === trimmed && results.length === 0 && (
+                <p className="panel-hint">{fi ? `Ei tuloksia haulla “${trimmed}”.` : `No results for “${trimmed}”.`}</p>
+            )}
         </div>
     );
-};
+}
 
-export default SearchModal;
+function ResultList({ items, fi, language, onOpen, recentIcon }) {
+    return (
+        <ul className="search2-list">
+            {items.map((r) => {
+                const isPlayer = r.type === 'PELAAJA';
+                const meta = isPlayer
+                    ? [r.abbrev, positionLabel(r.position, language), r.active === false && (fi ? 'ura päättynyt' : 'retired')].filter(Boolean).join(' · ')
+                    : `${fi ? 'Joukkue' : 'Team'} · ${teamNickname(r.abbrev)}`;
+                return (
+                    <li key={keyOf(r)}>
+                        <button type="button" className="search2-item" onClick={() => onOpen(r)}>
+                            {recentIcon
+                                ? <IconClock size={16} stroke={1.9} className="search2-icon" aria-hidden="true" />
+                                : <span className="dt-dot" style={{ background: r.abbrev ? colourOf(r.abbrev) : 'var(--border-strong)' }} aria-hidden="true" />}
+                            <span className="dt-person-text">
+                                <span className="dt-name">{r.name}</span>
+                                <span className="dt-meta">{meta}</span>
+                            </span>
+                            <IconChevronRight size={16} stroke={2} className="search2-chevron" aria-hidden="true" />
+                        </button>
+                    </li>
+                );
+            })}
+        </ul>
+    );
+}

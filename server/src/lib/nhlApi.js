@@ -14,7 +14,7 @@ const STATS_BASE = 'https://api.nhle.com/stats/rest/en';
 const SEARCH_BASE = 'https://search.d3.nhle.com/api/v1';
 
 const DEFAULT_TIMEOUT_MS = 12_000;
-const USER_AGENT = 'Aamujaa/2.0 (+https://d4nyyy.fi/hockey)';
+const USER_AGENT = 'pucknower/1.0 (+https://d4nyyy.fi/hockey)';
 
 export class NhlApiError extends Error {
     constructor(message, status) {
@@ -68,8 +68,13 @@ export const search = (path, opts) => request(`${SEARCH_BASE}${path}`, opts);
  * ei tarvitse muistaa encodeURIComponentia — vanhassa koodissa osa kyselyistä oli
  * koodattu käsin %20-merkeillä ja osa ei, mikä johti satunnaisiin 400-virheisiin.
  */
-export function stats(resource, { limit = 100, sort, cayenneExp, factCayenneExp, start } = {}, opts) {
+export function stats(resource, { limit = 100, sort, cayenneExp, factCayenneExp, start, isAggregate } = {}, opts) {
     const params = new URLSearchParams();
+    // isAggregate summaa kaikki kaudet pelaajittain (uratilastot).
+    if (isAggregate) {
+        params.set('isAggregate', 'true');
+        params.set('isGame', 'false');
+    }
     params.set('limit', String(limit));
     if (start !== undefined) params.set('start', String(start));
     if (sort) params.set('sort', JSON.stringify(sort));

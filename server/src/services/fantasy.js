@@ -42,6 +42,10 @@ function penaltyCategory(details) {
 }
 
 const emptyPlayer = () => ({
+    // Maalitapahtumista lasketut maalit ja syötöt. Tarvitaan maalivahdeille,
+    // joiden boxscore-rivillä niitä ei ole lainkaan.
+    eventGoals: 0,
+    eventAssists: 0,
     shorthandedGoals: 0,
     shorthandedAssists: 0,
     overtimeGoals: 0,
@@ -89,6 +93,8 @@ export async function getFantasyEvents(gameId) {
             if (isShootout) continue;
 
             const scorer = get(goal.playerId);
+            scorer.eventGoals += 1;
+            for (const assist of goal.assists ?? []) get(assist.playerId).eventAssists += 1;
 
             if (goal.strength === 'sh') {
                 scorer.shorthandedGoals += 1;
@@ -100,8 +106,9 @@ export async function getFantasyEvents(gameId) {
             if (goal.period?.periodType === 'OT') scorer.overtimeGoals += 1;
         }
 
-        // Voittomaali: voittajan (häviäjän maalit + 1). teline pitää sisällään
-        // myös voittolaukauksen, joka on NHL:ssä ottelun ratkaissut maali.
+        // Voittomaali on voittajan (häviäjän maalit + 1). maali. Voittolaukauskilpailussa
+        // NHL listaa maaleihin vain ratkaisevan laukauksen, ja se saa säännöissä
+        // voittomaalin pisteet.
         const homeScore = landing.homeTeam?.score ?? 0;
         const awayScore = landing.awayTeam?.score ?? 0;
         if (homeScore !== awayScore) {
@@ -139,8 +146,7 @@ export async function getFantasyEvents(gameId) {
 
         return {
             gameId: Number(gameId),
-            // 2 = runkosarja, 3 = pudotuspelit. Voittomaalipisteet ovat
-            // säännöissä käytössä vain runkosarjassa.
+            // 2 = runkosarja, 3 = pudotuspelit.
             gameType: landing.gameType ?? 2,
             players: Object.fromEntries(players),
             stars,
@@ -187,6 +193,9 @@ export async function getFantasyStats(playerIds, date) {
             const stats = box.playerByGameStats[side];
             if (!stats) continue;
 
+            // Nollapeli edellyttää, että sama vahti pelasi koko ottelun.
+            const goaliesUsed = (stats.goalies ?? []).filter((g) => g.toi && g.toi !== '00:00').length;
+
             for (const group of ['forwards', 'defense', 'goalies']) {
                 for (const p of stats[group] ?? []) {
                     if (!wanted.has(Number(p.playerId))) continue;
@@ -199,7 +208,7 @@ export async function getFantasyStats(playerIds, date) {
                         gameState: game.gameState,
                         played,
                         position: p.position,
-                        isRegularSeason: (events?.gameType ?? 2) === 2,
+                        fullGame: group === 'goalies' ? goaliesUsed === 1 : undefined,
                         starRank: events?.stars?.[p.playerId] ?? null,
                         // Boxscoren perustilastot sellaisenaan. Mukana myös
                         // peliaika ja torjuntaprosentti, jotta pelaajakortti

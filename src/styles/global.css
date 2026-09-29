@@ -162,14 +162,12 @@ h1 {
     text-shadow: 0 0 10px rgba(0, 168, 255, 0.7);
 }
 
-
 .container {
     max-width: 1000px;
     margin: 0 auto;
     padding: 20px;
     text-align: center;
 }
-
 
 /* --- UUDET TIIVIIT PELIKORTIT --- */
 .games-container {
@@ -838,7 +836,6 @@ h1 {
 /* UUSI: Puolustajien aito vaaleansininen/turkoosi */
 .ttv-cyan { color: #00ffff; text-shadow: 0 0 5px rgba(0, 255, 255, 0.5); }
 
-
 /* --- PELAAJAKORTIN SULKEMISNAPPI --- */
 .close-card-btn {
     position: absolute;
@@ -873,37 +870,6 @@ body.tv-mode .close-card-btn:hover {
     padding: 15px;
 }
 
-.sched-card {
-    display: flex;
-    flex-direction: column;
-    background: rgba(255,255,255,0.05);
-    border: 1px solid #444;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    padding: 10px;
-    scroll-margin-top: 80px; /* Estää yläpalkkia peittämästä korttia kun hypätään alas! */
-}
-
-.sched-header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 10px;
-    border-bottom: 1px solid #333;
-    padding-bottom: 5px;
-}
-
-.sched-logo {
-    width: 40px;
-    height: 40px;
-    margin-right: 15px;
-}
-
-.sched-team-name {
-    font-size: 1.2rem;
-    font-weight: bold;
-    flex-grow: 1;
-}
-
 .sched-count {
     background: #00d4ff;
     color: #000;
@@ -912,48 +878,6 @@ body.tv-mode .close-card-btn:hover {
     font-weight: bold;
     font-size: 0.9rem;
 }
-
-/* --- RULLAAVA KALENTERIRIVI --- */
-.sched-days {
-    display: flex; /* Muutettu gridistä flexiksi */
-    overflow-x: auto; /* Sallii sivuttaisrullauksen! */
-    gap: 6px;
-    padding-bottom: 10px; /* Tilaa rullapalkille */
-    -webkit-overflow-scrolling: touch; /* Sulava vieritys iPhonella */
-}
-
-/* Tyylitelty rullapalkki */
-.sched-days::-webkit-scrollbar { height: 6px; }
-.sched-days::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
-.sched-days::-webkit-scrollbar-track { background: transparent; }
-
-.sched-day-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 4px;
-    border-radius: 6px;
-    font-size: 0.75rem;
-    font-weight: bold;
-    text-align: center;
-    color: #fff;
-    
-    /* UUSI: Estää laattojen litistymisen kasaan! */
-    min-width: 50px; 
-    flex-shrink: 0; 
-}
-
-.sched-date {
-    font-size: 0.65rem;
-    color: rgba(255,255,255,0.6);
-    margin-bottom: 3px;
-}
-
-/* Värikoodaukset */
-.day-off { background: #222; border: 1px solid #333; }
-.day-home { background: #1e5a22; border: 1px solid #2e8a34; } /* Vihreä kotipeli */
-.day-away { background: #8a2e2e; border: 1px solid #c44141; } /* Punainen vieraspeli */
 
 /* --- AIKAVÄLIN VALINTANAPIT --- */
 .sched-filter-container {
@@ -985,17 +909,6 @@ body.tv-mode .close-card-btn:hover {
     opacity: 0.5;
     cursor: not-allowed;
     pointer-events: none; /* Estää klikkaukset kokonaan */
-}
-
-.sched-stats {
-    font-size: 0.85rem;
-    color: #ccc;
-    background: rgba(0,0,0,0.4);
-    padding: 4px 10px;
-    border-radius: 6px;
-    border: 1px solid #444;
-    font-family: 'Teko', sans-serif;
-    letter-spacing: 1px;
 }
 
 /* --- UUSI: MOBIILIN YLÄPALKIN HIENOSÄÄTÖ --- */
@@ -1043,22 +956,6 @@ body.tv-mode .close-card-btn:hover {
   `filter: grayscale(1)` -säännöllä.
 */
 
-/* --- UUDET: KUSTOMOITU KALENTERIHAKU --- */
-.date-input {
-    background: #222;
-    color: #fff;
-    border: 1px solid #444;
-    padding: 8px 10px;
-    border-radius: 6px;
-    font-family: 'Roboto', sans-serif;
-    color-scheme: dark; /* Tekee kalenteriponnahdusikkunasta mobiilissa tumman teeman mukaisen! */
-    outline: none;
-}
-
-.date-input:focus {
-    border-color: #00d4ff;
-}
-
 .date-search-btn {
     background: #00d4ff;
     color: #000;
@@ -1079,7 +976,6 @@ body.tv-mode .close-card-btn:hover {
 
 /* Pienennetään napin kokoa hieman mobiilissa, jotta kaikki mahtuu yhdelle riville */
 @media (max-width: 600px) {
-    .date-input { padding: 6px 5px; font-size: 0.85rem; }
     .date-search-btn { padding: 6px 12px; font-size: 1.1rem; }
 }
 
@@ -1194,32 +1090,6 @@ footer {
     100% { transform: scale(1.05); filter: drop-shadow(0 0 30px rgba(0, 212, 255, 1)); }
 }
 
-/* --- UUSI: PIKAHYPPYLINKIT --- */
-.quick-jump-row {
-    display: flex;
-    overflow-x: auto;
-    gap: 12px;
-    padding: 10px 5px;
-    margin-bottom: 15px;
-    -webkit-overflow-scrolling: touch;
-}
-
-.quick-jump-row::-webkit-scrollbar { height: 6px; }
-.quick-jump-row::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
-
-.quick-logo {
-    width: 35px;
-    height: 35px;
-    cursor: pointer;
-    transition: transform 0.2s;
-    filter: drop-shadow(0 0 2px rgba(255,255,255,0.2));
-    flex-shrink: 0; /* Estää logojen litistymisen */
-}
-
-.quick-logo:hover {
-    transform: scale(1.2);
-}
-
 /* --- ETUSIVUN PÄIVÄMÄÄRÄNUOLET --- */
 .date-nav-btn {
     background: transparent;
@@ -1238,28 +1108,6 @@ footer {
 
 .date-nav-btn:active {
     transform: scale(0.9);
-}
-
-/* Sydän-ikonin asetukset mobiililaitteille optimoituna */
-.fav-sydan {
-  cursor: pointer;
-  color: #555; /* Tyhjä sydän on tumman harmaa, istuu paremmin teemaan */
-  font-size: 1.4rem;
-  background: none;
-  border: none;
-  padding: 5px; /* Hyvä kosketuspinta sormelle */
-  margin: -5px 0 -5px -5px; /* Estää napin paddingia rikkomasta joukkuelistan riviä */
-  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  outline: none;
-}
-
-.fav-sydan:hover, .fav-sydan:active { 
-  transform: scale(1.3); 
-}
-
-.fav-sydan.aktiivinen { 
-  color: #ff2a2a; 
-  text-shadow: 0 0 10px rgba(255, 42, 42, 0.5); 
 }
 
 /* Suosikkijoukkueen ottelukortin kultainen korostus (Jyrää liven yli!) */
@@ -1401,10 +1249,6 @@ footer {
   Ne olivat vaalean teeman varsinainen vika: sivu vaihtui vaaleaksi mutta
   sisältö jäi mustaksi. Nämä osat noudattavat nyt teemamuuttujia kuten muutkin.
 */
-
-/* --- SUOSIKIT JA FANTASY --- */
-.fav-sydan { transition: color 0.2s; background: none; border: none; cursor: pointer; color: #555; }
-.fav-sydan.aktiivinen { color: #87ceeb !important; text-shadow: 0 0 8px rgba(135, 206, 235, 0.5); } /* Vaaleansininen */
 
 .fav-tahti { transition: color 0.2s; background: none; border: none; cursor: pointer; color: #555; }
 .fav-tahti.aktiivinen { color: #ffd700 !important; text-shadow: 0 0 8px rgba(255, 215, 0, 0.5); } /* Kulta */

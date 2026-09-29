@@ -1,18 +1,27 @@
 {
-  "name": "Aamujää — NHL-tilastot",
-  "short_name": "Aamujää",
-  "description": "NHL-ottelut, tilastot, suosikkipelaajat ja ennusteet suomeksi. Ei mainoksia, ei seurantaa.",
+  "name": "pucknower — NHL-tilastot",
+  "short_name": "pucknower",
+  "description": "NHL-ottelut, sarjataulukot ja tilastot: odotusmaalit, luistelunopeudet, loukkaantumiset ja historia. Ei mainoksia, ei seurantaa.",
   "id": "/hockey/",
   "start_url": "/hockey/",
   "scope": "/hockey/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0a0a0a",
-  "theme_color": "#0a0a0a",
+  "background_color": "#1a1d21",
+  "theme_color": "#1a1d21",
   "lang": "fi",
   "dir": "ltr",
-  "categories": ["sports", "news"],
+  "categories": [
+    "sports",
+    "news"
+  ],
   "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "icon-512.png",
       "sizes": "512x512",
@@ -28,14 +37,14 @@
   ],
   "shortcuts": [
     {
-      "name": "Tilastot",
-      "short_name": "Tilastot",
-      "url": "/hockey/?view=stats"
+      "name": "Pistepörssi",
+      "short_name": "Pisteet",
+      "url": "/hockey/#/tilastot/pisteporssi"
     },
     {
       "name": "Sarjataulukko",
       "short_name": "Sarja",
-      "url": "/hockey/?view=standings"
+      "url": "/hockey/#/taulukot/sarjataulukko"
     }
   ]
 }

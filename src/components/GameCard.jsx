@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconHeart, IconHeartFilled } from '@tabler/icons-react';
 import { translations } from '../utils/translations';
 import TeamBadge from './TeamBadge';
 import { teamColors, DEFAULT_TEAM_COLORS } from '../utils/teamColors';
@@ -49,9 +50,13 @@ const GameCard = ({ game, onClick, favTeams, toggleFavTeam, language }) => {
             : `${periodLabel(game, t)} · ${game.clock?.timeRemaining ?? ''}`;
         statusTone = 'live';
     } else {
-        const type = game.periodDescriptor?.periodType;
-        statusLabel = type && type !== 'REG' ? `${t.gameFinal} (${type})` : t.gameFinal;
+        const type = game.gameOutcome?.lastPeriodType ?? game.periodDescriptor?.periodType;
+        const fi = language !== 'en';
+        const extra = type === 'OT' ? (fi ? 'JA' : 'OT') : type === 'SO' ? (fi ? 'VL' : 'SO') : null;
+        statusLabel = extra ? `${t.gameFinal} · ${extra}` : t.gameFinal;
     }
+
+    const typeTag = game.gameType === 1 ? (language === 'en' ? 'PRE' : 'HO') : game.gameType === 3 ? 'PO' : null;
 
     const winner = isUpcoming || isLive
         ? null
@@ -79,7 +84,7 @@ const GameCard = ({ game, onClick, favTeams, toggleFavTeam, language }) => {
                     aria-label={`${team.abbrev} ${isFav ? 'pois suosikeista' : 'suosikkeihin'}`}
                     aria-pressed={isFav}
                 >
-                    {isFav ? '★' : '☆'}
+                    {isFav ? <IconHeartFilled size={13} aria-hidden="true" /> : <IconHeart size={13} stroke={2} aria-hidden="true" />}
                 </button>
 
                 <span className="gc-score">{isUpcoming ? '–' : team.score ?? 0}</span>
@@ -115,6 +120,7 @@ const GameCard = ({ game, onClick, favTeams, toggleFavTeam, language }) => {
                 <div className={`gc-status gc-status-${statusTone}`}>
                     {isLive && <span className="gc-live-dot" aria-hidden="true" />}
                     {statusLabel}
+                    {typeTag && <span className="gc-type">{typeTag}</span>}
                 </div>
 
                 <div className="gc-teams">

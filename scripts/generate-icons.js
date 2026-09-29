@@ -14,7 +14,7 @@ import path from 'node:path';
 const PUBLIC_DIR = 'public';
 const SOURCE = path.join(PUBLIC_DIR, 'icon-512.png');
 const SAFE_ZONE_RATIO = 0.78;
-const BACKGROUND = { r: 10, g: 10, b: 10, alpha: 1 };
+const BACKGROUND = { r: 26, g: 29, b: 33, alpha: 1 }; // pucknowerin grafiitti #1a1d21
 const PNG_OPTIONS = { compressionLevel: 9, effort: 10, palette: true };
 
 if (!fs.existsSync(SOURCE)) {

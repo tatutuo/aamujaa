@@ -1,65 +1,99 @@
-import React, { useState, useEffect } from 'react';
-import { translations } from '../utils/translations';
-import TeamBadge from './TeamBadge';
+import React, { useMemo, useState } from 'react';
+import { IconHeart, IconHeartFilled, IconHome, IconPlane, IconFlame, IconChartLine } from '@tabler/icons-react';
+import Sheet from './Sheet';
+import DataTable from './ui/DataTable';
+import Segmented from './ui/Segmented';
+import Chips from './ui/Chips';
+import StatTiles from './ui/StatTiles';
+import { PlayerIdentity } from './table/Identity';
 import { api } from '../utils/api';
 import { useFetchWhenOpen } from '../hooks/useModal';
-import Sheet from './Sheet';
-import { teamColors } from '../utils/teamColors';
+import { useSettings } from '../state/settings';
+import { teamColors, DEFAULT_TEAM_COLORS } from '../utils/teamColors';
+import { teamByAbbrev, teamNickname } from '../utils/teams';
+import { countryName } from '../utils/nations';
+import { positionLabel } from '../utils/positions';
+import { int, dec, pct, signed, seasonLabel, ageFrom } from '../utils/format';
+import { SKATER_GROUPS, GOALIE_GROUPS } from '../views/stats/tableConfigs';
 
-const TeamModal = ({ isOpen, onClose, teamAbbrev, onPlayerClick, onGameClick, language, zIndex = 99000 }) => {
-    const t = translations[language] || translations.fi;
-    const [showRoster, setShowRoster] = useState(false);
+/**
+ * Joukkuekortti.
+ *
+ * Aamujään kortissa oli vain otteluluettelo ja nimilappuina esitetty
+ * kokoonpano, eikä suosikkisydän tehnyt mitään. Nyt kortti kertoo joukkueen
+ * sarjatilanteen ja sijoitukset liigassa, ottelut tuloksineen, kokoonpanon
+ * taulukkona sekä joukkueen oman pistepörssin.
+ */
 
-    const { data, isLoading } = useFetchWhenOpen(
+const colourOf = (abbrev) => (teamColors[abbrev] ?? DEFAULT_TEAM_COLORS)[0];
+
+const CONFERENCE = { Eastern: { fi: 'Itä', en: 'East' }, Western: { fi: 'Länsi', en: 'West' } };
+
+const isPlayed = (g) => g.gameState === 'FINAL' || g.gameState === 'OFF';
+const isLive = (g) => g.gameState === 'LIVE' || g.gameState === 'CRIT';
+
+/** Sijoitus liigassa (1 = paras) annetun arvon mukaan. */
+function leagueRank(rows, abbrev, value, lowerIsBetter = false) {
+    const own = rows.find((r) => r.team === abbrev);
+    if (!own || value(own) == null) return null;
+    const mine = value(own);
+    const better = rows.filter((r) => {
+        const v = value(r);
+        return v != null && (lowerIsBetter ? v < mine : v > mine);
+    }).length;
+    return better + 1;
+}
+
+/** Putki suomeksi: "W3" -> "3 V", "OT2" -> "2 JA". */
+function streakLabel(streak, fi) {
+    const match = /^([A-Z]+)(\d+)$/.exec(streak ?? '');
+    if (!match) return null;
+    const [, code, count] = match;
+    const labels = fi ? { W: 'voittoa', L: 'tappiota', OT: 'JA-tappiota' } : { W: 'wins', L: 'losses', OT: 'OT losses' };
+    return `${count} ${labels[code] ?? code}`;
+}
+
+const localise = (columns, lang) => columns.map((c) => ({ ...c, label: c.label[lang], title: c.title[lang] }));
+
+export default function TeamModal({ isOpen, onClose, teamAbbrev, onPlayerClick, onGameClick, language, zIndex = 99000 }) {
+    const { favTeams, toggleFavTeam } = useSettings();
+    const lang = language === 'en' ? 'en' : 'fi';
+    const fi = lang === 'fi';
+
+    const team = teamByAbbrev(teamAbbrev);
+    const colour = colourOf(teamAbbrev);
+    const isFav = favTeams.includes(teamAbbrev);
+
+    // Otsikkotiedot (sarjataulukko + joukkuetilastot) ovat pieniä ja välimuistissa,
+    // joten ne haetaan heti. Ottelut ja kokoonpano ovat joukkuekohtaisia.
+    const { data: overview } = useFetchWhenOpen(
         isOpen && Boolean(teamAbbrev),
         (signal) => Promise.all([
-            api.team(teamAbbrev, { signal }),
-            api.roster(teamAbbrev, { signal }),
-        ]).then(([schedule, roster]) => ({ schedule, roster })),
+            api.standings(undefined, { signal }),
+            api.statsTable('teams', {}, { signal }),
+        ]).then(([standings, teams]) => ({ standings, teams })),
+        [],
+    );
+
+    const { data: schedule, isLoading: scheduleLoading } = useFetchWhenOpen(
+        isOpen && Boolean(teamAbbrev),
+        (signal) => api.team(teamAbbrev, { signal }),
         [teamAbbrev],
     );
 
-    const teamData = data ?? { roster: null, schedule: null };
-
-    useEffect(() => {
-        setShowRoster(false);
-    }, [teamAbbrev]);
-
-    useEffect(() => {
-        if (!isLoading && !showRoster && isOpen) {
-            setTimeout(() => {
-                const activeGame = document.getElementById('current-team-game');
-                if (activeGame) {
-                    activeGame.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }
-            }, 100);
-        }
-    }, [isLoading, showRoster, isOpen]);
+    const headerActions = teamAbbrev && (
+        <button
+            type="button"
+            className={`icon-toggle ${isFav ? 'is-on' : ''}`}
+            onClick={() => toggleFavTeam(teamAbbrev)}
+            aria-pressed={isFav}
+            aria-label={isFav ? (fi ? 'Poista suosikeista' : 'Remove from favourites') : (fi ? 'Lisää suosikiksi' : 'Add to favourites')}
+        >
+            {isFav ? <IconHeartFilled size={18} /> : <IconHeart size={18} stroke={2} />}
+        </button>
+    );
 
     if (!isOpen || !teamAbbrev) return null;
-
-    let gamesList = [];
-    let forwards = teamData.roster?.forwards || [];
-    let defense = teamData.roster?.defensemen || [];
-    let goalies = teamData.roster?.goalies || [];
-
-    if (teamData.schedule?.games) {
-        gamesList = teamData.schedule.games;
-    }
-
-    const nextGameId = gamesList.find(g => g.gameState !== "FINAL" && g.gameState !== "OFF")?.id;
-
-    const RosterTag = ({ player }) => (
-        <span 
-            onClick={() => onPlayerClick(player.playerId || player.id)} 
-            style={{ background: 'var(--surface-sunken)', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', transition: 'color 0.2s' }}
-            onMouseOver={(e) => e.target.style.color = 'var(--accent-text)'}
-            onMouseOut={(e) => e.target.style.color = 'var(--text-secondary)'}
-        >
-            <span style={{ color: 'var(--text-tertiary)', marginRight: '4px' }}>#{player.sweaterNumber || '-'}</span>
-            {player.firstName?.default} {player.lastName?.default}
-        </span>
-    );
 
     return (
         <Sheet
@@ -67,111 +101,430 @@ const TeamModal = ({ isOpen, onClose, teamAbbrev, onPlayerClick, onGameClick, la
             onClose={onClose}
             zIndex={zIndex}
             size="full"
-            accent={teamColors[teamAbbrev]?.[0]}
-            title={teamAbbrev}
+            accent={colour}
+            title={team?.name ?? teamAbbrev}
+            subtitle={team ? `${team.division} · ${CONFERENCE[team.conference]?.[lang] ?? team.conference}` : undefined}
+            headerExtra={headerActions}
         >
-            <>
-                
-                <div style={{ textAlign: 'center', marginBottom: '20px', paddingTop: '10px' }}>
-                    
-                    {/* ISO LOGO KORVATTU TEAMBADGELLA */}
-                    <TeamBadge abbrev={teamAbbrev} size={80} style={{ margin: '0 auto', fontSize: '30px' }} />
-                    
-                    <h2 style={{ margin: '10px 0 0 0', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
-                        <button className="fav-sydan" style={{ fontSize: '1.8rem', margin: 0, padding: 0 }}>♡</button>
-                        {teamAbbrev}
-                    </h2>
+            <TeamContent
+                key={teamAbbrev}
+                abbrev={teamAbbrev}
+                colour={colour}
+                overview={overview}
+                schedule={schedule}
+                scheduleLoading={scheduleLoading}
+                lang={lang}
+                isOpen={isOpen}
+                onPlayerClick={onPlayerClick}
+                onGameClick={onGameClick}
+            />
+        </Sheet>
+    );
+}
+
+function TeamContent({ abbrev, colour, overview, schedule, scheduleLoading, lang, isOpen, onPlayerClick, onGameClick }) {
+    const fi = lang === 'fi';
+    const [tab, setTab] = useState('games');
+
+    const standing = overview?.standings?.teams?.find((r) => r.team === abbrev) ?? null;
+    const teamRows = useMemo(() => overview?.teams?.rows ?? [], [overview]);
+    const teamStats = teamRows.find((r) => r.team === abbrev) ?? null;
+    const standingsSeason = overview?.standings?.season;
+
+    const rank = (value, lowerIsBetter) => {
+        const r = leagueRank(teamRows, abbrev, value, lowerIsBetter);
+        return r ? `${r}./${teamRows.length}` : undefined;
+    };
+
+    const tiles = standing ? [
+        { label: fi ? 'Pisteet' : 'Points', value: int(standing.points), sub: rank((r) => r.points), tone: 'accent' },
+        { label: fi ? 'Voitot' : 'Wins', value: int(standing.wins), sub: fi ? `${standing.losses} H · ${standing.otLosses} JA` : `${standing.losses} L · ${standing.otLosses} OT` },
+        { label: fi ? 'Piste-%' : 'Point %', value: pct(standing.pointPct, 1, lang), sub: rank((r) => r.pointPct) },
+        { label: fi ? 'Maaliero' : 'Goal diff', value: signed(standing.goalDiff), tone: standing.goalDiff > 0 ? 'positive' : standing.goalDiff < 0 ? 'negative' : undefined, sub: `${standing.goalsFor}–${standing.goalsAgainst}` },
+        { label: fi ? 'Ylivoima-%' : 'PP %', value: pct(teamStats?.ppPct, 1, lang), sub: rank((r) => r.ppPct) },
+        { label: fi ? 'Alivoima-%' : 'PK %', value: pct(teamStats?.pkPct, 1, lang), sub: rank((r) => r.pkPct) },
+    ] : null;
+
+    return (
+        <div className="team-card">
+            <div className="pc2-hero" style={{ '--team': colour }}>
+                <div className="pc2-hero-text">
+                    {standing ? (
+                        <>
+                            <span className="pc2-team">
+                                {fi
+                                    ? `${standing.divSeq}. ${standing.division} · ${standing.leagueSeq}. liigassa`
+                                    : `${standing.divSeq}. ${standing.division} · ${standing.leagueSeq}. in league`}
+                            </span>
+                            <span className="pc2-role">
+                                {fi ? 'Sarjataulukko' : 'Standings'} {seasonLabel(standingsSeason)}
+                                {overview?.standings?.isPreviousSeason && (fi ? ' (lopputilanne)' : ' (final)')}
+                            </span>
+                        </>
+                    ) : (
+                        <span className="pc2-team">{teamNickname(abbrev)}</span>
+                    )}
+                </div>
+                <span className="pc2-number tc-abbrev" aria-hidden="true">{abbrev}</span>
+            </div>
+
+            {standing && (
+                <div className="facts pc2-facts">
+                    <span className="fact"><IconHome size={14} stroke={2} aria-hidden="true" />{fi ? 'Koti' : 'Home'} <strong>{standing.home}</strong></span>
+                    <span className="fact"><IconPlane size={14} stroke={2} aria-hidden="true" />{fi ? 'Vieras' : 'Road'} <strong>{standing.road}</strong></span>
+                    <span className="fact"><IconChartLine size={14} stroke={2} aria-hidden="true" />{fi ? '10 viim.' : 'Last 10'} <strong>{standing.l10}</strong></span>
+                    {streakLabel(standing.streak, fi) && (
+                        <span className="fact"><IconFlame size={14} stroke={2} aria-hidden="true" />{fi ? 'Putki' : 'Streak'} <strong>{streakLabel(standing.streak, fi)}</strong></span>
+                    )}
+                </div>
+            )}
+
+            {tiles ? (
+                <section className="card-section">
+                    <StatTiles tiles={tiles} />
+                </section>
+            ) : (
+                <div className="skeleton" style={{ height: 140, marginTop: 'var(--space-4)' }} />
+            )}
+
+            <div className="tc-tabs">
+                <Segmented
+                    label={fi ? 'Näkymä' : 'View'}
+                    value={tab}
+                    onChange={setTab}
+                    options={[
+                        { value: 'games', label: fi ? 'Ottelut' : 'Games' },
+                        { value: 'roster', label: fi ? 'Kokoonpano' : 'Roster' },
+                        { value: 'stats', label: fi ? 'Tilastot' : 'Stats' },
+                    ]}
+                />
+            </div>
+
+            {tab === 'games' && (
+                <TeamGames abbrev={abbrev} schedule={schedule} isLoading={scheduleLoading} lang={lang} onGameClick={onGameClick} />
+            )}
+            {tab === 'roster' && (
+                <TeamRoster abbrev={abbrev} lang={lang} isOpen={isOpen} onPlayerClick={onPlayerClick} />
+            )}
+            {tab === 'stats' && (
+                <TeamStats abbrev={abbrev} teamRows={teamRows} lang={lang} isOpen={isOpen} onPlayerClick={onPlayerClick} />
+            )}
+        </div>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Ottelut
+// ---------------------------------------------------------------------------
+
+const GAMES_PAGE = 15;
+
+function gameDateLabel(g, lang) {
+    const d = new Date(g.startTimeUTC);
+    const weekday = d.toLocaleDateString(lang === 'en' ? 'en-US' : 'fi-FI', { weekday: 'short' }).replace('.', '');
+    return lang === 'en'
+        ? `${weekday} ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
+        : `${weekday} ${d.getDate()}.${d.getMonth() + 1}.`;
+}
+
+const startTime = (g, lang) => new Date(g.startTimeUTC)
+    .toLocaleTimeString(lang === 'en' ? 'en-GB' : 'fi-FI', { hour: '2-digit', minute: '2-digit' });
+
+function TeamGames({ abbrev, schedule, isLoading, lang, onGameClick }) {
+    const fi = lang === 'fi';
+    const games = useMemo(() => schedule?.games ?? [], [schedule]);
+    const played = useMemo(() => games.filter((g) => isPlayed(g)).reverse(), [games]);
+    const upcoming = useMemo(() => games.filter((g) => !isPlayed(g)), [games]);
+
+    const [which, setWhich] = useState(null);
+    const [shown, setShown] = useState(GAMES_PAGE);
+    // Oletuksena tulevat, paitsi kauden päätyttyä pelatut.
+    const active = which ?? (upcoming.length > 0 ? 'upcoming' : 'played');
+    const list = active === 'upcoming' ? upcoming : played;
+
+    if (isLoading) return <div className="skeleton" style={{ height: 320 }} />;
+    if (games.length === 0) return <p className="panel-hint">{fi ? 'Ei otteluita.' : 'No games.'}</p>;
+
+    return (
+        <>
+            <div className="tc-filter">
+                <Chips
+                    label={fi ? 'Ottelut' : 'Games'}
+                    value={active}
+                    onChange={(v) => { setWhich(v); setShown(GAMES_PAGE); }}
+                    options={[
+                        { value: 'upcoming', label: fi ? 'Tulevat' : 'Upcoming', count: upcoming.length },
+                        { value: 'played', label: fi ? 'Pelatut' : 'Played', count: played.length },
+                    ]}
+                />
+            </div>
+
+            {list.length === 0 ? (
+                <p className="panel-hint">{active === 'upcoming' ? (fi ? 'Ei tulevia otteluita.' : 'No upcoming games.') : (fi ? 'Ei vielä pelattuja otteluita.' : 'No games played yet.')}</p>
+            ) : (
+                <ul className="team-games">
+                    {list.slice(0, shown).map((g, i) => (
+                        <li key={g.id}>
+                            <TeamGameRow
+                                game={g}
+                                abbrev={abbrev}
+                                lang={lang}
+                                isNext={active === 'upcoming' && i === 0}
+                                onClick={() => onGameClick?.(g)}
+                            />
+                        </li>
+                    ))}
+                </ul>
+            )}
+
+            {list.length > shown && (
+                <button type="button" className="dt-more" onClick={() => setShown((n) => n + GAMES_PAGE)}>
+                    {fi ? `Näytä lisää · ${list.length} yhteensä` : `Show more · ${list.length} total`}
+                </button>
+            )}
+        </>
+    );
+}
+
+function TeamGameRow({ game, abbrev, lang, isNext, onClick }) {
+    const fi = lang === 'fi';
+    const isHome = game.homeTeam?.abbrev === abbrev;
+    const us = isHome ? game.homeTeam : game.awayTeam;
+    const them = isHome ? game.awayTeam : game.homeTeam;
+    const opponent = them?.abbrev ?? '';
+
+    let result;
+    if (isPlayed(game)) {
+        const won = (us?.score ?? 0) > (them?.score ?? 0);
+        const extra = game.gameOutcome?.lastPeriodType;
+        const suffix = extra === 'OT' ? (fi ? ' JA' : ' OT') : extra === 'SO' ? (fi ? ' VL' : ' SO') : '';
+        result = (
+            <span className={`tg-result ${won ? 'is-win' : extra === 'OT' || extra === 'SO' ? 'is-otl' : 'is-loss'}`}>
+                <span className="tg-wl">{won ? (fi ? 'V' : 'W') : (fi ? 'H' : 'L')}</span>
+                <span className="num">{us?.score}–{them?.score}</span>
+                {suffix && <span className="tg-extra">{suffix.trim()}</span>}
+            </span>
+        );
+    } else if (isLive(game)) {
+        result = (
+            <span className="tg-result is-live">
+                <span className="tg-wl">LIVE</span>
+                <span className="num">{us?.score ?? 0}–{them?.score ?? 0}</span>
+            </span>
+        );
+    } else {
+        result = <span className="tg-time num">{game.gameScheduleState === 'PPD' ? (fi ? 'Siirretty' : 'PPD') : startTime(game, lang)}</span>;
+    }
+
+    const typeTag = game.gameType === 1 ? (fi ? 'HO' : 'PRE') : game.gameType === 3 ? (fi ? 'PO' : 'PO') : null;
+
+    return (
+        <button type="button" className={`team-game ${isNext ? 'is-next' : ''}`} onClick={onClick}>
+            <span className="tg-date">
+                {isNext && <span className="tg-next">{fi ? 'Seuraava' : 'Next'}</span>}
+                {gameDateLabel(game, lang)}
+            </span>
+            <span className="tg-opp">
+                <span className="recent-at">{isHome ? 'vs' : '@'}</span>
+                <span className="dt-dot" style={{ background: colourOf(opponent) }} aria-hidden="true" />
+                <span className="tg-opp-abbrev">{opponent}</span>
+                <span className="tg-opp-name">{teamNickname(opponent)}</span>
+                {typeTag && <span className="dt-tag" title={game.gameType === 1 ? (fi ? 'Harjoitusottelu' : 'Preseason') : (fi ? 'Pudotuspelit' : 'Playoffs')}>{typeTag}</span>}
+            </span>
+            {result}
+        </button>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Kokoonpano
+// ---------------------------------------------------------------------------
+
+const ROSTER_GROUPS = [
+    { value: 'forwards', label: { fi: 'Hyökkääjät', en: 'Forwards' } },
+    { value: 'defensemen', label: { fi: 'Puolustajat', en: 'Defense' } },
+    { value: 'goalies', label: { fi: 'Maalivahdit', en: 'Goalies' } },
+];
+
+function TeamRoster({ abbrev, lang, isOpen, onPlayerClick }) {
+    const fi = lang === 'fi';
+    const [group, setGroup] = useState('forwards');
+
+    const { data, isLoading, error } = useFetchWhenOpen(
+        isOpen,
+        (signal) => api.roster(abbrev, { signal }),
+        [abbrev],
+    );
+
+    const rows = useMemo(() => (data?.[group] ?? []).map((p) => ({
+        id: p.id,
+        name: `${p.firstName?.default ?? ''} ${p.lastName?.default ?? ''}`.trim(),
+        pos: p.positionCode,
+        nat: p.birthCountry,
+        number: p.sweaterNumber ?? null,
+        age: ageFrom(p.birthDate),
+        height: p.heightInCentimeters ?? null,
+        weight: p.weightInKilograms ?? null,
+    })), [data, group]);
+
+    if (isLoading) return <div className="skeleton" style={{ height: 320 }} />;
+    if (error || !data) return <p className="panel-hint">{fi ? 'Kokoonpanon haku epäonnistui.' : 'Could not load roster.'}</p>;
+
+    const columns = [
+        { key: 'number', label: '#', title: fi ? 'Pelinumero' : 'Number', format: int, lowerIsBetter: true },
+        { key: 'age', label: fi ? 'Ikä' : 'Age', title: fi ? 'Ikä' : 'Age', format: int, lowerIsBetter: true },
+        { key: 'height', label: 'cm', title: fi ? 'Pituus' : 'Height', format: int },
+        { key: 'weight', label: 'kg', title: fi ? 'Paino' : 'Weight', format: int },
+    ];
+
+    return (
+        <>
+            <div className="tc-filter">
+                <Chips
+                    label={fi ? 'Pelipaikka' : 'Position'}
+                    value={group}
+                    onChange={setGroup}
+                    options={ROSTER_GROUPS.map((g) => ({ value: g.value, label: g.label[lang], count: data[g.value]?.length ?? 0 }))}
+                />
+            </div>
+            <DataTable
+                key={group}
+                rows={rows}
+                columns={columns}
+                identity={{
+                    label: fi ? 'Pelaaja' : 'Player',
+                    render: (row) => (
+                        <span className="dt-person">
+                            <span className="dt-dot" style={{ background: colourOf(abbrev) }} aria-hidden="true" />
+                            <span className="dt-person-text">
+                                <span className="dt-name">{row.name}</span>
+                                <span className="dt-meta">
+                                    {[positionLabel(row.pos, lang), countryName(row.nat, lang)].filter(Boolean).join(' · ')}
+                                </span>
+                            </span>
+                        </span>
+                    ),
+                }}
+                defaultSort={{ key: 'number', dir: 'asc' }}
+                onRowClick={(row) => onPlayerClick(row.id)}
+                showRank={false}
+                pageSize={60}
+                language={lang}
+                caption={fi ? 'Kokoonpano' : 'Roster'}
+            />
+        </>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Tilastot: joukkueen pistepörssi ja sijoitukset liigassa
+// ---------------------------------------------------------------------------
+
+function TeamStats({ abbrev, teamRows, lang, isOpen, onPlayerClick }) {
+    const fi = lang === 'fi';
+    const [who, setWho] = useState('skaters');
+    const [skaterGroup, setSkaterGroup] = useState('basic');
+    const [goalieGroup, setGoalieGroup] = useState('basic');
+
+    const { data, isLoading, error } = useFetchWhenOpen(
+        isOpen,
+        (signal) => Promise.all([
+            api.statsTable('skaters', {}, { signal }),
+            api.statsTable('goalies', {}, { signal }),
+        ]).then(([skaters, goalies]) => ({ skaters, goalies })),
+        [],
+    );
+
+    const skaters = useMemo(() => (data?.skaters?.rows ?? []).filter((r) => r.team === abbrev), [data, abbrev]);
+    const goalies = useMemo(() => (data?.goalies?.rows ?? []).filter((r) => r.team === abbrev), [data, abbrev]);
+    const own = teamRows.find((r) => r.team === abbrev);
+
+    const rankOf = (field, lowerIsBetter = false) => {
+        const r = leagueRank(teamRows, abbrev, (row) => row[field], lowerIsBetter);
+        return r ? `${r}./${teamRows.length}` : undefined;
+    };
+
+    const rankTiles = own ? [
+        { label: fi ? 'Maalit/O' : 'GF/GP', value: dec(own.gfPerGame, 2, lang), sub: rankOf('gfPerGame') },
+        { label: fi ? 'Päästetyt/O' : 'GA/GP', value: dec(own.gaPerGame, 2, lang), sub: rankOf('gaPerGame', true) },
+        { label: fi ? 'Laukaukset/O' : 'Shots/GP', value: dec(own.shotsForPerGame, 1, lang), sub: rankOf('shotsForPerGame') },
+        { label: fi ? 'Lauk. vastaan/O' : 'SA/GP', value: dec(own.shotsAgainstPerGame, 1, lang), sub: rankOf('shotsAgainstPerGame', true) },
+        { label: fi ? 'Aloitus-%' : 'Faceoff %', value: pct(own.faceoffPct, 1, lang), sub: rankOf('faceoffPct') },
+        { label: 'Corsi-%', value: pct(own.corsiPct, 1, lang), sub: rankOf('corsiPct') },
+    ] : null;
+
+    const groups = who === 'skaters' ? SKATER_GROUPS : GOALIE_GROUPS;
+    const groupId = who === 'skaters' ? skaterGroup : goalieGroup;
+    const setGroupId = who === 'skaters' ? setSkaterGroup : setGoalieGroup;
+    const group = groups.find((g) => g.id === groupId) ?? groups[0];
+    const rows = who === 'skaters' ? skaters : goalies;
+    const season = data?.skaters?.season;
+
+    return (
+        <>
+            {rankTiles && (
+                <section className="card-section tc-first">
+                    <div className="card-section-head">
+                        <h3 className="card-section-title">{fi ? 'Sijoitus liigassa' : 'League rank'}</h3>
+                    </div>
+                    <StatTiles tiles={rankTiles} />
+                </section>
+            )}
+
+            <section className="card-section">
+                <div className="card-section-head">
+                    <h3 className="card-section-title">
+                        {fi ? 'Pelaajat' : 'Players'} {season && seasonLabel(season)}
+                    </h3>
+                    <Segmented
+                        size="sm"
+                        label={fi ? 'Pelaajat' : 'Players'}
+                        value={who}
+                        onChange={setWho}
+                        options={[
+                            { value: 'skaters', label: fi ? 'Kenttä' : 'Skaters' },
+                            { value: 'goalies', label: fi ? 'Maalivahdit' : 'Goalies' },
+                        ]}
+                    />
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-                    <button className={`sched-filter-btn ${!showRoster ? 'active' : ''}`} onClick={() => setShowRoster(false)} style={{ flex: 1 }}>{t.teamGames}</button>
-                    <button className={`sched-filter-btn ${showRoster ? 'active' : ''}`} onClick={() => setShowRoster(true)} style={{ flex: 1 }}>{t.teamRoster}</button>
+                {data?.skaters?.isPreviousSeason && (
+                    <p className="panel-hint tc-hint">
+                        {fi
+                            ? 'Kausi ei ole vielä alkanut, joten luvut ovat edelliseltä kaudelta (pelaajat, jotka päättivät kauden tässä joukkueessa).'
+                            : 'The season has not started, so these are last season’s numbers (players who finished the season with this team).'}
+                    </p>
+                )}
+
+                <div className="tc-filter">
+                    <Chips
+                        label={fi ? 'Sarakeryhmä' : 'Column group'}
+                        value={group.id}
+                        onChange={setGroupId}
+                        options={groups.map((g) => ({ value: g.id, label: g.label[lang] }))}
+                    />
                 </div>
 
                 {isLoading ? (
-                    <div className="loading" style={{ textAlign: 'center', padding: '40px', color: 'var(--accent-blue)' }}>{t.teamLoading}</div>
+                    <div className="skeleton" style={{ height: 320 }} />
+                ) : error ? (
+                    <p className="panel-hint">{fi ? 'Tilastojen haku epäonnistui.' : 'Could not load stats.'}</p>
                 ) : (
-                    <>
-                        {showRoster && (
-                            <div style={{ background: 'var(--surface-sunken)', padding: '15px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
-                                <h4 style={{ color: 'var(--accent-text)', marginTop: 0, borderBottom: '1px solid var(--border-strong)', paddingBottom: '5px' }}>{t.gmForwards}</h4>
-                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '15px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                                    {forwards.map((p, i) => <RosterTag key={i} player={p} />)}
-                                </div>
-                                <h4 style={{ color: 'var(--positive)', borderBottom: '1px solid var(--border-strong)', paddingBottom: '5px' }}>{t.gmDefense}</h4>
-                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '15px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                                    {defense.map((p, i) => <RosterTag key={i} player={p} />)}
-                                </div>
-                                <h4 style={{ color: 'var(--gold)', borderBottom: '1px solid var(--border-strong)', paddingBottom: '5px' }}>{t.gmGoalies}</h4>
-                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-                                    {goalies.map((p, i) => <RosterTag key={i} player={p} />)}
-                                </div>
-                            </div>
-                        )}
-
-                        {!showRoster && (
-                            <div style={{ maxHeight: '55vh', overflowY: 'auto', overflowX: 'hidden' }}>
-                                {gamesList.length === 0 && <div style={{ color: 'var(--text-tertiary)', textAlign: 'center', padding: '20px' }}>{t.teamNoGames}</div>}
-                                
-                                {gamesList.map((g, i) => {
-                                    const isPlayed = g.gameState === 'FINAL' || g.gameState === 'OFF';
-                                    const homeTeamStr = g.homeTeam?.abbrev || g.homeTeam?.placeName?.default;
-                                    const awayTeamStr = g.awayTeam?.abbrev || g.awayTeam?.placeName?.default;
-                                    
-                                    const isHome = homeTeamStr === teamAbbrev;
-                                    const opponent = isHome ? awayTeamStr : homeTeamStr;
-                                    
-                                    const teamScore = isHome ? (g.homeTeam?.score ?? 0) : (g.awayTeam?.score ?? 0);
-                                    const oppScore = isHome ? (g.awayTeam?.score ?? 0) : (g.homeTeam?.score ?? 0);
-                                    
-                                    let resultColor = 'var(--text-tertiary)'; 
-                                    if (isPlayed) {
-                                        resultColor = teamScore > oppScore ? 'var(--positive)' : 'var(--negative)';
-                                    }
-                                    
-                                    const gameDate = g.startTimeUTC ? new Date(g.startTimeUTC).toLocaleDateString('fi-FI', { day: 'numeric', month: 'numeric' }) : '-';
-                                    const isCurrentGame = g.id === nextGameId;
-
-                                    return (
-                                        <div 
-                                            key={i} 
-                                            id={isCurrentGame ? 'current-team-game' : ''}
-                                            onClick={() => onGameClick(g)}
-                                            onMouseOver={(e) => { e.currentTarget.style.background = isCurrentGame ? 'rgba(0, 212, 255, 0.2)' : 'rgba(255, 255, 255, 0.05)'; }}
-                                            onMouseOut={(e) => { e.currentTarget.style.background = isCurrentGame ? 'rgba(0, 212, 255, 0.1)' : 'transparent'; }}
-                                            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 5px', borderBottom: '1px solid var(--border-subtle)', background: isCurrentGame ? 'rgba(0, 212, 255, 0.1)' : 'transparent', cursor: 'pointer', transition: 'background 0.2s' }}
-                                        >
-                                            <div style={{ width: '45px', color: 'var(--text-tertiary)', fontSize: '0.85rem' }}>{gameDate}</div>
-                                            
-                                            <div style={{ display: 'flex', alignItems: 'center', flex: 1, justifyContent: 'flex-end', gap: '8px' }}>
-                                                <span style={{ color: isHome ? 'var(--text-tertiary)' : 'var(--text-primary)' }}>{isHome ? opponent : teamAbbrev}</span>
-                                                
-                                                {/* PIENI LOGO VASEN (Vierasjoukkue) */}
-                                                <TeamBadge abbrev={isHome ? opponent : teamAbbrev} size={24} />
-                                                
-                                            </div>
-                                            
-                                            <div style={{ width: '70px', textAlign: 'center', fontWeight: 'bold', color: resultColor, fontSize: '1rem' }}>
-                                                {isPlayed ? `${isHome ? oppScore : teamScore} - ${isHome ? teamScore : oppScore}` : 'vs'}
-                                            </div>
-                                            
-                                            <div style={{ display: 'flex', alignItems: 'center', flex: 1, justifyContent: 'flex-start', gap: '8px' }}>
-                                                
-                                                {/* PIENI LOGO OIKEA (Kotijoukkue) */}
-                                                <TeamBadge abbrev={isHome ? teamAbbrev : opponent} size={24} />
-                                                
-                                                <span style={{ color: isHome ? 'var(--text-primary)' : 'var(--text-tertiary)' }}>{isHome ? teamAbbrev : opponent}</span>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        )}
-                    </>
+                    <DataTable
+                        key={`${who}:${group.id}`}
+                        rows={rows}
+                        columns={localise(group.columns, lang)}
+                        identity={{ label: fi ? 'Pelaaja' : 'Player', render: (row) => <PlayerIdentity row={row} language={lang} /> }}
+                        defaultSort={{ key: who === 'skaters' ? 'points' : 'wins', dir: 'desc' }}
+                        isQualified={(row) => row.gp >= 10}
+                        qualifierNote={fi ? 'Alle 10 ottelua' : 'Fewer than 10 games'}
+                        onRowClick={(row) => onPlayerClick(row.id)}
+                        pageSize={60}
+                        language={lang}
+                        caption={fi ? 'Joukkueen pelaajatilastot' : 'Team player stats'}
+                    />
                 )}
-            </>
-        </Sheet>
+            </section>
+        </>
     );
-};
-
-export default TeamModal;
+}

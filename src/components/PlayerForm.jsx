@@ -1,4 +1,8 @@
 import React from 'react';
+import { dec, clock, seasonLabel } from '../utils/format';
+
+/** Palvelin antaa osan luvuista merkkijonoina ("1.01"); muotoillaan kielen mukaan. */
+const num = (v, decimals, language) => dec(Number.parseFloat(v), decimals, language);
 
 /**
  * Pelaajan muotokäyrä ottelulokista.
@@ -24,7 +28,7 @@ const PlayerForm = ({ data, language = 'fi', onGameClick }) => {
     const maxPoints = Math.max(1, ...ordered.map((g) => g.points));
 
     const fi = language === 'fi';
-    const kausi = `${String(season).slice(0, 4)}–${String(season).slice(6)}`;
+    const kausi = seasonLabel(season);
 
     return (
         <div className="form-chart">
@@ -56,8 +60,8 @@ const PlayerForm = ({ data, language = 'fi', onGameClick }) => {
 
             <dl className="form-stats">
                 <div>
-                    <dt>{fi ? 'Pistettä/ottelu' : 'Points/game'}</dt>
-                    <dd>{summary.pointsPerGame}</dd>
+                    <dt>{fi ? 'Pisteet/ottelu' : 'Points/game'}</dt>
+                    <dd>{num(summary.pointsPerGame, 2, language)}</dd>
                 </div>
                 <div>
                     <dt>{fi ? 'Pisteotteluita' : 'Point games'}</dt>
@@ -69,15 +73,15 @@ const PlayerForm = ({ data, language = 'fi', onGameClick }) => {
                 </div>
                 <div>
                     <dt>{fi ? 'Peliaika' : 'Ice time'}</dt>
-                    <dd>{summary.avgToi} min</dd>
+                    <dd>{clock(Number.parseFloat(summary.avgToi) * 60)}</dd>
                 </div>
                 <div>
-                    <dt>{fi ? 'Kotona' : 'Home'}</dt>
-                    <dd>{summary.home.pointsPerGame}</dd>
+                    <dt>{fi ? 'P/O kotona' : 'P/GP home'}</dt>
+                    <dd>{num(summary.home.pointsPerGame, 2, language)}</dd>
                 </div>
                 <div>
-                    <dt>{fi ? 'Vieraissa' : 'Away'}</dt>
-                    <dd>{summary.road.pointsPerGame}</dd>
+                    <dt>{fi ? 'P/O vieraissa' : 'P/GP away'}</dt>
+                    <dd>{num(summary.road.pointsPerGame, 2, language)}</dd>
                 </div>
             </dl>
 

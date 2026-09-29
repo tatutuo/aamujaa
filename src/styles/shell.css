@@ -1,0 +1,507 @@
+/**
+ * pucknower — kuori: pohja, yläpalkki, kelluva alapalkki ja minivalikot.
+ *
+ * Ladataan viimeisenä, joten nämä säännöt voittavat Aamujäästä perityt
+ * tyylit (global.css, app.css). Ne poistuvat sitä mukaa kun näkymät
+ * rakennetaan uudelleen.
+ */
+
+/* ==========================================================================
+   Pohja
+   ========================================================================== */
+
+html,
+body {
+    background: var(--surface-app);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-feature-settings: 'cv11', 'ss01';
+    /* clip eikä hidden: hidden tekee bodysta vierityssäiliön, jolloin
+       taulukoiden kiinteä otsikkorivi ei tartu sivun yläreunaan vaan jää
+       paikalleen vieritettäessä. clip estää sivuttaisvalumisen luomatta
+       säiliötä. */
+    overflow-x: clip;
+}
+
+/* Sama kuin yllä: Aamujään global.css antaa näille overflow-x: hidden, joka
+   tekee niistäkin vierityssäiliöt ja rikkoo kiinteät otsikkorivit. */
+#root,
+.app-container {
+    overflow: visible;
+    overflow-x: clip;
+}
+
+/* Sivun yläreunaan hento hehku korostusväristä: syvyyttä ilman kuviota.
+   Kiinteänä taustana, joten se ei vieri sisällön mukana. */
+body {
+    background-image: radial-gradient(120% 55% at 50% -12%, var(--accent-glow, transparent), transparent 62%);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+}
+
+/* Vanhan Aamujään otsikkotyyli (Teko-fontti, sininen hehku) pois. */
+h1, h2, h3 {
+    font-family: var(--font-body);
+    text-shadow: none;
+    letter-spacing: -0.01em;
+    text-transform: none;
+}
+
+/* Kaikki luvut tasaleveinä: sarakkeet pysyvät linjassa ilman erillistä luokkaa. */
+table,
+.num {
+    font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+/* Lasipinta — sama resepti kaikille kelluville osille. */
+.glass {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+}
+
+/* Sisältö mahtuu kelluvien palkkien väliin myös lovinäytöillä.
+   display ja animaatio ohittavat Aamujään säännön, joka piilotti näkymän
+   ilman active-view-luokkaa. Näkymä vaihtuu nyt reitin mukana (key={path}),
+   joten erillistä luokkaa ei tarvita. */
+.app-view {
+    display: block;
+    padding-top: calc(56px + var(--safe-top));
+    padding-bottom: calc(104px + var(--safe-bottom));
+    animation: view-in 0.22s var(--ease-out);
+}
+
+@keyframes view-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .app-view { animation: none; }
+}
+
+/* ==========================================================================
+   Yläpalkki
+   ========================================================================== */
+
+.topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: var(--z-nav);
+    display: flex;
+    align-items: center;
+    height: calc(52px + var(--safe-top));
+    padding: var(--safe-top) var(--space-4) 0;
+    background: var(--surface-nav);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.topbar-home {
+    display: inline-flex;
+    align-items: center;
+    padding: var(--space-1) var(--space-2) var(--space-1) 0;
+    border: none;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+}
+
+.logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-word {
+    font-size: 1.1rem;
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+}
+
+.logo-accent {
+    color: var(--accent);
+}
+
+/* ==========================================================================
+   Alapalkki — kelluva lasi
+   ========================================================================== */
+
+.navbar {
+    position: fixed;
+    left: 50%;
+    bottom: calc(12px + var(--safe-bottom));
+    transform: translateX(-50%);
+    z-index: var(--z-nav);
+    display: flex;
+    gap: 2px;
+    width: min(460px, calc(100vw - 20px));
+    padding: 6px;
+    border-radius: var(--radius-lg);
+}
+
+.navbar-item {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 7px 4px 6px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text-secondary);
+    font: inherit;
+    text-shadow: var(--glass-text-shadow);
+    cursor: pointer;
+    transition: background var(--duration-fast), color var(--duration-fast);
+}
+
+.navbar-item:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--text-primary);
+}
+
+:root[data-theme='light'] .navbar-item:hover {
+    background: rgba(15, 23, 42, 0.05);
+}
+
+/* Aktiivinen: hillitty sävytys korostusväristä, ei täyttä väriä. */
+.navbar-item.is-active {
+    background: var(--accent-soft);
+    color: var(--accent-text);
+}
+
+.navbar-label {
+    max-width: 100%;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ==========================================================================
+   Minivalikko — nousee palkin päältä
+   ========================================================================== */
+
+.navmenu-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: calc(var(--z-menu) - 1);
+    border: none;
+    padding: 0;
+    background: transparent;
+    cursor: default;
+}
+
+.navmenu {
+    position: fixed;
+    left: 50%;
+    /* Palkin korkeus (noin 60 px) + väli. */
+    bottom: calc(12px + 60px + 10px + var(--safe-bottom));
+    transform: translateX(-50%);
+    z-index: var(--z-menu);
+    width: min(380px, calc(100vw - 20px));
+    max-height: calc(100dvh - 180px);
+    overflow-y: auto;
+    padding: 6px;
+    border-radius: var(--radius-lg);
+    background: var(--glass-bg-strong);
+    text-shadow: var(--glass-text-shadow);
+    animation: navmenu-up 0.18s var(--ease-out);
+}
+
+@keyframes navmenu-up {
+    from { opacity: 0; transform: translate(-50%, 10px); }
+    to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .navmenu { animation: none; }
+}
+
+.navmenu-title {
+    padding: 8px 10px 6px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+}
+
+.navmenu-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text-primary);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    transition: background var(--duration-fast);
+}
+
+.navmenu-item:hover,
+.navmenu-item:focus-visible {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-theme='light'] .navmenu-item:hover,
+:root[data-theme='light'] .navmenu-item:focus-visible {
+    background: rgba(15, 23, 42, 0.05);
+}
+
+.navmenu-item.is-current {
+    background: var(--accent-soft);
+}
+
+.navmenu-icon {
+    flex: none;
+    color: var(--accent);
+}
+
+.navmenu-text {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.navmenu-label {
+    font-size: var(--text-base);
+    font-weight: 600;
+}
+
+.navmenu-hint {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.navmenu-chevron {
+    flex: none;
+    color: var(--text-tertiary);
+}
+
+/* ==========================================================================
+   Näkymät
+   ========================================================================== */
+
+.view {
+    width: 100%;
+    max-width: 880px;
+    margin: 0 auto;
+    padding: var(--space-4);
+}
+
+.view-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin: var(--space-2) 0 var(--space-4);
+}
+
+/* Otsikko vie tilan, valinnat rivittyvät sen alle kapealla ruudulla. */
+.view-header-text {
+    flex: 1 1 220px;
+    min-width: 0;
+}
+
+.view-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    font-size: var(--text-2xl);
+    font-weight: 750;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+}
+
+.view-title-icon {
+    color: var(--accent);
+    flex: none;
+}
+
+.view-subtitle {
+    margin: 4px 0 0;
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+}
+
+.view-header-actions {
+    display: flex;
+    gap: var(--space-2);
+    max-width: 100%;
+}
+
+@media (max-width: 480px) {
+    .view { padding: var(--space-3); }
+    .view-title { font-size: var(--text-xl); }
+}
+
+.empty-panel {
+    padding: var(--space-6) var(--space-4);
+    border: 1px dashed var(--border-strong);
+    border-radius: var(--radius-md);
+    text-align: center;
+    color: var(--text-tertiary);
+}
+
+.empty-panel p {
+    margin: 0;
+}
+
+/* Ilmoitus alapalkin yläpuolella. */
+.app-toast {
+    bottom: calc(12px + 60px + 14px + var(--safe-bottom));
+}
+
+/* ==========================================================================
+   Etusivun päivänavigaatio
+   ========================================================================== */
+
+.date-nav {
+    margin: var(--space-2) 0 var(--space-4);
+}
+
+.date-nav-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    padding: 0 2px;
+}
+
+.date-nav-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+}
+
+.date-nav-today {
+    padding: 3px 10px;
+    border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
+    border-radius: var(--radius-pill);
+    background: var(--accent-soft);
+    color: var(--accent-text);
+    font: inherit;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.date-nav-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 5px;
+    border-radius: var(--radius-lg);
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+}
+
+.date-nav-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: background var(--duration-fast), color var(--duration-fast);
+}
+
+.date-nav-arrow:hover {
+    background: var(--surface-card-hover);
+    color: var(--text-primary);
+}
+
+.date-nav-current {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.date-nav-day {
+    font-size: var(--text-base);
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.date-nav-refresh {
+    display: inline-flex;
+    padding: 5px;
+    border: none;
+    border-radius: 8px;
+    background: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+}
+
+.date-nav-refresh:hover { color: var(--accent-text); }
+
+.date-nav-refresh.is-spinning svg { animation: spin 0.9s linear infinite; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ==========================================================================
+   Etusivun osiot
+   ========================================================================== */
+
+.home-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: var(--space-5) 0 var(--space-3);
+    padding: 0;
+    border: none;
+    font-size: var(--text-lg);
+    font-weight: 750;
+    color: var(--text-primary);
+    text-transform: none;
+    letter-spacing: -0.01em;
+}
+
+.home-section-title svg { color: var(--accent); flex: none; }
+
+.home-section-meta {
+    margin-left: 2px;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-tertiary);
+}

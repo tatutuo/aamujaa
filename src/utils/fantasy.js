@@ -16,9 +16,15 @@
  *
  *   Tähdet: 1. = 3 p, 2. = 2 p, 3. = 1 p (kaikille)
  *
- *   Jäähyt: 2 min −1, tappelu (5 min) +2, muu 5 min −3, 10 min −5,
- *           pelirangaistus −8, ottelurangaistus −10.
+ *   Jäähyt: 2 min: maalivahti −1, kenttäpelaaja +1. Tappelu (5 min) +2,
+ *           muu 5 min −3, 10 min −5, pelirangaistus −8, ottelurangaistus −10.
  *           Vain henkilökohtaiset jäähyt; maalivahdilla enintään −10/ottelu.
+ *
+ *   Voittomaali annetaan myös pudotuspeleissä ja voittolaukauskilpailun
+ *   ratkaisevasta maalista. Jatkoaikatappio on vain runkosarjassa (NHL merkitsee
+ *   pudotuspeleissä maalivahdille aina W tai L, joten tämä hoituu itsestään).
+ *
+ * Lähde: hockeygm.fi/ohjeet (tarkistettu 29.9.2026).
  */
 
 /** Kapteenin kerroin. Pisteet pyöristetään aina nollasta poispäin. */
@@ -27,9 +33,9 @@ export const CAPTAIN_MULTIPLIER = 1.3;
 /**
  * Jäähytyyppien pistearvot.
  *
- * Kahden minuutin jäähy on ainoa rivi, jossa maalivahti ja kenttäpelaaja
- * eroavat: kenttäpelaaja saa siitä pisteen, maalivahti menettää sellaisen.
- * Sääntö on omalaatuinen mutta näin se on Hockey GM:n taulukossa.
+ * Kahden minuutin jäähy on taulukon ainoa rivi, jossa maalivahti ja
+ * kenttäpelaaja eroavat: kenttäpelaaja saa siitä pisteen, maalivahti menettää
+ * sellaisen. Sääntö on omalaatuinen, mutta näin se on Hockey GM:n taulukossa.
  */
 const PENALTY_POINTS = {
     minor: { skater: 1, goalie: -1 },
@@ -129,7 +135,6 @@ export function applyCaptain(points, isCaptain) {
  *
  * @param {object} stats
  * @param {'C'|'L'|'R'|'D'} stats.position
- * @param {boolean} stats.isRegularSeason  voittomaalipisteet vain runkosarjassa
  */
 export function scoreSkater(stats) {
     const {
@@ -148,7 +153,6 @@ export function scoreSkater(stats) {
         faceoffLosses = 0,
         penalties = null,
         starRank = null,
-        isRegularSeason = true,
         isCaptain = false,
     } = stats;
 
@@ -166,11 +170,10 @@ export function scoreSkater(stats) {
 
     /*
      * Jatkoaikamaali sisältää jo voittomaalin osuuden, joten samasta maalista
-     * ei anneta molempia. Voittomaalipisteet ovat lisäksi käytössä vain
-     * runkosarjassa.
+     * ei anneta molempia. Voittomaali pisteytetään myös pudotuspeleissä.
      */
     const winnersNotInOvertime = Math.max(0, gameWinningGoals - overtimeGoals);
-    if (isRegularSeason) add('gameWinner', winnersNotInOvertime, winnersNotInOvertime * 2);
+    add('gameWinner', winnersNotInOvertime, winnersNotInOvertime * 2);
     add('overtimeGoal', overtimeGoals, overtimeGoals * 3);
 
     add('shorthandedGoal', shorthandedGoals, shorthandedGoals * 4);
@@ -201,13 +204,19 @@ export function scoreSkater(stats) {
 /**
  * Maalivahdin pisteet.
  *
- * Maalivahdin omat maalit ja syötöt eivät ole NHL:n boxscoren
- * maalivahtirivillä, joten ne on annettava erikseen jos ne halutaan mukaan.
+ * Maalivahdin maalit ja syötöt eivät ole NHL:n boxscoren maalivahtirivillä,
+ * joten palvelin laskee ne ottelun maalitapahtumista (eventGoals,
+ * eventAssists). Suurempi luku voittaa, jos kumpikin on annettu.
+ *
+ * @param {boolean} stats.fullGame  pelasiko vahti koko ottelun (nollapelin ehto)
  */
 export function scoreGoalie(stats) {
     const {
-        goals = 0,
-        assists = 0,
+        goals: boxGoals = 0,
+        assists: boxAssists = 0,
+        eventGoals = 0,
+        eventAssists = 0,
+        fullGame = true,
         saves = 0,
         goalsAgainst = 0,
         decision = '',
@@ -215,6 +224,9 @@ export function scoreGoalie(stats) {
         starRank = null,
         isCaptain = false,
     } = stats;
+
+    const goals = Math.max(boxGoals ?? 0, eventGoals ?? 0);
+    const assists = Math.max(boxAssists ?? 0, eventAssists ?? 0);
 
     const breakdown = [];
     let total = 0;
@@ -231,8 +243,12 @@ export function scoreGoalie(stats) {
     else if (decision === 'L') add('loss', decision, -2);
     else if (decision === 'O' || decision === 'OTL') add('otLoss', decision, 1);
 
-    // Nollapeli edellyttää voittoa: torjuttu peli ilman voittoa ei ole nollapeli.
-    if (decision === 'W' && goalsAgainst === 0) add('shutout', 1, 12);
+    /*
+     * Nollapeli kuten NHL:n tilastoissa: voitto, ei päästettyjä maaleja ja koko
+     * ottelu samalla vahdilla. Jaettu nollapeli ei ole kummankaan vahdin.
+     * Voittolaukauskilpailun maalit eivät ole päästettyjä maaleja.
+     */
+    if (decision === 'W' && goalsAgainst === 0 && fullGame) add('shutout', 1, 12);
 
     add('saves', saves, savePoints(saves));
     add('goalsAgainst', goalsAgainst, goalsAgainstPoints(goalsAgainst));

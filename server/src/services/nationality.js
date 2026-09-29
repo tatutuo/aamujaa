@@ -1,6 +1,6 @@
 import { stats, web, mapWithConcurrency } from '../lib/nhlApi.js';
 import { getOrFetch, TTL } from '../lib/cache.js';
-import { getSeasonId, getPreviousSeasonId } from '../lib/season.js';
+import { getSeasonId } from '../lib/season.js';
 import { NHL_TEAMS } from '../lib/teams.js';
 
 /**
@@ -26,27 +26,24 @@ import { NHL_TEAMS } from '../lib/teams.js';
  * virallinen kansallisuus voittaa syntymämaan aina kun se on tiedossa.
  */
 
+/** NHL käyttää ISO-maakoodeja (DEU, CHE, DNK, SVN) eikä olympiakoodeja. */
 const EURO_NATIONALITIES = [
-    'FIN', 'SWE', 'RUS', 'CZE', 'SUI', 'SVK', 'GER',
-    'DEN', 'LVA', 'AUT', 'FRA', 'NOR', 'SLO', 'BLR',
+    'FIN', 'SWE', 'RUS', 'CZE', 'CHE', 'SVK', 'DEU',
+    'DNK', 'LVA', 'AUT', 'FRA', 'NOR', 'SVN', 'BLR',
 ];
 
-/** Mitkä maakoodit kuuluvat alueeseen. Sama joukko molemmille lähteille. */
+/** Vanhat olympiakoodit ISO-koodeiksi. */
+const LEGACY_CODES = { GER: 'DEU', SUI: 'CHE', DEN: 'DNK', SLO: 'SVN', LAT: 'LVA' };
+export const normaliseNation = (code) => LEGACY_CODES[code] ?? code;
+
+/** Alueen maat: 'fi' = Suomi, 'en' = Euroopan maat (vanha Aamujää-jako). */
 function regionCountries(region) {
     return region === 'en' ? EURO_NATIONALITIES : ['FIN'];
 }
 
-function nationalityExpression(region) {
-    if (region === 'en') {
-        const list = EURO_NATIONALITIES.map((c) => `'${c}'`).join(',');
-        return `nationalityCode in (${list})`;
-    }
-    return `nationalityCode='FIN'`;
-}
-
-/** Lisää yhden kauden pelaajat karttaan. Uudempi kausi voittaa vanhemman. */
-async function fetchSeason(region, season, map) {
-    const cayenneExp = `seasonId=${season} and ${nationalityExpression(region)}`;
+/** Lisää yhden kauden yhden maan pelaajat karttaan. */
+async function fetchSeason(code, season, map) {
+    const cayenneExp = `seasonId=${season} and nationalityCode='${code}'`;
 
     const [skaters, goalies] = await Promise.all([
         stats('skater/bios', { limit: -1, cayenneExp }).catch(() => null),
@@ -79,12 +76,12 @@ async function fetchSeason(region, season, map) {
  *
  * Vain ne pelaajat, joita bios-raportti ei jo tuntenut — virallinen
  * kansallisuus on tarkempi tieto kuin syntymämaa, joten se ei saa ylikirjoittua.
+ * Kokoonpanot ovat samassa välimuistissa kuin /roster-reitti, joten useamman
+ * maan seuraaminen ei moninkertaista NHL-pyyntöjä.
  */
-async function fetchRosters(region, map) {
-    const wanted = new Set(regionCountries(region));
-
+async function fetchRosters(code, map) {
     const rosters = await mapWithConcurrency(NHL_TEAMS, 6, (team) =>
-        web(`/roster/${team.abbrev}/current`).catch(() => null),
+        getOrFetch(`roster:${team.abbrev}`, TTL.roster, () => web(`/roster/${team.abbrev}/current`)).catch(() => null),
     );
 
     rosters.forEach((roster) => {
@@ -97,12 +94,12 @@ async function fetchRosters(region, map) {
         ];
 
         for (const p of players) {
-            if (!wanted.has(p.birthCountry) || map.has(p.id)) continue;
+            if (normaliseNation(p.birthCountry) !== code || map.has(p.id)) continue;
 
             map.set(p.id, {
                 id: p.id,
                 name: `${p.firstName?.default ?? ''} ${p.lastName?.default ?? ''}`.trim(),
-                nationality: p.birthCountry,
+                nationality: code,
                 birthDate: p.birthDate,
                 position: p.positionCode || 'F',
             });
@@ -111,14 +108,11 @@ async function fetchRosters(region, map) {
 }
 
 /**
- * @param {string} region 'fi' = suomalaiset, 'en' = eurooppalaiset
- * @param {string} [season] kauden tunniste; oletuksena kuluva kausi
- * @returns {Promise<Map<number, {id:number,name:string,nationality:string,position:string}>>}
+ * Yhden maan pelaajat. Välimuistissa maakohtaisesti, joten eri käyttäjien
+ * erilaiset maayhdistelmät jakavat saman datan.
  */
-export async function getPlayersByRegion(region = 'fi', season = getSeasonId()) {
-    const key = `nationality:${season}:${region}`;
-
-    return getOrFetch(key, TTL.roster, async () => {
+async function getPlayersByNation(code, season) {
+    return getOrFetch(`nationality:${season}:${code}`, TTL.roster, async () => {
         const map = new Map();
 
         /*
@@ -131,13 +125,36 @@ export async function getPlayersByRegion(region = 'fi', season = getSeasonId()) 
          * ja listaa käytetään vain suodattimena illan kokoonpanoille, joten
          * lopettaneesta pelaajasta ei ole haittaa — hän ei osu mihinkään.
          */
-        // Virallinen kansallisuus ensin: edellinen kausi pohjaksi, kuluva päälle.
-        await fetchSeason(region, getPreviousSeasonId(), map);
-        await fetchSeason(region, season, map);
+        const previous = `${Number(season.slice(0, 4)) - 1}${season.slice(0, 4)}`;
+        await fetchSeason(code, previous, map);
+        await fetchSeason(code, season, map);
 
         // Kokoonpanot täydentävät ne, joilla ei vielä ole yhtään NHL-ottelua.
-        await fetchRosters(region, map);
+        await fetchRosters(code, map);
 
         return map;
     });
+}
+
+/**
+ * Usean maan pelaajat yhdessä kartassa.
+ * @param {string[]} codes ISO-maakoodit, esim. ['FIN', 'SWE']
+ * @param {string} [season]
+ * @returns {Promise<Map<number, {id:number,name:string,nationality:string,position:string}>>}
+ */
+export async function getPlayersByNations(codes, season = getSeasonId()) {
+    const unique = [...new Set(codes.map(normaliseNation))];
+    const maps = await Promise.all(unique.map((code) => getPlayersByNation(code, season).catch(() => new Map())));
+    const merged = new Map();
+    for (const map of maps) for (const [id, p] of map) merged.set(id, p);
+    return merged;
+}
+
+/**
+ * Vanha rajapinta: 'fi' = suomalaiset, 'en' = eurooppalaiset.
+ * @param {string} region
+ * @param {string} [season]
+ */
+export async function getPlayersByRegion(region = 'fi', season = getSeasonId()) {
+    return getPlayersByNations(regionCountries(region), season);
 }

@@ -118,17 +118,15 @@ const FantasyModal = ({
             // pelaajakortin tietoihin nähden esimerkiksi kaupan jälkeen.
             const position = pStats.position ?? player.position;
 
+            // Nollapeli edellyttää, että sama vahti pelasi koko ottelun.
+            const ownSide = ['awayTeam', 'homeTeam'].find((side) =>
+                (box.playerByGameStats[side]?.goalies ?? []).some((g) => Number(g.playerId) === Number(playerId)));
+            const goaliesUsed = (box.playerByGameStats[ownSide]?.goalies ?? [])
+                .filter((g) => g.toi && g.toi !== '00:00').length;
+
             const result = position === 'G'
-                ? scoreGoalie({ ...pStats, ...own, starRank, isCaptain })
-                : scoreSkater({
-                    ...pStats,
-                    ...own,
-                    position,
-                    starRank,
-                    isCaptain,
-                    // Voittomaalipisteet ovat käytössä vain runkosarjassa.
-                    isRegularSeason: (events?.gameType ?? 2) === 2,
-                });
+                ? scoreGoalie({ ...pStats, ...own, starRank, isCaptain, fullGame: goaliesUsed === 1 })
+                : scoreSkater({ ...pStats, ...own, position, starRank, isCaptain });
 
             totalPts = result.total;
             rawTotal = result.rawTotal;
