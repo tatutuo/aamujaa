@@ -94,7 +94,53 @@
     white-space: nowrap;
 }
 
-.dt-sort:hover { color: var(--text-primary); }
+/*
+ * Lajittelunuoli otsikon alapuolella eikä vieressä: puhelimen 40 px:n
+ * sarakkeessa nuoli vei muuten tilan kolmekirjaimiselta lyhenteeltä.
+ */
+.dt-sort { position: relative; }
+
+.dt-sort svg {
+    position: absolute;
+    right: 6px;
+    bottom: 0;
+}
+
+@media (max-width: 480px) {
+    .dt-sort svg { right: 4px; }
+}
+
+@media (hover: hover) {
+    .dt-sort:hover { color: var(--text-primary); }
+}
+
+/* --- Lyhenteiden selitykset taulukon alla --- */
+
+.dt-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin: 0;
+    padding: 10px 12px;
+    border-top: 1px solid var(--border-subtle);
+    font-size: var(--text-xs);
+    line-height: 1.45;
+    color: var(--text-tertiary);
+}
+
+.dt-legend-item {
+    display: flex;
+    gap: 5px;
+    max-width: 100%;
+}
+
+.dt-legend dt {
+    flex: none;
+    font-weight: 800;
+    color: var(--text-secondary);
+}
+
+.dt-legend dd { margin: 0; }
 
 .dt-table thead th.is-sorted {
     color: var(--accent-text);

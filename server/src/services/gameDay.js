@@ -221,18 +221,12 @@ async function findNextGameDay(fromDate) {
 }
 
 /**
- * Päivän kooste. Yksi kutsu, yksi välimuistiavain.
- *
- * @param {string} date  YYYY-MM-DD
- * @param {string} region 'fi' = suomalaiset, 'en' = eurooppalaiset
+ * Päivän ottelut ja kaikki niissä pelaavat (tai pelaamaan tulevat) pelaajat.
+ * Ei riipu käyttäjän valinnoista, joten sama välimuistimerkintä palvelee
+ * kaikkia: seuratut maat ja suosikit suodatetaan tästä erikseen.
  */
-/**
- * @param {string} date YYYY-MM-DD
- * @param {string[]} nations seurattavat maat ISO-koodeina, esim. ['FIN', 'SWE']
- */
-export async function getGameDay(date, nations = ['FIN']) {
-    const codes = [...new Set(nations)].sort();
-    return getOrFetch(`gameday:${date}:${codes.join(',')}`, TTL.scores, async () => {
+async function getDayPlayers(date) {
+    return getOrFetch(`gameday-players:${date}`, TTL.scores, async () => {
         const score = await web(`/score/${date}`);
         const games = score?.games ?? [];
 
@@ -241,45 +235,66 @@ export async function getGameDay(date, nations = ['FIN']) {
             // pelataan. Pelkkä "ei otteluita" jättää käyttäjän pimentoon —
             // ja kausi on tauolla neljä kuukautta vuodessa.
             const next = await findNextGameDay(date).catch(() => null);
-            return { date, games: [], hot: [], tracked: [], hasLiveGames: false, next };
+            return { games: [], all: [], next };
         }
 
-        // Kansallisuudet haetaan sen kauden mukaan johon päivä kuuluu, ei
-        // nykyhetken mukaan — muuten menneiden päivien selaus ei löydä pelaajia.
-        const season = getSeasonId(new Date(`${date}T12:00:00Z`));
-
-        const [played, upcoming, regionPlayers] = await Promise.all([
+        const [played, upcoming] = await Promise.all([
             fetchBoxscores(games),
             fetchUpcomingRosters(games),
-            getPlayersByNations(codes, season).catch(() => new Map()),
         ]);
 
-        const playedWithFlag = played.map((p) => ({ ...p, playing: true }));
-        const all = [...playedWithFlag, ...upcoming];
-
-        // Seurattujen maiden pelaajat
-        const tracked = all
-            .filter((p) => regionPlayers.has(p.id))
-            .map((p) => ({ ...p, nationality: regionPlayers.get(p.id).nationality }));
-
-        const hot = playedWithFlag.filter(isHot);
-
-        const sortByPoints = (a, b) => {
-            if (a.playing !== b.playing) return a.playing ? -1 : 1;
-            const pa = a.position === 'G' ? a.stats.saves : a.stats.points;
-            const pb = b.position === 'G' ? b.stats.saves : b.stats.points;
-            return pb - pa;
-        };
-
-        return {
-            date,
-            games,
-            hot: hot.sort(sortByPoints),
-            tracked: tracked.sort(sortByPoints),
-            hasLiveGames: games.some((g) => LIVE_STATES.has(g.gameState)),
-            allFinished: games.every((g) => FINISHED_STATES.has(g.gameState)),
-        };
+        return { games, all: [...played.map((p) => ({ ...p, playing: true })), ...upcoming], next: null };
     });
+}
+
+const sortByPoints = (a, b) => {
+    if (a.playing !== b.playing) return a.playing ? -1 : 1;
+    const pa = a.position === 'G' ? a.stats.saves : a.stats.points;
+    const pb = b.position === 'G' ? b.stats.saves : b.stats.points;
+    return pb - pa;
+};
+
+/**
+ * Päivän kooste etusivulle.
+ *
+ * @param {string} date YYYY-MM-DD
+ * @param {string[]} nations seurattavat maat ISO-koodeina, esim. ['FIN', 'SWE']
+ * @param {number[]} favourites suosikkipelaajien tunnisteet: heidän illan
+ *   tilastonsa palautetaan kansallisuudesta riippumatta. Aiemmin vain
+ *   seurattujen maiden pelaajat saivat tilastot, joten esimerkiksi
+ *   kanadalainen suosikki näytti "odottaa ottelua" koko illan.
+ */
+export async function getGameDay(date, nations = ['FIN'], favourites = []) {
+    const codes = [...new Set(nations)].sort();
+    const day = await getDayPlayers(date);
+
+    if (day.games.length === 0) {
+        return { date, games: [], hot: [], tracked: [], favourites: [], hasLiveGames: false, next: day.next };
+    }
+
+    // Kansallisuudet haetaan sen kauden mukaan johon päivä kuuluu, ei
+    // nykyhetken mukaan — muuten menneiden päivien selaus ei löydä pelaajia.
+    const season = getSeasonId(new Date(`${date}T12:00:00Z`));
+    const regionPlayers = await getPlayersByNations(codes, season).catch(() => new Map());
+
+    const tracked = day.all
+        .filter((p) => regionPlayers.has(p.id))
+        .map((p) => ({ ...p, nationality: regionPlayers.get(p.id).nationality }));
+
+    const favSet = new Set(favourites.map(Number));
+    const favouritePlayers = favSet.size ? day.all.filter((p) => favSet.has(p.id)) : [];
+
+    const hot = day.all.filter((p) => p.playing && isHot(p));
+
+    return {
+        date,
+        games: day.games,
+        hot: [...hot].sort(sortByPoints),
+        tracked: tracked.sort(sortByPoints),
+        favourites: favouritePlayers.sort(sortByPoints),
+        hasLiveGames: day.games.some((g) => LIVE_STATES.has(g.gameState)),
+        allFinished: day.games.every((g) => FINISHED_STATES.has(g.gameState)),
+    };
 }
 
 /** Yksittäisen ottelun pelaajatilastot valmiiksi normalisoituna. */

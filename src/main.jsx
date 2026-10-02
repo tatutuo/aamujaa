@@ -14,6 +14,17 @@ createRoot(document.getElementById('root')).render(
     </StrictMode>,
 );
 
+/*
+ * Ei zoomausta: sovellus toimii kuin natiivisovellus, myös kotinäytöltä
+ * avattuna. Android noudattaa viewportin maximum-scale-asetusta, mutta
+ * iPhonen Safari ohittaa sen, joten nipistyseleet estetään erikseen.
+ * Kaksoisnapautuksen zoomin estää global.css:n touch-action: manipulation.
+ * Käyttöjärjestelmän oma saavutettavuuszoomi toimii edelleen.
+ */
+for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+    document.addEventListener(type, (event) => event.preventDefault(), { passive: false });
+}
+
 // Service worker rekisteröidään vasta kun sivu on latautunut, jottei se
 // kilpaile ensimmäisen näkymän piirtämisen kanssa. Vain tuotantobuildissa —
 // kehityksessä välimuisti vain haittaisi.

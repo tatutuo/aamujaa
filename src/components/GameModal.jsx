@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { IconPlayerPlayFilled, IconStarFilled, IconMapPin, IconDeviceTv, IconFlag, IconUser, IconCalendar } from '@tabler/icons-react';
 import Sheet from './Sheet';
 import ShotMap from './ShotMap';
+import LinesView from './LinesView';
 import TeamBadge from './TeamBadge';
 import DataTable from './ui/DataTable';
 import Segmented from './ui/Segmented';
@@ -187,10 +188,14 @@ function GameContent({ gameData, details, box, isLoading, error, awayAbbrev, hom
     }, [details, homeAbbrev]);
 
     const tabs = pregame
-        ? [{ value: 'info', label: fi ? 'Tiedot' : 'Info' }]
+        ? [
+            { value: 'info', label: fi ? 'Tiedot' : 'Info' },
+            { value: 'lines', label: fi ? 'Kentälliset' : 'Lines' },
+        ]
         : [
             { value: 'events', label: fi ? 'Tapahtumat' : 'Events' },
             { value: 'players', label: fi ? 'Pelaajat' : 'Players' },
+            { value: 'lines', label: fi ? 'Kentälliset' : 'Lines' },
             { value: 'stats', label: fi ? 'Tilastot' : 'Stats' },
             { value: 'shots', label: fi ? 'Laukaukset' : 'Shots' },
             { value: 'faceoffs', label: fi ? 'Aloitukset' : 'Faceoffs' },
@@ -237,6 +242,9 @@ function GameContent({ gameData, details, box, isLoading, error, awayAbbrev, hom
                         )}
                         {activeTab === 'players' && (
                             <GamePlayers box={box} awayAbbrev={awayAbbrev} homeAbbrev={homeAbbrev} lang={lang} onPlayerClick={onPlayerClick} />
+                        )}
+                        {activeTab === 'lines' && (
+                            <GameLines gameId={gameId} pregame={pregame} awayAbbrev={awayAbbrev} homeAbbrev={homeAbbrev} lang={lang} onPlayerClick={onPlayerClick} />
                         )}
                         {activeTab === 'stats' && (
                             extrasLoading
@@ -409,7 +417,7 @@ function GameEvents({ periods, stars, box, awayAbbrev, homeAbbrev, lang, onPlaye
                                 const g = event.data;
                                 const team = g.teamAbbrev?.default;
                                 const tag = goalTag(g, fi);
-                                const assists = (g.assists ?? []).map((a) => a.name?.default).filter(Boolean);
+                                const assists = (g.assists ?? []).filter((a) => a.name?.default);
                                 return (
                                     <li key={`g${i}`} className="gm2-event is-goal" style={{ '--team': colourOf(team) }}>
                                         <span className="gm2-event-time num">{event.time}</span>
@@ -420,7 +428,25 @@ function GameEvents({ periods, stars, box, awayAbbrev, homeAbbrev, lang, onPlaye
                                             </button>
                                             <span className="gm2-event-sub">
                                                 {team}{tag && <span className="dt-tag">{tag}</span>}
-                                                {assists.length > 0 ? ` · ${assists.join(', ')}` : (fi ? ' · ilman syöttäjää' : ' · unassisted')}
+                                                {assists.length > 0 ? (
+                                                    <>
+                                                        {' · '}
+                                                        {assists.map((a, k) => (
+                                                            <React.Fragment key={a.playerId ?? k}>
+                                                                {k > 0 && ', '}
+                                                                <button
+                                                                    type="button"
+                                                                    className="gm2-assist"
+                                                                    onClick={() => a.playerId && onPlayerClick(a.playerId)}
+                                                                    disabled={!a.playerId}
+                                                                >
+                                                                    {a.name.default}
+                                                                    {a.assistsToDate != null && <span className="gm2-todate"> ({a.assistsToDate})</span>}
+                                                                </button>
+                                                            </React.Fragment>
+                                                        ))}
+                                                    </>
+                                                ) : (fi ? ' · ilman syöttäjää' : ' · unassisted')}
                                             </span>
                                         </span>
                                         <span className="gm2-event-score num">{g.awayScore}–{g.homeScore}</span>
@@ -470,8 +496,8 @@ function skaterColumns(group, fi, lang) {
     if (group === 'more') {
         return [
             { key: 'sog', label: fi ? 'L' : 'S', title: fi ? 'Laukaukset maalia kohti' : 'Shots on goal', format: int },
-            { key: 'hits', label: fi ? 'Takl' : 'Hits', title: fi ? 'Taklaukset' : 'Hits', format: int },
-            { key: 'blockedShots', label: fi ? 'Blok' : 'Blk', title: fi ? 'Blokit' : 'Blocked shots', format: int },
+            { key: 'hits', label: fi ? 'TA' : 'HIT', title: fi ? 'Taklaukset' : 'Hits', format: int },
+            { key: 'blockedShots', label: fi ? 'BL' : 'BLK', title: fi ? 'Blokatut laukaukset' : 'Blocked shots', format: int },
             { key: 'faceoffPct', label: fi ? 'Al%' : 'FO%', title: fi ? 'Aloitusvoitot' : 'Faceoff win %', format: (v) => pct(v, 0, lang) },
             { key: 'pim', label: fi ? 'JM' : 'PIM', title: fi ? 'Jäähyminuutit' : 'Penalty minutes', format: int },
         ];
@@ -517,7 +543,7 @@ function GamePlayers({ box, awayAbbrev, homeAbbrev, lang, onPlayerClick }) {
 
     const columns = who === 'goalies'
         ? [
-            { key: 'saves', label: fi ? 'Torj' : 'SV', title: fi ? 'Torjunnat' : 'Saves', format: int },
+            { key: 'saves', label: fi ? 'TO' : 'SV', title: fi ? 'Torjunnat' : 'Saves', format: int },
             { key: 'shotsAgainst', label: fi ? 'LV' : 'SA', title: fi ? 'Laukaukset vastaan' : 'Shots against', format: int },
             { key: 'savePct', label: fi ? 'T%' : 'SV%', title: fi ? 'Torjuntaprosentti' : 'Save percentage', format: (v) => pct(v, 1, lang) },
             { key: 'goalsAgainst', label: fi ? 'PM' : 'GA', title: fi ? 'Päästetyt maalit' : 'Goals against', format: int, lowerIsBetter: true },
@@ -835,6 +861,76 @@ function GameInfo({ game, extras, extrasLoading, pregame, awayAbbrev, homeAbbrev
                     )}
                 </>
             )}
+        </>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Kentälliset
+// ---------------------------------------------------------------------------
+
+/**
+ * Pelattu tai käynnissä oleva ottelu: tämän ottelun kentälliset.
+ * Tuleva ottelu: kummankin joukkueen edellisen ottelun kentälliset, koska
+ * illan kokoonpanoa ei julkaista virallisesti etukäteen.
+ */
+function GameLines({ gameId, pregame, awayAbbrev, homeAbbrev, lang, onPlayerClick }) {
+    const fi = lang === 'fi';
+    const [team, setTeam] = useState(awayAbbrev);
+
+    const { data, isLoading, error } = useFetchWhenOpen(
+        true,
+        (signal) => (pregame
+            ? Promise.all([api.teamLines(awayAbbrev, { signal }), api.teamLines(homeAbbrev, { signal })])
+                .then(([away, home]) => ({ pregame: true, teams: { [awayAbbrev]: away, [homeAbbrev]: home } }))
+            : api.gameLines(gameId, { signal }).then((g) => ({ pregame: false, game: g }))),
+        [gameId, pregame],
+    );
+
+    const picker = (
+        <div className="gm2-filters">
+            <Chips
+                label={fi ? 'Joukkue' : 'Team'}
+                value={team}
+                onChange={setTeam}
+                options={[{ value: awayAbbrev, label: awayAbbrev }, { value: homeAbbrev, label: homeAbbrev }]}
+            />
+        </div>
+    );
+
+    if (isLoading) return <>{picker}<div className="skeleton" style={{ height: 320 }} /></>;
+    if (error || !data) return <p className="panel-hint">{fi ? 'Kentällisten haku epäonnistui.' : 'Could not load lines.'}</p>;
+
+    if (data.pregame) {
+        const latest = data.teams[team];
+        const injured = new Map((latest?.injured ?? []).map((i) => [i.id, i]));
+        return (
+            <>
+                {picker}
+                {latest?.lines ? (
+                    <>
+                        <p className="ln-context">
+                            {fi
+                                ? `Edellisen ottelun kentälliset (${shortDate(latest.date, lang)} ${latest.isHome ? 'vs' : '@'} ${latest.opponent}). Illan kokoonpano voi muuttua.`
+                                : `Lines from the previous game (${shortDate(latest.date, lang)} ${latest.isHome ? 'vs' : '@'} ${latest.opponent}). Tonight's lineup may change.`}
+                        </p>
+                        <LinesView lines={latest.lines} lang={lang} injured={injured} onPlayerClick={onPlayerClick} />
+                    </>
+                ) : (
+                    <p className="panel-hint">{fi ? 'Joukkueella ei ole vielä pelattuja otteluita.' : 'No games played yet.'}</p>
+                )}
+            </>
+        );
+    }
+
+    if (!data.game?.available) {
+        return <p className="panel-hint">{fi ? 'Vaihtotiedot eivät ole vielä saatavilla. Ne päivittyvät ottelun aikana.' : 'Shift data is not available yet.'}</p>;
+    }
+
+    return (
+        <>
+            {picker}
+            <LinesView lines={data.game.teams?.[team]} lang={lang} onPlayerClick={onPlayerClick} />
         </>
     );
 }

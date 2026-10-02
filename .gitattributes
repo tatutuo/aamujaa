@@ -1,0 +1,2 @@
+# Komentosarjat ajetaan Linux-palvelimella: aina LF-rivinvaihdot.
+*.sh text eol=lf

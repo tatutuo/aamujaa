@@ -17,6 +17,8 @@ import { getInjuries } from '../services/injuries.js';
 import { getBracket, getSeriesGames } from '../services/playoffs.js';
 import { getNationCareers, getCupHistory, getAwardWinners, getNationAwards, TROPHIES } from '../services/history.js';
 import { getDraftPicks, getDraftRankings } from '../services/draft.js';
+import { getForm, FORM_WINDOWS } from '../services/form.js';
+import { getGameLines, getLatestLines } from '../services/lines.js';
 
 const router = Router();
 
@@ -76,7 +78,9 @@ function abbrevParam(req) {
  */
 router.get('/day', asyncRoute(async (req, res) => {
     const date = dateParam(req);
-    const data = await getGameDay(date, nationsParam(req));
+    // ?favs=8484801,8476872: suosikkien illan tilastot kansallisuudesta riippumatta (enintään 40).
+    const favs = String(req.query.favs ?? '').split(',').filter((id) => /^\d{7}$/.test(id)).slice(0, 40).map(Number);
+    const data = await getGameDay(date, nationsParam(req), favs);
 
     // Kun ottelut ovat käynnissä, selain saa virkistää usein; muuten harvoin.
     res.set('Cache-Control', data.hasLiveGames ? 'public, max-age=15' : 'public, max-age=120');
@@ -205,6 +209,22 @@ router.get('/edge/player/:id', asyncRoute(async (req, res) => {
 // ---------------------------------------------------------------------------
 // Loukkaantumiset, pudotuspelit, historia ja draft
 // ---------------------------------------------------------------------------
+
+/** Ottelun kentälliset vaihdoista laskettuna. */
+router.get('/game/:id/lines', asyncRoute(async (req, res) => {
+    res.json(await getGameLines(gameIdParam(req)));
+}));
+
+/** Joukkueen viimeisimmän ottelun kentälliset ja nykyiset poissaolot. */
+router.get('/team/:abbrev/lines', asyncRoute(async (req, res) => {
+    res.json(await getLatestLines(abbrevParam(req)));
+}));
+
+/** Kunto: viimeisen 7, 14 tai 30 päivän taso verrattuna kauteen. */
+router.get('/form', asyncRoute(async (req, res) => {
+    const days = Number(req.query.days);
+    res.json(await getForm({ days: FORM_WINDOWS.includes(days) ? days : 14 }));
+}));
 
 router.get('/injuries', asyncRoute(async (req, res) => {
     res.json(await getInjuries());

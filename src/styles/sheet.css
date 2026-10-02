@@ -1,13 +1,16 @@
 /**
- * Alhaalta liukuvan paneelin tyylit.
+ * Kortit (pelaaja, joukkue, ottelu, haku, tietoja, palaute).
  *
- * Mobiilissa paneeli nousee alhaalta ja jättää yläreunaan raon, jotta käyttäjä
- * näkee mistä tuli. Työpöydällä sama komponentti näkyy keskitettynä korttina.
+ * Yläpalkki jää aina näkyviin: kortti alkaa sen alapuolelta. Puhelimessa kortti
+ * täyttää koko loppunäytön kuten tavallinen näkymä (pistepörssi ym.), jolloin
+ * se näyttää sovelluksen sivulta eikä päälle levitetyltä ikkunalta. Alas
+ * vetäminen sulkee sen edelleen. Työpöydällä kortti on keskitetty.
  */
 
 .sheet-root {
     position: fixed;
     inset: 0;
+    top: calc(52px + var(--safe-top));
     display: flex;
     align-items: flex-end;
     justify-content: center;
@@ -154,6 +157,27 @@
     to   { opacity: 1; }
 }
 
+/* Puhelimessa kortti on koko yläpalkin alapuolisen alueen kokoinen. */
+@media (max-width: 767px) {
+    .sheet-panel,
+    .sheet-panel.is-full {
+        height: 100%;
+        max-height: none;
+        min-height: 0;
+        border: none;
+        border-radius: 0;
+        box-shadow: none;
+    }
+
+    .sheet-grip-area {
+        padding-top: var(--space-2);
+    }
+
+    .sheet-grip {
+        margin-bottom: var(--space-2);
+    }
+}
+
 /* Työpöydällä paneeli on keskitetty kortti, ei alhaalta nouseva levy. */
 @media (min-width: 768px) {
     .sheet-root {
@@ -162,7 +186,7 @@
     }
 
     .sheet-panel {
-        max-height: min(86dvh, 900px);
+        max-height: min(calc(100dvh - 52px - var(--safe-top) - 2 * var(--space-5)), 900px);
         border-radius: var(--radius-lg);
         border-bottom: 1px solid var(--border-subtle);
         animation-name: sheet-pop;

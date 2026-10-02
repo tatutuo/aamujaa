@@ -26,6 +26,10 @@
        ei kirkkautta, joten tekstiä tuetaan kevyellä varjolla. */
     --glass-bg: rgba(46, 50, 56, 0.72);
     --glass-bg-strong: rgba(40, 44, 50, 0.88);
+    /* Alapalkki ja minivalikko: läpikuultavampi lasi. */
+    --glass-bg-nav: rgba(38, 42, 48, 0.46);
+    --glass-bg-menu: rgba(34, 38, 44, 0.6);
+    --glass-blur-nav: blur(18px) saturate(170%);
     --glass-border: rgba(255, 255, 255, 0.12);
     --glass-blur: blur(22px) saturate(130%);
     --glass-shadow: 0 10px 34px rgba(0, 0, 0, 0.42);
@@ -140,6 +144,8 @@
 
     --glass-bg: rgba(255, 255, 255, 0.72);
     --glass-bg-strong: rgba(255, 255, 255, 0.9);
+    --glass-bg-nav: rgba(255, 255, 255, 0.55);
+    --glass-bg-menu: rgba(255, 255, 255, 0.72);
     --glass-border: rgba(15, 23, 42, 0.1);
     --glass-shadow: 0 10px 30px rgba(15, 23, 42, 0.14);
     --glass-text-shadow: none;

@@ -368,3 +368,156 @@
 .link-button:hover { color: var(--accent-text); text-decoration-color: currentColor; }
 
 .gm2-board + .gm2-body { margin-top: var(--space-4); }
+
+/* ==========================================================================
+   Kentälliset (LinesView): pelipaidat kokoonpanokortin tapaan
+   ========================================================================== */
+
+.ln-context {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.ln-group + .ln-group { margin-top: var(--space-4); }
+.ln-group .card-section-title { margin-bottom: var(--space-2); }
+
+.ln-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    border: 1px solid var(--border-subtle);
+    overflow: hidden;
+}
+
+.ln-row { padding: 8px 8px 10px; }
+.ln-row + .ln-row { border-top: 1px solid var(--border-subtle); }
+
+.ln-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 0 4px 2px;
+}
+
+.ln-index { font-size: var(--text-xs); font-weight: 800; color: var(--accent-text); }
+.ln-time { font-size: var(--text-xs); font-weight: 700; color: var(--text-tertiary); }
+
+/* Kolme saraketta; parit ja viisikot keskitetään samaan ruudukkoon. */
+.ln-players {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    row-gap: 6px;
+}
+
+.ln-player {
+    flex: 0 1 33.333%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 0;
+    padding: 4px 2px;
+    border: none;
+    border-radius: 10px;
+    background: none;
+    color: var(--text-primary);
+    font: inherit;
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .ln-player:hover { background: var(--surface-card-hover); }
+}
+
+.ln-player:active { transform: scale(0.97); }
+
+.ln-jersey-wrap { position: relative; display: inline-block; }
+
+.ln-jersey {
+    display: block;
+    width: 54px;
+    height: 47px;
+    filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+}
+
+.ln-jersey-number {
+    font-family: var(--font-body);
+    font-size: 19px;
+    font-weight: 850;
+    letter-spacing: -0.03em;
+}
+
+.ln-name {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--text-sm);
+    font-weight: 750;
+    line-height: 1.2;
+}
+
+.ln-pos {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text-tertiary);
+}
+
+/* Sivussa oleva pelaaja: himmennetty paita ja ensiapumerkki. */
+.ln-player.is-out .ln-jersey { opacity: 0.45; }
+.ln-player.is-out .ln-name { color: var(--negative); }
+
+.ln-out {
+    position: absolute;
+    top: -2px;
+    right: -6px;
+    display: grid;
+    place-items: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--negative);
+    color: #fff;
+    box-shadow: 0 0 0 2px var(--surface-card);
+}
+
+.ln-goalies {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px;
+}
+
+.ln-goalie {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 0 1 33.333%;
+}
+
+.ln-goalie .ln-player { flex: none; width: 100%; }
+.ln-role { font-size: var(--text-xs); color: var(--text-tertiary); }
+
+@media (min-width: 620px) {
+    .ln-jersey { width: 62px; height: 54px; }
+}
+
+/* Maalin syöttäjät: napautettavat nimet tapahtumarivillä. */
+.gm2-assist {
+    padding: 2px 0;
+    border: none;
+    background: none;
+    color: var(--text-secondary);
+    font: inherit;
+    cursor: pointer;
+}
+
+.gm2-assist:disabled { cursor: default; }
+@media (hover: hover) {
+    .gm2-assist:hover:not(:disabled) { color: var(--accent-text); text-decoration: underline; }
+}

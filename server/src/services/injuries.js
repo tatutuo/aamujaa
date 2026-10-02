@@ -92,6 +92,7 @@ export async function getInjuries() {
             return {
                 id: match?.id ?? null,
                 nat: match?.nat ?? null,
+                // Huom: ESPN:n tunniste on uutismerkinnän, ei pelaajan, ja voi toistua.
                 espnId: i.id,
                 name: a.displayName,
                 team: t.abbrev,

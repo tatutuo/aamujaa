@@ -2,7 +2,7 @@ import {
     IconCalendarEvent, IconTable, IconChartBar, IconStar, IconDots,
     IconListNumbers, IconTournament, IconCalendarStats, IconFirstAidKit,
     IconTrophy, IconShield, IconUsersGroup, IconChartDots, IconBolt, IconFlag,
-    IconSearch, IconHistory, IconSeedling, IconAdjustments, IconInfoCircle, IconMessage,
+    IconSearch, IconHistory, IconSeedling, IconAdjustments, IconInfoCircle, IconMessage, IconTrendingUp,
 } from '@tabler/icons-react';
 
 /**
@@ -40,6 +40,7 @@ export const SECTIONS = [
         label: { fi: 'Tilastot', en: 'Stats' },
         items: [
             { path: '/tilastot/pisteporssi', icon: IconTrophy, label: { fi: 'Pistepörssi', en: 'Scoring' }, hint: { fi: 'Pisteet, maalit, syötöt', en: 'Points, goals, assists' } },
+            { path: '/tilastot/kunto', icon: IconTrendingUp, label: { fi: 'Kunto', en: 'Form' }, hint: { fi: 'Nousussa, hiipumassa ja poissaolot', en: 'Rising, falling and absences' } },
             { path: '/tilastot/maalivahdit', icon: IconShield, label: { fi: 'Maalivahdit', en: 'Goalies' }, hint: { fi: 'Torjunta-%, PÄM, nollapelit', en: 'Save %, GAA, shutouts' } },
             { path: '/tilastot/joukkueet', icon: IconUsersGroup, label: { fi: 'Joukkueet', en: 'Teams' }, hint: { fi: 'Maalit, ylivoima, alivoima', en: 'Goals, power play, penalty kill' } },
             { path: '/tilastot/edistyneet', icon: IconChartDots, label: { fi: 'Edistyneet', en: 'Advanced' }, hint: { fi: 'Odotusmaalit ja Corsi', en: 'Expected goals and Corsi' } },

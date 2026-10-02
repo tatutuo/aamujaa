@@ -70,6 +70,12 @@ app.get('/api/health', (req, res) => {
         season: getSeasonId(),
         uptime: Math.round(process.uptime()),
         cache: cacheStats(),
+        // Muistinkulutus megatavuina: webhotellin raja on 512 Mt koko tilille.
+        memory: {
+            rssMb: Math.round(process.memoryUsage().rss / 1048576),
+            heapUsedMb: Math.round(process.memoryUsage().heapUsed / 1048576),
+        },
+        pid: process.pid,
     });
 });
 
@@ -135,9 +141,28 @@ const server = app.listen(config.port, () => {
     startScheduler();
 });
 
-for (const signal of ['SIGINT', 'SIGTERM']) {
-    process.on(signal, () => {
-        console.log(`\n${signal} vastaanotettu, suljetaan...`);
-        server.close(() => process.exit(0));
-    });
+/*
+ * Hallittu sammutus.
+ *
+ * server.close() odottaa, että kaikki yhteydet sulkeutuvat. Webhotellin
+ * Passenger pitää yhteyksiä auki (keep-alive), joten pelkkä close ei koskaan
+ * valmistunut: vanha prosessi jäi uudelleenkäynnistyksen jälkeen pyörimään
+ * päiviksi ja söi prosessikiintiötä. Nyt joutilaat yhteydet suljetaan heti ja
+ * viimeistään viiden sekunnin kuluttua prosessi lopetetaan joka tapauksessa.
+ */
+let shuttingDown = false;
+function shutdown(reason) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`${reason}: suljetaan palvelin`);
+    server.close(() => process.exit(0));
+    server.closeIdleConnections?.();
+    setTimeout(() => {
+        server.closeAllConnections?.();
+        process.exit(0);
+    }, 5000).unref();
+}
+
+for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+    process.on(signal, () => shutdown(signal));
 }

@@ -166,6 +166,34 @@ Selaimet pitävät `assets/`-tiedostot pitkään välimuistissa, mutta se on
 turvallista: Vite lisää tiedostonimiin sisältöhajautteen, joten uusi versio saa
 uudet nimet.
 
+## 9. Jumiin jääneet Node-prosessit
+
+Tilin raja on 100 "prosessia" (säikeet lasketaan mukaan) ja 512 Mt muistia.
+Passenger käynnistää sovelluksesta uuden kopion uudelleenkäynnistyksessä ja
+ruuhkassa, mutta vanha kopio ei aina sammu, eikä Webbikettu siivoa niitä.
+Jokainen kopio vie noin 7 prosessipaikkaa ja 60–110 Mt.
+
+Tilanteen näkee terminaalista (PID, muisti kt, säikeet, sovellus):
+
+```bash
+for p in $(pgrep -u dnyyyfi node); do echo "$p $(ps -o rss=,nlwp= -p $p) $(readlink /proc/$p/cwd)"; done
+```
+
+**Automaattinen siivous:** vie `server/scripts/node-siivous.sh` polkuun
+`~/bin/node-siivous.sh` ja lisää cPanelin Cron Jobs -kohtaan:
+
+```
+*/15 * * * * /bin/bash $HOME/bin/node-siivous.sh
+```
+
+Skripti jättää jokaisesta sovelluksesta uusimman kopion rauhaan ja sammuttaa
+muut, jos ne ovat olleet käynnissä yli tunnin. Loki: `~/logs/node-siivous.log`.
+Kokeilu ilman sammuttamista: `DRY_RUN=1 bash ~/bin/node-siivous.sh`.
+
+Lisäksi jokaiselle Node-sovellukselle kannattaa asettaa ympäristömuuttujat
+`UV_THREADPOOL_SIZE=2` ja `NODE_OPTIONS=--v8-pool-size=2`: säikeet putoavat
+noin kymmenestä seitsemään per kopio.
+
 ---
 
 ## Vaihtoehto: pelkkä backend omaksi sovelluksekseen

@@ -62,7 +62,11 @@ const query = (params) => {
 
 export const api = {
     /** Päivän kooste: ottelut, tulikuumat ja seurattujen maiden pelaajat yhdellä kutsulla. */
-    day: (date, nations, opts) => request(`/api/nhl/day${query({ date, nations: nations?.length ? nations.join(',') : undefined })}`, opts),
+    day: (date, nations, favs, opts) => request(`/api/nhl/day${query({
+        date,
+        nations: nations?.length ? nations.join(',') : undefined,
+        favs: favs?.length ? favs.slice(0, 40).join(',') : undefined,
+    })}`, opts),
 
     score: (date, opts) => request(`/api/nhl/score${query({ date })}`, opts),
     game: (id, opts) => request(`/api/nhl/game/${id}`, opts),
@@ -115,6 +119,14 @@ export const api = {
         request(`/api/nhl/edge/leaders/${category}${query({ pos, season, gameType })}`, opts),
     /** Pelaajan EDGE-luvut persentiileineen. */
     edgePlayer: (id, isGoalie, opts) => request(`/api/nhl/edge/player/${id}${query({ goalie: isGoalie ? 1 : undefined })}`, opts),
+
+    /** Ottelun kentälliset vaihdoista laskettuna. */
+    gameLines: (id, opts) => request(`/api/nhl/game/${id}/lines`, opts),
+    /** Joukkueen viimeisimmän ottelun kentälliset ja nykyiset poissaolot. */
+    teamLines: (abbrev, opts) => request(`/api/nhl/team/${abbrev}/lines`, opts),
+
+    /** Kunto: viimeisen 7, 14 tai 30 päivän taso verrattuna kauteen. */
+    form: (days, opts) => request(`/api/nhl/form${query({ days })}`, opts),
 
     /** Loukkaantumiset (ESPN). */
     injuries: (opts) => request('/api/nhl/injuries', opts),

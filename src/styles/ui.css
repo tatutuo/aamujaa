@@ -485,3 +485,18 @@
     border-color: color-mix(in srgb, var(--live) 45%, transparent);
     background: var(--live-soft);
 }
+
+/*
+ * iPhone suurentaa sivun automaattisesti, kun napautetaan kenttää, jonka
+ * fonttikoko on alle 16 px. Kosketusnäytöillä kentät ovat siksi aina 16 px.
+ */
+@media (pointer: coarse) {
+    .search-field input,
+    .select,
+    .field-input,
+    input,
+    select,
+    textarea {
+        font-size: 16px;
+    }
+}

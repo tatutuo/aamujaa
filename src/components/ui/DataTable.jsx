@@ -34,6 +34,8 @@ const valueOf = (column, row) => (column?.value ? column.value(row) : row[column
  *                  tulevat valmiiksi siinä järjestyksessä.
  *   rowClass       (row) => lisäluokka riville, esim. pudotuspelipaikka
  *   dividerAfter   (row, i, rows, sort) => katkoviiva rivin alle (esim. playoff-raja)
+ *   legend         lyhenteiden selitys taulukon alla (oletus). Otetaan sarakkeiden
+ *                  title-kentistä, joten otsikot voivat olla lyhyitä (TA, RI, CF%).
  */
 export default function DataTable({
     rows,
@@ -52,6 +54,7 @@ export default function DataTable({
     pageSize = 50,
     language = 'fi',
     caption,
+    legend = true,
 }) {
     const fi = language !== 'en';
     const [sort, setSort] = useState(defaultSort ?? { key: columns[0]?.key, dir: 'desc' });
@@ -226,6 +229,8 @@ export default function DataTable({
                 </tbody>
             </table>
 
+            {legend && sorted.length > 0 && <Legend columns={columns} language={language} />}
+
             {sorted.length === 0 && (
                 <p className="dt-empty">{fi ? 'Ei rivejä näillä valinnoilla.' : 'No rows with these filters.'}</p>
             )}
@@ -238,5 +243,21 @@ export default function DataTable({
                 </button>
             )}
         </div>
+    );
+}
+
+/** Lyhenteiden selitykset: "TA Taklaukset · RI Riistot …". */
+function Legend({ columns, language }) {
+    const items = columns.filter((c) => c.title && c.title !== c.label);
+    if (items.length === 0) return null;
+    return (
+        <dl className="dt-legend" aria-label={language === 'en' ? 'Abbreviations' : 'Lyhenteet'}>
+            {items.map((c) => (
+                <div key={c.key} className="dt-legend-item">
+                    <dt>{c.label}</dt>
+                    <dd>{c.title}</dd>
+                </div>
+            ))}
+        </dl>
     );
 }

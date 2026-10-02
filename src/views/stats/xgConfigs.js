@@ -45,9 +45,9 @@ export const XG_SKATER_GROUPS = [
         label: { fi: 'Jäällä 5v5', en: 'On ice 5v5' },
         columns: [
             col('xgPct', { fi: 'xG%', en: 'xG%' }, { fi: 'Joukkueen osuus odotetuista maaleista pelaajan ollessa jäällä (5v5)', en: 'Team share of expected goals with player on ice (5v5)' }, { format: pct1, rate: true }),
-            col('xgPctRel', { fi: 'Rel', en: 'Rel' }, { fi: 'xG% verrattuna siihen, kun pelaaja on vaihdossa', en: 'xG% relative to when player is off ice' }, { format: signedPct, rate: true }),
-            col('cfPct', { fi: 'CF%', en: 'CF%' }, { fi: 'Corsi: osuus laukaisuyrityksistä (5v5)', en: 'Corsi: share of shot attempts (5v5)' }, { format: pct1, rate: true }),
-            col('ffPct', { fi: 'FF%', en: 'FF%' }, { fi: 'Fenwick: osuus blokkaamattomista yrityksistä (5v5)', en: 'Fenwick: share of unblocked attempts (5v5)' }, { format: pct1, rate: true }),
+            col('xgPctRel', { fi: 'Rel', en: 'Rel' }, { fi: 'Suhteellinen xG%: jäällä ollessa miinus vaihdossa ollessa. Plus = joukkue pelaa paremmin pelaajan kanssa', en: 'xG% on ice minus off ice' }, { format: signedPct, rate: true }),
+            col('cfPct', { fi: 'CF%', en: 'CF%' }, { fi: 'Corsi: joukkueen osuus kaikista laukaisuyrityksistä (maalia kohti, ohi ja blokatut) pelaajan ollessa jäällä tasakentin. Yli 50 % = joukkue hallitsee kiekkoa', en: 'Corsi: team share of all shot attempts with player on ice at 5v5' }, { format: pct1, rate: true }),
+            col('ffPct', { fi: 'FF%', en: 'FF%' }, { fi: 'Fenwick: kuten Corsi, mutta ilman blokattuja laukauksia', en: 'Fenwick: like Corsi but without blocked shots' }, { format: pct1, rate: true }),
             col('toi', { fi: 'Aika', en: 'TOI' }, { fi: 'Peliaika per ottelu', en: 'Time on ice per game' }, { format: clock, width: '52px' }),
         ],
     },
@@ -59,7 +59,7 @@ export const XG_SKATER_GROUPS = [
             col('hdGoals', { fi: 'VM', en: 'HDG' }, { fi: 'Maalit vaarallisilta paikoilta', en: 'High-danger goals' }, { format: int }),
             col('hdxg', { fi: 'VxG', en: 'HDxG' }, { fi: 'Odotetut maalit vaarallisilta paikoilta', en: 'High-danger expected goals' }, { format: dec1 }),
             col('shotAttempts', { fi: 'YR', en: 'ATT' }, { fi: 'Laukaisuyritykset', en: 'Shot attempts' }, { format: int }),
-            col('gameScore', { fi: 'GS/O', en: 'GS/GP' }, { fi: 'Game Score per ottelu: yhden luvun arvio ottelun annista', en: 'Game Score per game' }, { format: dec2, rate: true, width: '52px' }),
+            col('gameScore', { fi: 'GS/O', en: 'GS/GP' }, { fi: 'Game Score per ottelu: maaleista, syötöistä, laukauksista, blokeista ja aloituksista laskettu yhden luvun arvio pelaajan annista', en: 'Game Score per game: one-number rating of a performance' }, { format: dec2, rate: true, width: '52px' }),
         ],
     },
 ];
@@ -84,7 +84,7 @@ export const XG_GOALIE_GROUPS = [
             col('hdShots', { fi: 'VL', en: 'HDS' }, { fi: 'Laukaukset vaarallisilta paikoilta', en: 'High-danger shots against' }, { format: int }),
             col('hdGoals', { fi: 'VM', en: 'HDG' }, { fi: 'Maalit vaarallisilta paikoilta', en: 'High-danger goals against' }, { format: int, lowerIsBetter: true }),
             col('hdSavePct', { fi: 'VT%', en: 'HDSV%' }, { fi: 'Torjuntaprosentti vaarallisilta paikoilta', en: 'High-danger save percentage' }, { format: pct1, rate: true, width: '52px' }),
-            col('hdGsax', { fi: 'VGSAx', en: 'HDGSAx' }, { fi: 'Estetyt maalit vaarallisilta paikoilta odotettuun nähden', en: 'High-danger goals saved above expected' }, { format: signedDec(1), width: '56px' }),
+            col('hdGsax', { fi: 'VGS', en: 'HDGS' }, { fi: 'Estetyt maalit vaarallisilta paikoilta odotettuun nähden', en: 'High-danger goals saved above expected' }, { format: signedDec(1), width: '56px' }),
         ],
     },
 ];
@@ -95,8 +95,8 @@ export const XG_TEAM_GROUPS = [
         label: { fi: 'Osuudet 5v5', en: 'Shares 5v5' },
         columns: [
             col('xgPct', { fi: 'xG%', en: 'xG%' }, { fi: 'Osuus odotetuista maaleista (5v5)', en: 'Share of expected goals (5v5)' }, { format: pct1 }),
-            col('cfPct', { fi: 'CF%', en: 'CF%' }, { fi: 'Corsi: osuus laukaisuyrityksistä (5v5)', en: 'Corsi (5v5)' }, { format: pct1 }),
-            col('ffPct', { fi: 'FF%', en: 'FF%' }, { fi: 'Fenwick: osuus blokkaamattomista (5v5)', en: 'Fenwick (5v5)' }, { format: pct1 }),
+            col('cfPct', { fi: 'CF%', en: 'CF%' }, { fi: 'Corsi: osuus kaikista laukaisuyrityksistä tasakentin. Yli 50 % = hallitsee kiekkoa', en: 'Corsi: share of all 5v5 shot attempts' }, { format: pct1 }),
+            col('ffPct', { fi: 'FF%', en: 'FF%' }, { fi: 'Fenwick: kuten Corsi, mutta ilman blokattuja laukauksia', en: 'Fenwick: Corsi without blocked shots' }, { format: pct1 }),
             col('hdfPerGame', { fi: 'VL/O', en: 'HDF/GP' }, { fi: 'Vaaralliset laukaukset per ottelu', en: 'High-danger shots for per game' }, { format: dec1, width: '52px' }),
             col('hdaPerGame', { fi: 'VLV/O', en: 'HDA/GP' }, { fi: 'Vaaralliset laukaukset vastaan per ottelu', en: 'High-danger shots against per game' }, { format: dec1, lowerIsBetter: true, width: '52px' }),
         ],
@@ -109,7 +109,7 @@ export const XG_TEAM_GROUPS = [
             col('gf', { fi: 'TM', en: 'GF' }, { fi: 'Tehdyt maalit per ottelu', en: 'Goals for per game' }, { format: dec2 }),
             col('xga', { fi: 'xPM', en: 'xGA' }, { fi: 'Odotetut päästetyt maalit per ottelu', en: 'Expected goals against per game' }, { format: dec2, lowerIsBetter: true }),
             col('ga', { fi: 'PM', en: 'GA' }, { fi: 'Päästetyt maalit per ottelu', en: 'Goals against per game' }, { format: dec2, lowerIsBetter: true }),
-            col('finishing', { fi: 'Viim', en: 'Fin' }, { fi: 'Viimeistely: tehdyt maalit miinus odotetut koko kaudelta', en: 'Finishing: goals minus expected over the season' }, { format: signedDec(1) }),
+            col('finishing', { fi: 'VII', en: 'FIN' }, { fi: 'Viimeistely: tehdyt maalit miinus odotetut koko kaudelta', en: 'Finishing: goals minus expected over the season' }, { format: signedDec(1) }),
         ],
     },
     {

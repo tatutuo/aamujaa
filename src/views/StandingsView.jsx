@@ -88,7 +88,7 @@ const GROUPS = [
             { key: 'home', label: { fi: 'Koti', en: 'Home' }, title: { fi: 'Kotiottelut V-H-JAH', en: 'Home W-L-OTL' }, value: (r) => r.homePoints, format: (_v, r) => record(r.home), width: '62px' },
             { key: 'road', label: { fi: 'Vieras', en: 'Away' }, title: { fi: 'Vierasottelut V-H-JAH', en: 'Road W-L-OTL' }, value: (r) => r.roadPoints, format: (_v, r) => record(r.road), width: '62px' },
             { key: 'l10', label: { fi: '10 v.', en: 'L10' }, title: { fi: 'Viimeiset 10 ottelua', en: 'Last 10 games' }, value: (r) => r.l10Points, format: (_v, r) => record(r.l10), width: '56px' },
-            { key: 'streak', label: { fi: 'Putki', en: 'Strk' }, title: { fi: 'Nykyinen putki', en: 'Current streak' }, value: (r) => streakValue(r.streak), format: (_v, r) => r.streak ?? '–' },
+            { key: 'streak', label: { fi: 'PU', en: 'STK' }, title: { fi: 'Putki: W = voittoja, L = tappioita, OT = jatkoaikatappioita peräkkäin', en: 'Current streak' }, value: (r) => streakValue(r.streak), format: (_v, r) => r.streak ?? '–' },
         ],
     },
 ];

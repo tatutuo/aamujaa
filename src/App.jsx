@@ -27,6 +27,7 @@ import PlayoffsView from './views/PlayoffsView';
 import NationsView from './views/NationsView';
 import HistoryView from './views/HistoryView';
 import DraftView from './views/DraftView';
+import FormView from './views/FormView';
 import MineView from './views/MineView';
 import StatsTableView from './views/stats/StatsTableView';
 import { SCORING, GOALIES, TEAMS } from './views/stats/statsViews';
@@ -244,6 +245,8 @@ function App() {
                 return <ScheduleView onTeamClick={handleOpenTeam} onGameClick={handleOpenGame} />;
             case '/tilastot/pisteporssi':
                 return <StatsTableView config={SCORING} onPlayerClick={handleOpenPlayer} />;
+            case '/tilastot/kunto':
+                return <FormView onPlayerClick={handleOpenPlayer} onTeamClick={handleOpenTeam} />;
             case '/tilastot/maalivahdit':
                 return <StatsTableView config={GOALIES} onPlayerClick={handleOpenPlayer} />;
             case '/tilastot/joukkueet':

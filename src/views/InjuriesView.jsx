@@ -157,7 +157,7 @@ export default function InjuriesView({ onPlayerClick, onTeamClick }) {
                         )}
                         <ul className="team-games">
                             {g.rows.map((r) => (
-                                <li key={r.espnId}>
+                                <li key={`${r.team}:${r.name}`}>
                                     <InjuryRow row={r} lang={lang} showTeam={order === 'return'} onClick={r.id ? () => onPlayerClick(r.id) : undefined} />
                                 </li>
                             ))}

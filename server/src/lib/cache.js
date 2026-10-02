@@ -27,7 +27,9 @@ export async function getOrFetch(key, ttlMs, producer) {
     const promise = (async () => {
         try {
             const value = await producer();
-            store.set(key, { value, expires: Date.now() + ttlMs, stale: value });
+            // Poisto ja lisäys siirtää avaimen järjestyksessä uusimmaksi (siivous poistaa vanhimmat).
+            store.delete(key);
+            store.set(key, { value, expires: Date.now() + ttlMs });
             return value;
         } catch (err) {
             // Jos ulkoinen API kaatuu, tarjotaan mieluummin vanhentunutta dataa
@@ -45,6 +47,45 @@ export async function getOrFetch(key, ttlMs, producer) {
     inFlight.set(key, promise);
     return promise;
 }
+
+// ---------------------------------------------------------------------------
+// Siivous
+// ---------------------------------------------------------------------------
+
+/**
+ * Vanhentunut merkintä pidetään vielä hetken varalla (palautetaan, jos
+ * ulkoinen rajapinta on nurin), mutta sen jälkeen se poistetaan. Ilman
+ * siivousta muisti kasvoi jokaisesta uudesta päivästä, ottelusta, pelaajasta
+ * ja hakusanasta, kunnes webhotellin muistiraja (512 Mt) tuli vastaan.
+ */
+const STALE_GRACE_MS = 2 * 60 * 60_000;
+/** Merkintöjen enimmäismäärä; yli menevistä poistetaan ensin vanhimmat. */
+const MAX_ENTRIES = 1500;
+const SWEEP_INTERVAL_MS = 10 * 60_000;
+
+export function sweep(now = Date.now()) {
+    let removed = 0;
+    for (const [key, entry] of store) {
+        if (entry.expires + STALE_GRACE_MS < now) {
+            store.delete(key);
+            removed++;
+        }
+    }
+    if (store.size > MAX_ENTRIES) {
+        // Map säilyttää lisäysjärjestyksen: ensimmäiset ovat vanhimpia.
+        const excess = store.size - MAX_ENTRIES;
+        let i = 0;
+        for (const key of store.keys()) {
+            if (i++ >= excess) break;
+            store.delete(key);
+            removed++;
+        }
+    }
+    return removed;
+}
+
+// unref: ajastin ei pidä prosessia hengissä (testit ja sammutus).
+setInterval(() => sweep(), SWEEP_INTERVAL_MS).unref?.();
 
 export function invalidate(prefix) {
     for (const key of store.keys()) {

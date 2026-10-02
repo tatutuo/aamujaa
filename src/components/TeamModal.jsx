@@ -6,6 +6,7 @@ import Segmented from './ui/Segmented';
 import Chips from './ui/Chips';
 import StatTiles from './ui/StatTiles';
 import { PlayerIdentity } from './table/Identity';
+import LinesView from './LinesView';
 import { api } from '../utils/api';
 import { useFetchWhenOpen } from '../hooks/useModal';
 import { useSettings } from '../state/settings';
@@ -13,7 +14,7 @@ import { teamColors, DEFAULT_TEAM_COLORS } from '../utils/teamColors';
 import { teamByAbbrev, teamNickname } from '../utils/teams';
 import { countryName } from '../utils/nations';
 import { positionLabel } from '../utils/positions';
-import { int, dec, pct, signed, seasonLabel, ageFrom } from '../utils/format';
+import { int, dec, pct, signed, seasonLabel, ageFrom, shortDate } from '../utils/format';
 import { SKATER_GROUPS, GOALIE_GROUPS } from '../views/stats/tableConfigs';
 
 /**
@@ -194,6 +195,7 @@ function TeamContent({ abbrev, colour, overview, schedule, scheduleLoading, lang
                     onChange={setTab}
                     options={[
                         { value: 'games', label: fi ? 'Ottelut' : 'Games' },
+                        { value: 'lines', label: fi ? 'Kentälliset' : 'Lines' },
                         { value: 'roster', label: fi ? 'Kokoonpano' : 'Roster' },
                         { value: 'stats', label: fi ? 'Tilastot' : 'Stats' },
                     ]}
@@ -202,6 +204,9 @@ function TeamContent({ abbrev, colour, overview, schedule, scheduleLoading, lang
 
             {tab === 'games' && (
                 <TeamGames abbrev={abbrev} schedule={schedule} isLoading={scheduleLoading} lang={lang} onGameClick={onGameClick} />
+            )}
+            {tab === 'lines' && (
+                <TeamLines abbrev={abbrev} lang={lang} isOpen={isOpen} onPlayerClick={onPlayerClick} />
             )}
             {tab === 'roster' && (
                 <TeamRoster abbrev={abbrev} lang={lang} isOpen={isOpen} onPlayerClick={onPlayerClick} />
@@ -525,6 +530,42 @@ function TeamStats({ abbrev, teamRows, lang, isOpen, onPlayerClick }) {
                     />
                 )}
             </section>
+        </>
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Kentälliset: viimeisin pelattu ottelu
+// ---------------------------------------------------------------------------
+
+function TeamLines({ abbrev, lang, isOpen, onPlayerClick }) {
+    const fi = lang === 'fi';
+    const { data, isLoading, error } = useFetchWhenOpen(
+        isOpen,
+        (signal) => api.teamLines(abbrev, { signal }),
+        [abbrev],
+    );
+
+    if (isLoading) return <div className="skeleton" style={{ height: 320 }} />;
+    if (error || !data) return <p className="panel-hint">{fi ? 'Kentällisten haku epäonnistui.' : 'Could not load lines.'}</p>;
+    if (!data.lines) return <p className="panel-hint">{fi ? 'Joukkueella ei ole vielä pelattuja otteluita.' : 'No games played yet.'}</p>;
+
+    const injured = new Map((data.injured ?? []).map((i) => [i.id, i]));
+    const outInLines = [...injured.keys()].filter((id) => [
+        ...data.lines.forwards, ...data.lines.defence, ...(data.lines.goalies ?? []).map((g) => ({ players: [g] })),
+    ].some((row) => row.players.some((p) => p.id === id))).length;
+
+    return (
+        <>
+            <p className="ln-context">
+                {fi
+                    ? `Viimeisin ottelu ${shortDate(data.date, lang)} ${data.isHome ? 'vs' : '@'} ${data.opponent}.`
+                    : `Latest game ${shortDate(data.date, lang)} ${data.isHome ? 'vs' : '@'} ${data.opponent}.`}
+                {outInLines > 0 && (fi
+                    ? ` ${outInLines} kentällisten pelaajista on nyt sivussa (merkitty).`
+                    : ` ${outInLines} of these players are now out (marked).`)}
+            </p>
+            <LinesView lines={data.lines} lang={lang} injured={injured} onPlayerClick={onPlayerClick} />
         </>
     );
 }

@@ -72,6 +72,11 @@ const HomePage = ({
     const { settings } = useSettings();
     const nations = settings.nationalities?.length ? settings.nationalities : ['FIN'];
     const nationsKey = nations.join(',');
+    // Suosikkien illan tilastot pyydetään koosteen mukana: muuten vain
+    // seurattujen maiden pelaajat saivat ne, ja esimerkiksi kanadalainen
+    // suosikki näytti "odottaa ottelua" vaikka peli oli käynnissä.
+    const favIds = (favPlayers ?? []).filter((id) => String(id).length === 7);
+    const favKey = favIds.join(',');
 
     const apiDate = toApiDate(currentDateObj);
     const isToday = isSameDay(currentDateObj, getGameDayDate());
@@ -98,7 +103,7 @@ const HomePage = ({
         const { silent = false, signal } = options;
         if (!silent) setIsLoading(true);
 
-        return api.day(apiDate, nations, { signal })
+        return api.day(apiDate, nations, favIds, { signal })
             .then((data) => {
                 const alerts = detectGoals(data.games);
                 if (silent && alerts.length > 0) {
@@ -113,9 +118,9 @@ const HomePage = ({
                 setError(err.message);
                 setIsLoading(false);
             });
-        // nationsKey pitää riippuvuuden vakaana: sama maalista ei hae uudelleen.
+        // Avaimet pitävät riippuvuudet vakaina: sama lista ei hae uudelleen.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [apiDate, nationsKey, detectGoals]);
+    }, [apiDate, nationsKey, favKey, detectGoals]);
 
     // Päivän vaihtuessa nollataan maalivahti, jotta eilisen tulokset eivät
     // näytä "uusilta maaleilta".
@@ -187,7 +192,7 @@ const HomePage = ({
 
     /** Yhdistää päivän suorituksen ja kausitilastot yhdeksi korttidataksi. */
     const buildPlayerList = useCallback((ids, nameOverrides = {}) => {
-        const playingToday = new Map(day.tracked.concat(day.hot).map((p) => [p.id, p]));
+        const playingToday = new Map([...(day.favourites ?? []), ...day.tracked, ...day.hot].map((p) => [p.id, p]));
         const gameTeams = new Set(day.games.flatMap((g) => [g.homeTeam.abbrev, g.awayTeam.abbrev]));
 
         return ids.map((id) => {
