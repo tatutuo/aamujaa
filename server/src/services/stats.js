@@ -2,6 +2,7 @@ import { stats } from '../lib/nhlApi.js';
 import { getOrFetch, TTL } from '../lib/cache.js';
 import { getSeasonId, getPreviousSeasonId } from '../lib/season.js';
 import { abbrevFromName } from '../lib/teams.js';
+import { patchRecentGames, teamGamesPlayed } from './statsPatch.js';
 
 /**
  * Tilastotaulukot: kenttäpelaajat, maalivahdit ja joukkueet kokonaisina.
@@ -29,6 +30,9 @@ const MIN_FACEOFFS = 50;
 
 /** Päättyneen kauden luvut eivät muutu, joten niitä ei tarvitse hakea uudelleen. */
 const TTL_PAST_SEASON = 24 * 60 * 60_000;
+
+/** Tuoreiden otteluiden lisäyksen välimuisti (ks. statsPatch.js). */
+const TTL_PATCHED = 2 * 60_000;
 
 const ALL = { limit: -1 };
 
@@ -224,8 +228,28 @@ export async function getStatsTable(category, { season, gameType = 2 } = {}) {
     const requested = season ?? getSeasonId();
     const isCurrent = requested === getSeasonId();
     const ttl = isCurrent ? TTL.stats : TTL_PAST_SEASON;
+    const key = `statsTable:${category}:${requested}:${gameType}:${season ? 'fixed' : 'auto'}`;
 
-    return getOrFetch(`statsTable:${category}:${requested}:${gameType}:${season ? 'fixed' : 'auto'}`, ttl, async () => {
+    const official = () => getOfficialTable(key, ttl, category, fetcher, requested, season, gameType, isCurrent);
+    const strip = ({ teamGp: _teamGp, ...table }) => table;
+
+    // Juuri päättyneet ottelut lisätään runkosarjan kuluvan kauden tauluihin
+    // (ks. statsPatch.js). Oma lyhyt välimuisti, jotta lisäys näkyy pian
+    // ottelun jälkeen eikä vasta virallisen datan vanhennuttua.
+    if (!isCurrent || gameType !== 2) return strip(await official());
+    return getOrFetch(`${key}:patched`, TTL_PATCHED, async () => {
+        const base = await official();
+        if (base.isPreviousSeason || !base.teamGp) return strip(base);
+        const { rows, provisionalGames } = await patchRecentGames(category, base.rows, base.season, base.teamGp);
+        return { ...strip(base), rows, provisionalGames };
+    });
+}
+
+async function getOfficialTable(key, ttl, category, fetcher, requested, season, gameType, isCurrent) {
+    return getOrFetch(key, ttl, async () => {
+        const teamGpPromise = isCurrent && gameType === 2
+            ? (category === 'teams' ? null : teamGamesPlayed(requested).catch(() => null))
+            : null;
         let rows = await fetcher(requested, gameType);
         let used = requested;
         let isPreviousSeason = false;
@@ -243,6 +267,9 @@ export async function getStatsTable(category, { season, gameType = 2 } = {}) {
             }
         }
 
-        return { category, season: used, gameType, isPreviousSeason, rows };
+        const teamGp = category === 'teams'
+            ? Object.fromEntries(rows.map((r) => [r.team, r.gp ?? 0]))
+            : await teamGpPromise;
+        return { category, season: used, gameType, isPreviousSeason, rows, teamGp };
     });
 }

@@ -61,10 +61,90 @@ function pickGroups(times, limit, minSeconds) {
     return picked;
 }
 
-/** Hyökkääjät järjestykseen vasen laita – keskushyökkääjä – oikea laita. */
-function orderForwards(players) {
-    const rank = { L: 0, C: 1, R: 2 };
-    return [...players].sort((a, b) => (rank[a.pos] ?? 1) - (rank[b.pos] ?? 1));
+// ---------------------------------------------------------------------------
+// Paikat ketjussa
+// ---------------------------------------------------------------------------
+//
+// Nimilistan pelipaikka (L/C/R) kertoo pelaajan tavallisen paikan, ei sitä
+// missä hän illalla pelasi: kaksi vasenta laitaa voi pelata samassa ketjussa,
+// ja keskushyökkääjä voi pelata laidassa. Siksi:
+//
+//   - Keskushyökkääjä on ketjun se pelaaja, joka otti eniten aloituksia.
+//     Aloitukset ovat ottelun luotettavin vihje: keskushyökkääjä ottaa
+//     lähes kaikki oman ketjunsa aloitukset.
+//   - Laidat jaetaan "vasemmuuden" mukaan: nimilistan pelipaikka painaa
+//     eniten, laukaisukäsi ratkaisee jos pelipaikat ovat samat (vasemmalta
+//     laukova pelaa tavallisesti vasenta laitaa).
+//   - Puolustajaparissa vasemmalta laukova vasemmalle.
+
+const leftness = (p) => (p.pos === 'L' ? 2 : p.pos === 'R' ? -2 : 0) + (p.shoots === 'L' ? 1 : p.shoots === 'R' ? -1 : 0);
+
+function pickCentre(players) {
+    return [...players].sort((a, b) => (b.faceoffs ?? 0) - (a.faceoffs ?? 0)
+        || (b.pos === 'C') - (a.pos === 'C'))[0];
+}
+
+/** Hyökkääjät paikoilleen: [vasen laita…, keskushyökkääjä, oikea laita…], jokaisella slot. */
+export function assignForwardSlots(players) {
+    if (players.length === 0) return [];
+    if (players.length === 1) return [{ ...players[0], slot: players[0].pos }];
+
+    const centre = pickCentre(players);
+    const wings = players.filter((p) => p !== centre).sort((a, b) => leftness(b) - leftness(a));
+
+    if (wings.length === 1) {
+        const wing = wings[0];
+        return leftness(wing) >= 0
+            ? [{ ...wing, slot: 'L' }, { ...centre, slot: 'C' }]
+            : [{ ...centre, slot: 'C' }, { ...wing, slot: 'R' }];
+    }
+    const half = Math.ceil(wings.length / 2);
+    return [
+        ...wings.slice(0, half).map((p) => ({ ...p, slot: 'L' })),
+        { ...centre, slot: 'C' },
+        ...wings.slice(half).map((p) => ({ ...p, slot: 'R' })),
+    ];
+}
+
+/** Puolustajat järjestykseen: vasemmalta laukova vasemmalle. */
+export function orderDefence(players) {
+    return [...players]
+        .sort((a, b) => (a.shoots === 'L' ? 0 : 1) - (b.shoots === 'L' ? 0 : 1))
+        .map((p, i, list) => ({ ...p, slot: list.length === 2 ? (i === 0 ? 'LD' : 'RD') : 'D' }));
+}
+
+/**
+ * Yli- tai alivoimakenttä: hyökkääjät ja puolustajat erikseen. Laitoja ei
+ * nimetä, koska erikoistilanteissa ei pelata laitapaikoilla (ylivoiman
+ * 1-3-1, alivoiman boksi): vain aloittaja merkitään keskushyökkääjäksi,
+ * muut ovat hyökkääjiä (slot F). Järjestys silti vasemmalta oikealle.
+ */
+export function splitUnit(players) {
+    const forwards = assignForwardSlots(players.filter((p) => isForwardCode(p.pos)))
+        .map((p) => (p.slot === 'C' ? p : { ...p, slot: 'F' }));
+    return {
+        forwards,
+        defence: orderDefence(players.filter((p) => p.pos === 'D')),
+    };
+}
+
+/**
+ * Alivoimakentät pareista: n:s hyökkääjäpari ja n:s puolustajapari samaan
+ * kenttään. Aika on hyökkääjäparin yhteinen alivoima-aika (puolustajaparin
+ * oma aika mukana erikseen).
+ */
+export function penaltyKillUnits(forwardPairs, defencePairs, toPlayers) {
+    const count = Math.max(forwardPairs.length, defencePairs.length);
+    return Array.from({ length: count }, (_, i) => {
+        const f = forwardPairs[i];
+        const d = defencePairs[i];
+        return {
+            seconds: f?.seconds ?? d.seconds,
+            defenceSeconds: f && d ? d.seconds : undefined,
+            forwards: f ? assignForwardSlots(toPlayers(f.ids)).map((p) => (p.slot === 'C' ? p : { ...p, slot: 'F' })) : [],
+            defence: d ? orderDefence(toPlayers(d.ids)) : [],
+        };
+    });
 }
 
 function computeLines(shifts, roster, homeId) {
@@ -102,7 +182,10 @@ function computeLines(shifts, roster, homeId) {
         const forwardTrios = new Map();
         const defencePairs = new Map();
         const powerPlay = new Map();
-        const penaltyKill = new Map();
+        const pkForwardPairs = new Map();
+        const pkDefencePairs = new Map();
+        // Pelaajan oma tasakenttäaika: ketjun yhtenäisyys suhteutetaan siihen.
+        const evenSeconds = new Map();
         const add = (map, ids) => {
             const key = [...ids].sort((a, b) => a - b).join('-');
             map.set(key, (map.get(key) ?? 0) + 1);
@@ -119,25 +202,61 @@ function computeLines(shifts, roster, homeId) {
                 const defence = ours.filter((id) => roster.get(id)?.pos === 'D');
 
                 if (ours.length === 5 && them === 5) {
+                    for (const id of ours) evenSeconds.set(id, (evenSeconds.get(id) ?? 0) + 1);
                     // Tasakenttä: yleensä 3 hyökkääjää ja 2 puolustajaa. Poikkeavat
                     // hetket (esim. 4 hyökkääjää) jaetaan kaikkiin yhdistelmiin.
                     if (forwards.length >= 3 && forwards.length <= 4) combinations(forwards, 3).forEach((c) => add(forwardTrios, c));
                     if (defence.length >= 2 && defence.length <= 3) combinations(defence, 2).forEach((c) => add(defencePairs, c));
-                } else if (ours.length > them && them >= 3 && ours.length <= 6) {
+                } else if (ours.length > them && ours.length <= 5 && them >= 3) {
+                    // Ylivoima (5v4, 5v3, 4v3). Kuusi kenttäpelaajaa tarkoittaa
+                    // tyhjää maalia tai viivästettyä jäähyä, ei ylivoimaa.
                     add(powerPlay, ours);
-                } else if (ours.length < them && ours.length >= 3) {
-                    add(penaltyKill, ours);
+                } else if (ours.length < them && ours.length >= 3 && them <= 5) {
+                    // Alivoima. Vastustajan kuusi kenttäpelaajaa = maalivahti
+                    // pois, sitä ei lasketa. Hyökkääjä- ja puolustajaparit
+                    // vaihtuvat alivoimalla eri tahtiin, joten ne lasketaan erikseen.
+                    if (forwards.length >= 2 && forwards.length <= 3) combinations(forwards, 2).forEach((c) => add(pkForwardPairs, c));
+                    if (defence.length >= 2 && defence.length <= 3) combinations(defence, 2).forEach((c) => add(pkDefencePairs, c));
                 }
             }
         }
 
         const toPlayers = (ids) => ids.map((id) => roster.get(id)).filter(Boolean);
+        /**
+         * Yhtenäisyys: kuinka suuren osan tasakenttäajastaan ryhmän pelaajat
+         * pelasivat juuri tässä kokoonpanossa (keskiarvo). Lähellä 100 %:a =
+         * vakiintunut ketju; alle puolet = ketjuja sekoitettiin ottelun aikana.
+         */
+        const cohesion = (ids, seconds) => {
+            const own = ids.map((id) => evenSeconds.get(id) ?? 0).filter((v) => v > 0);
+            if (own.length === 0) return null;
+            return Math.round((seconds / (own.reduce((a, b) => a + b, 0) / own.length)) * 100) / 100;
+        };
+
+        /*
+         * Ketjun numero peliajan mukaan: pelaajien koko ottelun peliajat
+         * yhteen, eniten pelannut on ykkösketju. Ahne valinta poimii ketjut
+         * yhteisen ajan perusteella, mikä ei kerro järjestystä (nelosketju voi
+         * pysyä koossa paremmin kuin sekoitettu ykkösketju).
+         */
+        const byIceTime = (groups) => groups
+            .map((g) => ({ ...g, total: g.ids.reduce((sum, id) => sum + (roster.get(id)?.toi ?? 0), 0) }))
+            .sort((a, b) => b.total - a.total);
+
         result[team] = {
             isHome: team === homeId,
-            forwards: pickGroups(forwardTrios, 4, 60).map((g) => ({ seconds: g.seconds, players: orderForwards(toPlayers(g.ids)) })),
-            defence: pickGroups(defencePairs, 3, 60).map((g) => ({ seconds: g.seconds, players: toPlayers(g.ids) })),
-            powerPlay: pickGroups(powerPlay, 2, 30).map((g) => ({ seconds: g.seconds, players: toPlayers(g.ids) })),
-            penaltyKill: pickGroups(penaltyKill, 2, 30).map((g) => ({ seconds: g.seconds, players: toPlayers(g.ids) })),
+            forwards: byIceTime(pickGroups(forwardTrios, 4, 60)).map((g) => ({
+                seconds: g.seconds,
+                cohesion: cohesion(g.ids, g.seconds),
+                players: assignForwardSlots(toPlayers(g.ids)),
+            })),
+            defence: byIceTime(pickGroups(defencePairs, 3, 60)).map((g) => ({
+                seconds: g.seconds,
+                cohesion: cohesion(g.ids, g.seconds),
+                players: orderDefence(toPlayers(g.ids)),
+            })),
+            powerPlay: pickGroups(powerPlay, 2, 30).map((g) => ({ seconds: g.seconds, ...splitUnit(toPlayers(g.ids)) })),
+            penaltyKill: penaltyKillUnits(pickGroups(pkForwardPairs, 2, 20), pickGroups(pkDefencePairs, 2, 20), toPlayers),
         };
     }
 
@@ -152,8 +271,32 @@ export async function getGameLines(gameId) {
 
     const ttl = state === 'FINAL' || state === 'OFF' ? TTL_FINAL : TTL_LIVE;
     return getOrFetch(`lines:${gameId}`, ttl, async () => {
-        const res = await fetch(`https://api.nhle.com/stats/rest/en/shiftcharts?cayenneExp=gameId=${gameId}`);
-        const shifts = (await res.json())?.data ?? [];
+        const away = box.awayTeam?.abbrev;
+        const home = box.homeTeam?.abbrev;
+        const [shiftRes, pbp, awayRoster, homeRoster] = await Promise.all([
+            fetch(`https://api.nhle.com/stats/rest/en/shiftcharts?cayenneExp=gameId=${gameId}`),
+            web(`/gamecenter/${gameId}/play-by-play`).catch(() => null),
+            getOrFetch(`roster:${away}`, TTL.roster, () => web(`/roster/${away}/current`)).catch(() => null),
+            getOrFetch(`roster:${home}`, TTL.roster, () => web(`/roster/${home}/current`)).catch(() => null),
+        ]);
+        const shifts = (await shiftRes.json())?.data ?? [];
+
+        // Aloitukset pelaajittain: keskushyökkääjän tunnistus.
+        const faceoffs = new Map();
+        for (const play of pbp?.plays ?? []) {
+            if (play.typeDescKey !== 'faceoff') continue;
+            for (const id of [play.details?.winningPlayerId, play.details?.losingPlayerId]) {
+                if (id) faceoffs.set(id, (faceoffs.get(id) ?? 0) + 1);
+            }
+        }
+
+        // Laukaisukäsi joukkueen kokoonpanosta (laitojen puolen ratkaisuun).
+        const shoots = new Map();
+        for (const r of [awayRoster, homeRoster]) {
+            for (const group of ['forwards', 'defensemen', 'goalies']) {
+                for (const p of r?.[group] ?? []) shoots.set(p.id, p.shootsCatches ?? null);
+            }
+        }
 
         const roster = new Map();
         for (const side of ['awayTeam', 'homeTeam']) {
@@ -168,6 +311,8 @@ export async function getGameLines(gameId) {
                         pos: group === 'goalies' ? 'G' : group === 'defense' ? 'D' : (p.position ?? 'C'),
                         team: team.abbrev,
                         toi: toSeconds(p.toi),
+                        faceoffs: faceoffs.get(p.playerId) ?? 0,
+                        shoots: shoots.get(p.playerId) ?? null,
                     });
                 }
             }

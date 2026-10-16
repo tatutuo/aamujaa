@@ -1,5 +1,6 @@
 import { web } from '../lib/nhlApi.js';
 import { getOrFetch, TTL } from '../lib/cache.js';
+import { shotFeatures, xgOf } from '../lib/xg.js';
 
 /**
  * Laukauskartta ottelun tapahtumista.
@@ -67,8 +68,10 @@ export async function getGameShots(gameId) {
         );
 
         const shots = [];
+        const plays = pbp.plays ?? [];
 
-        for (const play of pbp.plays ?? []) {
+        for (let index = 0; index < plays.length; index++) {
+            const play = plays[index];
             if (!SHOT_EVENTS.has(play.typeDescKey)) continue;
 
             // Voittolaukauskilpailu jätetään pois: kaikki yritykset lähtevät
@@ -96,8 +99,12 @@ export async function getGameShots(gameId) {
             const shooterId = d.shootingPlayerId ?? d.scoringPlayerId;
             const shooter = players.get(shooterId);
 
+            // Odotettu maali; blokatuille ei lasketa (ks. lib/xg.js).
+            const features = shotFeatures(plays, index, homeTeamId);
+
             shots.push({
                 eventId: play.eventId,
+                xg: features ? Number(xgOf(features).toFixed(3)) : null,
                 period: play.periodDescriptor?.number,
                 periodType: play.periodDescriptor?.periodType,
                 time: play.timeInPeriod,
@@ -122,6 +129,7 @@ export async function getGameShots(gameId) {
         }
 
         const laske = (ehto) => shots.filter(ehto).length;
+        const xgSum = (isHome) => Number(shots.filter((s) => s.isHome === isHome).reduce((sum, s) => sum + (s.xg ?? 0), 0).toFixed(2));
 
         return {
             gameId: Number(gameId),
@@ -134,12 +142,14 @@ export async function getGameShots(gameId) {
                     onGoal: laske((s) => s.isHome && (s.result === 'goal' || s.result === 'save')),
                     missed: laske((s) => s.isHome && s.result === 'miss'),
                     blocked: laske((s) => s.isHome && s.result === 'blocked'),
+                    xg: xgSum(true),
                 },
                 away: {
                     goals: laske((s) => !s.isHome && s.result === 'goal'),
                     onGoal: laske((s) => !s.isHome && (s.result === 'goal' || s.result === 'save')),
                     missed: laske((s) => !s.isHome && s.result === 'miss'),
                     blocked: laske((s) => !s.isHome && s.result === 'blocked'),
+                    xg: xgSum(false),
                 },
             },
         };

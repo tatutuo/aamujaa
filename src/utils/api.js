@@ -125,6 +125,9 @@ export const api = {
     /** Joukkueen viimeisimmän ottelun kentälliset ja nykyiset poissaolot. */
     teamLines: (abbrev, opts) => request(`/api/nhl/team/${abbrev}/lines`, opts),
 
+    /** Kierroksen data: päivän kaikkien otteluiden kärjet, maalit ja joukkuetilastot. */
+    round: (date, opts) => request(`/api/nhl/round/${date}`, opts),
+
     /** Kunto: viimeisen 7, 14 tai 30 päivän taso verrattuna kauteen. */
     form: (days, opts) => request(`/api/nhl/form${query({ days })}`, opts),
 

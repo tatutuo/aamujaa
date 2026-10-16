@@ -5,6 +5,10 @@ import { createRoot } from 'react-dom/client';
 import '@fontsource-variable/inter';
 import App from './App.jsx';
 import SettingsProvider from './state/SettingsProvider.jsx';
+import { initInstallPrompt } from './utils/install.js';
+
+// Ennen piirtämistä: selain voi tarjota asennusta heti latauksen alussa.
+initInstallPrompt();
 
 createRoot(document.getElementById('root')).render(
     <StrictMode>

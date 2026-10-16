@@ -21,6 +21,23 @@ const surnameOf = (name) => (initialOf(name) ? name.slice(initialOf(name).length
 
 const mmss = (seconds) => `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`;
 
+/**
+ * Paikka, jolla pelaaja pelasi tässä kokoonpanossa (palvelin päättelee sen
+ * aloituksista ja laukaisukädestä). Ilman sitä näytetään nimilistan paikka.
+ */
+const SLOT_LABELS = {
+    L: { fi: 'VL', en: 'LW' },
+    C: { fi: 'KH', en: 'C' },
+    R: { fi: 'OL', en: 'RW' },
+    F: { fi: 'H', en: 'F' },
+    LD: { fi: 'VP', en: 'LD' },
+    RD: { fi: 'OP', en: 'RD' },
+};
+const slotLabel = (player, lang) => SLOT_LABELS[player.slot]?.[lang === 'fi' ? 'fi' : 'en'] ?? positionLabel(player.pos, lang);
+
+/** Rivin pelaajat: ketjussa yksi rivi, yli- ja alivoimalla hyökkääjät ja puolustajat omille riveilleen. */
+const unitsOf = (row) => (row.players ? [row.players] : [row.forwards, row.defence].filter((u) => u?.length));
+
 /** Suhteellinen kirkkaus (0–1): vaalealle paidalle tumma numero. */
 function luminance(hex) {
     const m = /^#?([0-9a-f]{6})$/i.exec(hex ?? '');
@@ -88,7 +105,7 @@ function PlayerCell({ player, lang, injured, onPlayerClick }) {
                 )}
             </span>
             <span className="ln-name">{surnameOf(player.name)}</span>
-            <span className="ln-pos">{positionLabel(player.pos, lang)}</span>
+            <span className="ln-pos">{slotLabel(player, lang)}</span>
         </button>
     );
 }
@@ -100,19 +117,45 @@ function Group({ title, rows, lang, injured, onPlayerClick }) {
         <section className="ln-group">
             <h3 className="card-section-title">{title}</h3>
             <ol className="ln-list">
-                {rows.map((row, i) => (
-                    <li key={row.players.map((p) => p.id).join('-')} className="ln-row">
-                        <span className="ln-head">
-                            <span className="ln-index">{i + 1}.</span>
-                            <span className="ln-time num" title={fi ? 'Yhteinen peliaika' : 'Time together'}>{mmss(row.seconds)}</span>
-                        </span>
-                        <span className="ln-players">
-                            {row.players.map((p) => (
-                                <PlayerCell key={p.id} player={p} lang={lang} injured={injured} onPlayerClick={onPlayerClick} />
+                {rows.map((row, i) => {
+                    const units = unitsOf(row);
+                    return (
+                        <li key={units.flat().map((p) => p.id).join('-')} className="ln-row">
+                            <span className="ln-head">
+                                <span className="ln-index">{i + 1}.</span>
+                                <span className="ln-meta">
+                                    {row.cohesion != null && (
+                                        <span
+                                            className="ln-cohesion num"
+                                            title={fi
+                                                ? 'Yhtenäisyys: kuinka suuren osan tasakenttäajastaan pelaajat pelasivat juuri tässä kokoonpanossa'
+                                                : 'Cohesion: share of the players’ 5v5 time spent in exactly this unit'}
+                                        >
+                                            {Math.round(Math.min(row.cohesion, 1) * 100)} %
+                                        </span>
+                                    )}
+                                    {row.defenceSeconds != null ? (
+                                        <span
+                                            className="ln-time num"
+                                            title={fi ? 'Hyökkääjäparin / puolustajaparin yhteinen alivoima-aika' : 'Forward pair / defence pair shorthanded time'}
+                                        >
+                                            {mmss(row.seconds)} / {mmss(row.defenceSeconds)}
+                                        </span>
+                                    ) : (
+                                        <span className="ln-time num" title={fi ? 'Yhteinen peliaika' : 'Time together'}>{mmss(row.seconds)}</span>
+                                    )}
+                                </span>
+                            </span>
+                            {units.map((unit) => (
+                                <span key={unit.map((p) => p.id).join('-')} className="ln-players" data-count={unit.length}>
+                                    {unit.map((p) => (
+                                        <PlayerCell key={p.id} player={p} lang={lang} injured={injured} onPlayerClick={onPlayerClick} />
+                                    ))}
+                                </span>
                             ))}
-                        </span>
-                    </li>
-                ))}
+                        </li>
+                    );
+                })}
             </ol>
         </section>
     );
@@ -145,8 +188,8 @@ export default function LinesView({ lines, lang, injured, onPlayerClick }) {
 
             <p className="source-note">
                 {fi
-                    ? 'Laskettu NHL:n vaihtotiedoista: ketju on kolmikko, joka pelasi eniten yhdessä tasakentin. Aika on yhteinen peliaika.'
-                    : 'Computed from NHL shift data: a line is the trio that played the most together at 5v5. Time is shared ice time.'}
+                    ? 'Laskettu NHL:n vaihtotiedoista: ketju on kolmikko, joka pelasi eniten yhdessä tasakentin. Keskushyökkääjä on ketjun eniten aloituksia ottanut pelaaja, laidat määräytyvät pelipaikan ja laukaisukäden mukaan. Aika on yhteinen peliaika, prosentti kertoo kuinka vakiintunut kokoonpano oli. Alivoimalla hyökkääjä- ja puolustajaparit vaihtuvat eri tahtiin, joten kentät kootaan pareista.'
+                    : 'Computed from NHL shift data: a line is the trio that played the most together at 5v5. The centre is the player who took the most faceoffs; wings follow listed position and handedness. Time is shared ice time; the percentage shows how settled the unit was. On the penalty kill, forward and defence pairs change separately, so units are built from pairs.'}
             </p>
         </div>
     );

@@ -3,6 +3,9 @@ import DateNavigation from './DateNavigation';
 import GameCard from './GameCard';
 import PlayerCard from './PlayerCard';
 import TeamBadge from './TeamBadge';
+import InstallBanner from './InstallBanner';
+import RoundView from './round/RoundView';
+import Segmented from './ui/Segmented';
 import { translations } from '../utils/translations';
 import { api } from '../utils/api';
 import { scoreSkater, scoreGoalie } from '../utils/fantasy';
@@ -67,6 +70,22 @@ const HomePage = ({
 
     const [seasonStats, setSeasonStats] = useState({});
     const [goalAlert, setGoalAlert] = useState(null);
+    // Ottelut vai kierroksen data. Muistetaan istunnon ajan, ei pysyvästi:
+    // sovellus avautuu aina otteluihin.
+    const [mode, setMode] = useState(() => {
+        try {
+            return sessionStorage.getItem('pucknower_home_mode') === 'round' ? 'round' : 'games';
+        } catch {
+            return 'games';
+        }
+    });
+    useEffect(() => {
+        try {
+            sessionStorage.setItem('pucknower_home_mode', mode);
+        } catch {
+            // Tallennus ei onnistu (yksityinen selaus) — valinta vain ei säily.
+        }
+    }, [mode]);
     const previousScores = useRef({});
 
     const { settings } = useSettings();
@@ -363,6 +382,8 @@ const HomePage = ({
             )}
 
 
+            <InstallBanner language={language} />
+
             <DateNavigation
                 currentDateObj={currentDateObj}
                 language={language}
@@ -374,6 +395,22 @@ const HomePage = ({
                 onToday={() => setCurrentDateObj(getGameDayDate())}
             />
 
+            <div className="home-mode">
+                <Segmented
+                    size="sm"
+                    label={fi ? 'Näkymä' : 'View'}
+                    value={mode}
+                    onChange={setMode}
+                    options={[
+                        { value: 'games', label: fi ? 'Ottelut' : 'Games' },
+                        { value: 'round', label: fi ? 'Kierroksen data' : 'Round data' },
+                    ]}
+                />
+            </div>
+
+            {mode === 'round' ? (
+                <RoundView date={apiDate} lang={fi ? 'fi' : 'en'} onGameClick={onGameClick} onPlayerClick={onPlayerClick} />
+            ) : (<>
             <div className="games-container">
                 {isLoading ? (
                     <div className="loading">{t.homeLoading}</div>
@@ -454,6 +491,7 @@ const HomePage = ({
                 }
                 return null;
             })}
+            </>)}
         </div>
     );
 };

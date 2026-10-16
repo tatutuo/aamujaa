@@ -8,57 +8,16 @@ import { useApi } from '../hooks/useApi';
 import { usePersistentState } from '../hooks/usePersistentState';
 import { useSettings } from '../state/settings';
 import { api } from '../utils/api';
-import { shortDate } from '../utils/format';
 import { nationPlural } from '../utils/nations';
-import { teamByAbbrev, teamNickname } from '../utils/teams';
+import { teamByAbbrev } from '../utils/teams';
 import { teamColors, DEFAULT_TEAM_COLORS } from '../utils/teamColors';
 import { routeOf } from '../router/routes';
-import { positionLabel } from '../utils/positions';
+import { InjuryRow } from '../components/Injuries';
+import { statusOf } from '../utils/injuries';
 
-/** ESPN:n pelipaikat NHL:n koodeiksi. */
-const ESPN_POSITIONS = { LW: 'L', RW: 'R', C: 'C', D: 'D', G: 'G', F: 'C' };
-
-/**
- * Loukkaantumiset.
- *
- * NHL ei julkaise loukkaantumistietoja, joten lähde on ESPN. Tiedot eivät
- * ole virallisia, ja paluuarviot ovat arvioita — siksi ne näytetään
- * "arvio"-sanalla eikä varmana päivänä.
- */
+/** Loukkaantumiset koko liigasta. Rivit ja tilat: components/Injuries.jsx. */
 
 const colourOf = (abbrev) => (teamColors[abbrev] ?? DEFAULT_TEAM_COLORS)[0];
-
-const STATUS = {
-    'IR-LT': { fi: 'Pitkäaikainen IR', en: 'Long-term IR', tone: 'long' },
-    IR: { fi: 'Loukkaantuneiden lista', en: 'Injured reserve', tone: 'long' },
-    'IR-NR': { fi: 'Loukkaantuneiden lista', en: 'Injured reserve', tone: 'long' },
-    'Day-To-Day': { fi: 'Päivä kerrallaan', en: 'Day-to-day', tone: 'short' },
-    OUT: { fi: 'Sivussa', en: 'Out', tone: 'out' },
-};
-
-const INJURY_TYPES = {
-    'Lower Body': 'Alavartalo', 'Upper Body': 'Ylävartalo', Undisclosed: 'Ei kerrottu', Knee: 'Polvi',
-    Shoulder: 'Olkapää', Hip: 'Lonkka', Abdomen: 'Vatsa', Concussion: 'Aivotärähdys', Foot: 'Jalkaterä',
-    Personal: 'Henkilökohtainen syy', 'Lower Leg': 'Sääri', Groin: 'Nivus', Pectoral: 'Rintalihas', Hand: 'Käsi',
-    Back: 'Selkä', Ankle: 'Nilkka', Wrist: 'Ranne', Illness: 'Sairaus', Head: 'Pää', Leg: 'Jalka',
-    Achilles: 'Akillesjänne', Elbow: 'Kyynärpää', Neck: 'Niska', Face: 'Kasvot', Hamstring: 'Takareisi',
-    Thumb: 'Peukalo', Finger: 'Sormi', Rib: 'Kylkiluu', Oblique: 'Kylki', Calf: 'Pohje', Arm: 'Käsivarsi',
-    Eye: 'Silmä', Jaw: 'Leuka', Collarbone: 'Solisluu', Chest: 'Rintakehä', Quadriceps: 'Etureisi',
-    Suspension: 'Pelikielto', 'Contract Dispute': 'Sopimuskiista', 'Not Injury Related': 'Muu kuin loukkaantuminen',
-    Heel: 'Kantapää', Toe: 'Varvas', Forearm: 'Kyynärvarsi', Spleen: 'Perna', Lung: 'Keuhko', Nose: 'Nenä',
-};
-
-function statusOf(row, lang) {
-    if (row.status === 'Suspension') return { label: lang === 'en' ? 'Suspended' : 'Pelikielto', tone: 'out' };
-    const s = STATUS[row.statusCode] ?? STATUS[row.status];
-    return s ? { label: s[lang], tone: s.tone } : { label: row.status, tone: 'out' };
-}
-
-const typeOf = (row, lang) => {
-    // Pelikielto näkyy jo tilassa; ei toisteta sitä vammana.
-    if (!row.type || row.status === 'Suspension') return null;
-    return lang === 'en' ? row.type : (INJURY_TYPES[row.type] ?? row.type);
-};
 
 export default function InjuriesView({ onPlayerClick, onTeamClick }) {
     const { language, settings, favTeams, favPlayers } = useSettings();
@@ -176,29 +135,5 @@ export default function InjuriesView({ onPlayerClick, onTeamClick }) {
                 </p>
             )}
         </div>
-    );
-}
-
-function InjuryRow({ row, lang, showTeam, onClick }) {
-    const fi = lang === 'fi';
-    const status = statusOf(row, lang);
-    const type = typeOf(row, lang);
-    const Tag = onClick ? 'button' : 'div';
-
-    return (
-        <Tag type={onClick ? 'button' : undefined} className="inj-row" onClick={onClick}>
-            <span className="dt-person-text">
-                <span className="dt-name">{row.name}</span>
-                <span className="dt-meta">
-                    {[showTeam && `${row.team} ${teamNickname(row.team)}`, positionLabel(ESPN_POSITIONS[row.pos] ?? row.pos, lang), type].filter(Boolean).join(' · ')}
-                </span>
-            </span>
-            <span className="inj-side">
-                <span className={`inj-status tone-${status.tone}`}>{status.label}</span>
-                <span className="inj-return">
-                    {row.returnDate ? `${fi ? 'arvio' : 'est.'} ${shortDate(row.returnDate, lang)}` : (fi ? 'ei arviota' : 'no estimate')}
-                </span>
-            </span>
-        </Tag>
     );
 }

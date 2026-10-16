@@ -255,6 +255,14 @@ function PlayerContent({ player, form, teamColour, lang, onGameClick }) {
                         )}
                     </div>
                     <StatTiles tiles={tilesFor(current)} />
+                    {player.provisional?.games > 0 && (
+                        <p className="pc2-provisional">
+                            <span className={`pc2-provisional-dot ${player.provisional.live ? 'is-live' : ''}`} aria-hidden="true" />
+                            {player.provisional.live
+                                ? (fi ? 'Sisältää käynnissä olevan ottelun.' : 'Includes the game in progress.')
+                                : (fi ? 'Viimeisin ottelu lisätty pöytäkirjasta. NHL päivittää viralliset luvut pian.' : 'Latest game added from the box score. The NHL updates official numbers shortly.')}
+                        </p>
+                    )}
                 </section>
             )}
 
@@ -292,6 +300,7 @@ function PlayerContent({ player, form, teamColour, lang, onGameClick }) {
                                         <span className="dt-dot" style={{ background: (teamColors[g.opponentAbbrev] ?? DEFAULT_TEAM_COLORS)[0] }} aria-hidden="true" />
                                         {g.opponentAbbrev}
                                         {g.gameTypeId === 3 && <span className="dt-tag">PO</span>}
+                                        {g.live && <span className="dt-tag recent-live">LIVE</span>}
                                     </span>
                                     {isGoalie ? (
                                         <span className="recent-line num">

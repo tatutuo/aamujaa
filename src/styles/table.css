@@ -381,3 +381,25 @@
     line-height: 1.6;
     color: var(--text-tertiary);
 }
+
+/* Pudotuspelipaikkojen ja villin kortin selitys. */
+.standings-explainer {
+    margin-top: var(--space-3);
+    padding: 10px 14px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+    font-size: var(--text-sm);
+    line-height: 1.55;
+    color: var(--text-secondary);
+}
+
+.standings-explainer summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.standings-explainer ul { margin: 8px 0 2px; padding-left: 18px; }
+.standings-explainer li + li { margin-top: 5px; }
+.standings-explainer strong { color: var(--text-primary); }

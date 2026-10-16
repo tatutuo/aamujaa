@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { IconHeart, IconHeartFilled, IconHome, IconPlane, IconFlame, IconChartLine } from '@tabler/icons-react';
+import { IconHeart, IconHeartFilled, IconHome, IconPlane, IconFlame, IconChartLine, IconFirstAidKit } from '@tabler/icons-react';
 import Sheet from './Sheet';
 import DataTable from './ui/DataTable';
 import Segmented from './ui/Segmented';
@@ -7,6 +7,9 @@ import Chips from './ui/Chips';
 import StatTiles from './ui/StatTiles';
 import { PlayerIdentity } from './table/Identity';
 import LinesView from './LinesView';
+import { TeamInjuries } from './Injuries';
+import { useInjuries } from '../hooks/useInjuries';
+import { statusOf } from '../utils/injuries';
 import { api } from '../utils/api';
 import { useFetchWhenOpen } from '../hooks/useModal';
 import { useSettings } from '../state/settings';
@@ -361,6 +364,12 @@ function TeamRoster({ abbrev, lang, isOpen, onPlayerClick }) {
         [abbrev],
     );
 
+    const injuries = useInjuries();
+    const outById = useMemo(
+        () => new Map((injuries ?? []).filter((r) => r.team === abbrev && r.id).map((r) => [r.id, r])),
+        [injuries, abbrev],
+    );
+
     const rows = useMemo(() => (data?.[group] ?? []).map((p) => ({
         id: p.id,
         name: `${p.firstName?.default ?? ''} ${p.lastName?.default ?? ''}`.trim(),
@@ -402,7 +411,14 @@ function TeamRoster({ abbrev, lang, isOpen, onPlayerClick }) {
                         <span className="dt-person">
                             <span className="dt-dot" style={{ background: colourOf(abbrev) }} aria-hidden="true" />
                             <span className="dt-person-text">
-                                <span className="dt-name">{row.name}</span>
+                                <span className="dt-name">
+                                    {row.name}
+                                    {outById.has(row.id) && (
+                                        <span className="dt-out" title={statusOf(outById.get(row.id), lang).label}>
+                                            <IconFirstAidKit size={12} stroke={2.2} aria-label={fi ? 'sivussa' : 'out'} />
+                                        </span>
+                                    )}
+                                </span>
                                 <span className="dt-meta">
                                     {[positionLabel(row.pos, lang), countryName(row.nat, lang)].filter(Boolean).join(' · ')}
                                 </span>
@@ -417,6 +433,7 @@ function TeamRoster({ abbrev, lang, isOpen, onPlayerClick }) {
                 language={lang}
                 caption={fi ? 'Kokoonpano' : 'Roster'}
             />
+            <TeamInjuries rows={injuries} teams={[abbrev]} lang={lang} onPlayerClick={onPlayerClick} />
         </>
     );
 }

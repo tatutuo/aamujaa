@@ -238,6 +238,8 @@
 }
 
 .gm2-event-sub .dt-tag { margin-left: 4px; }
+/* Maalin tyyppi (YV, AV, TM…) syöttäjien edessä. */
+.gm2-event-sub .gm2-goal-tag { margin: 0 5px 0 0; }
 
 .gm2-event-score {
     padding: 2px 8px;
@@ -404,6 +406,12 @@
 
 .ln-index { font-size: var(--text-xs); font-weight: 800; color: var(--accent-text); }
 .ln-time { font-size: var(--text-xs); font-weight: 700; color: var(--text-tertiary); }
+.ln-meta { display: inline-flex; align-items: baseline; gap: 8px; }
+.ln-cohesion { font-size: var(--text-xs); font-weight: 700; color: var(--text-secondary); }
+
+/* Yli- ja alivoimalla puolustajat omalle rivilleen hyökkääjien alle. */
+.ln-players + .ln-players { margin-top: 4px; }
+.ln-players[data-count="4"] .ln-player { flex-basis: 25%; }
 
 /* Kolme saraketta; parit ja viisikot keskitetään samaan ruudukkoon. */
 .ln-players {

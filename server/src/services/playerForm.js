@@ -1,6 +1,7 @@
 import { web } from '../lib/nhlApi.js';
 import { getOrFetch, TTL } from '../lib/cache.js';
 import { getSeasonId, getPreviousSeasonId } from '../lib/season.js';
+import { getOfficialLanding, recentPlayerGames } from './playerLive.js';
 
 /**
  * Pelaajan ottelukohtainen loki ja siitä johdetut tunnusluvut.
@@ -88,8 +89,28 @@ function summarise(games) {
  */
 export async function getPlayerForm(playerId, season) {
     const requested = season ?? getSeasonId();
+    const official = () => getOfficialForm(playerId, season, requested);
+    if (requested !== getSeasonId()) return build(playerId, await official());
 
-    return getOrFetch(`form:${playerId}:${requested}`, TTL.player, async () => {
+    // Kuluva kausi: NHL:n ottelulokista puuttuvat viimeisimmät ottelut
+    // lisätään pöytäkirjoista (ks. playerLive.js), kuten pelaajakortissa.
+    return getOrFetch(`form-live:${playerId}`, TTL_PATCHED, async () => {
+        const base = await official();
+        if (base.isPreviousSeason) return build(playerId, base);
+        const landing = await getOfficialLanding(playerId).catch(() => null);
+        const known = new Set(base.games.map((g) => g.gameId));
+        const lines = await recentPlayerGames(playerId, landing?.currentTeamAbbrev, base.games[0]?.gameDate, known)
+            .catch(() => []);
+        const extra = lines.filter((l) => l.kind === 'skater' && l.gameTypeId === 2);
+        return build(playerId, extra.length ? { ...base, games: [...extra, ...base.games] } : base);
+    });
+}
+
+const TTL_PATCHED = 60_000;
+const TTL_OFFICIAL = 10 * 60_000;
+
+function getOfficialForm(playerId, season, requested) {
+    return getOrFetch(`form:${playerId}:${requested}`, requested === getSeasonId() ? TTL_OFFICIAL : TTL.player, async () => {
         const fetchSeason = async (s) => {
             const data = await web(`/player/${playerId}/game-log/${s}/2`).catch(() => null);
             return { season: s, games: data?.gameLog ?? [], available: data?.playerStatsSeasons ?? [] };
@@ -108,32 +129,38 @@ export async function getPlayerForm(playerId, season) {
             }
         }
 
-        const games = result.games.map((g) => ({
-            gameId: g.gameId,
-            date: g.gameDate,
-            opponent: g.opponentAbbrev,
-            isHome: g.homeRoadFlag === 'H',
-            goals: g.goals ?? 0,
-            assists: g.assists ?? 0,
-            points: g.points ?? 0,
-            plusMinus: g.plusMinus ?? 0,
-            shots: g.shots ?? 0,
-            shifts: g.shifts ?? 0,
-            pim: g.pim ?? 0,
-            toi: g.toi,
-        }));
-
-        return {
-            playerId: Number(playerId),
-            season: result.season,
-            isPreviousSeason,
-            // Uusimmasta vanhimpaan, kuten rajapinta ne antaa.
-            games,
-            summary: summarise(result.games),
-            // Rajapinta ilmoittaa kaudet muodossa { season, gameTypes: [2, 3] }.
-            availableSeasons: (result.available ?? [])
-                .filter((s) => s.gameTypes?.includes(2))
-                .map((s) => String(s.season)),
-        };
+        return { season: result.season, isPreviousSeason, games: result.games, available: result.available };
     });
+}
+
+/** NHL:n ottelulokin rivit (uusin ensin) -> vastaus muotokäyrälle. */
+function build(playerId, { season, isPreviousSeason, games: raw, available }) {
+    const games = raw.map((g) => ({
+        gameId: g.gameId,
+        date: g.gameDate,
+        opponent: g.opponentAbbrev,
+        isHome: g.homeRoadFlag === 'H',
+        goals: g.goals ?? 0,
+        assists: g.assists ?? 0,
+        points: g.points ?? 0,
+        plusMinus: g.plusMinus ?? 0,
+        shots: g.shots ?? 0,
+        shifts: g.shifts ?? 0,
+        pim: g.pim ?? 0,
+        toi: g.toi,
+        ...(g.live ? { live: true } : {}),
+    }));
+
+    return {
+        playerId: Number(playerId),
+        season,
+        isPreviousSeason,
+        // Uusimmasta vanhimpaan, kuten rajapinta ne antaa.
+        games,
+        summary: summarise(raw),
+        // Rajapinta ilmoittaa kaudet muodossa { season, gameTypes: [2, 3] }.
+        availableSeasons: (available ?? [])
+            .filter((s) => s.gameTypes?.includes(2))
+            .map((s) => String(s.season)),
+    };
 }

@@ -7,6 +7,8 @@ import { NHL_TEAMS, isValidAbbrev } from '../lib/teams.js';
 import { getGameDay, getGamePlayers } from '../services/gameDay.js';
 import { getGameShots, getGameFaceoffs, getGameExtras } from '../services/shots.js';
 import { getPlayerForm } from '../services/playerForm.js';
+import { getPlayerLanding } from '../services/playerLive.js';
+import { getRound } from '../services/round.js';
 import { getFantasyEvents, getFantasyStats } from '../services/fantasy.js';
 import { getStatsTable, CATEGORIES } from '../services/stats.js';
 import { getStandings } from '../services/standings.js';
@@ -83,6 +85,15 @@ router.get('/day', asyncRoute(async (req, res) => {
     const data = await getGameDay(date, nationsParam(req), favs);
 
     // Kun ottelut ovat käynnissä, selain saa virkistää usein; muuten harvoin.
+    res.set('Cache-Control', data.hasLiveGames ? 'public, max-age=15' : 'public, max-age=120');
+    res.json(data);
+}));
+
+/** Kierroksen data: päivän kaikkien otteluiden kärjet, maalit ja joukkuetilastot. */
+router.get('/round/:date', asyncRoute(async (req, res) => {
+    const date = req.params.date;
+    if (!isValidDateString(date)) throw badRequest('Virheellinen päivämäärä, odotettu muoto YYYY-MM-DD');
+    const data = await getRound(date);
     res.set('Cache-Control', data.hasLiveGames ? 'public, max-age=15' : 'public, max-age=120');
     res.json(data);
 }));
@@ -430,8 +441,7 @@ router.get('/roster/:abbrev', asyncRoute(async (req, res) => {
 router.get('/player/:id', asyncRoute(async (req, res) => {
     const id = req.params.id;
     if (!/^\d{6,9}$/.test(id)) throw badRequest('Virheellinen pelaaja-ID');
-    const data = await getOrFetch(`player:${id}`, TTL.player, () => web(`/player/${id}/landing`));
-    res.json(data);
+    res.json(await getPlayerLanding(id));
 }));
 
 /**
@@ -447,9 +457,8 @@ router.get('/players', asyncRoute(async (req, res) => {
 
     if (ids.length === 0) return res.json([]);
 
-    const results = await mapWithConcurrency(ids, 6, (id) =>
-        getOrFetch(`player:${id}`, TTL.player, () => web(`/player/${id}/landing`)),
-    );
+    // Suosikit etusivulla: samat täydennetyt luvut kuin pelaajakortissa.
+    const results = await mapWithConcurrency(ids, 6, (id) => getPlayerLanding(id));
 
     res.json(results.filter(Boolean));
 }));

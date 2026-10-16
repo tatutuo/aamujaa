@@ -117,6 +117,22 @@
 
 .inj-group + .inj-group { margin-top: var(--space-4); }
 
+/* Joukkue- ja ottelukortin "Sivussa"-osio. */
+.inj-card .card-section-title { display: flex; align-items: center; gap: 4px; }
+
+/* Ensiapumerkki pelaajataulukon nimen perässä: pelaaja on nyt sivussa. */
+.dt-out {
+    display: inline-grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    margin-left: 5px;
+    border-radius: 50%;
+    background: var(--negative);
+    color: #fff;
+    vertical-align: -2px;
+}
+
 .inj-team {
     display: flex;
     align-items: center;

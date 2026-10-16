@@ -182,6 +182,14 @@ export default function StatsTableView({ config, onPlayerClick, onTeamClick, swi
                         language={lang}
                         caption={route.label[lang]}
                     />
+                    {data.provisionalGames > 0 && (
+                        <p className="source-note">
+                            <IconInfoCircle size={13} stroke={2} aria-hidden="true" />{' '}
+                            {fi
+                                ? `Viimeisimmät ottelut (${data.provisionalGames}) on lisätty ottelupöytäkirjoista. NHL:n viralliset tilastot päivittyvät noin kahden tunnin viiveellä, ja osa erikoisluvuista (esim. ylivoimapisteet) täydentyy vasta silloin.`
+                                : `The latest games (${data.provisionalGames}) were added from box scores. Official NHL stats update about two hours after games; some detailed numbers (e.g. power-play points) fill in then.`}
+                        </p>
+                    )}
                     {config.source && (
                         <p className="source-note">
                             {fi ? 'Data' : 'Data'}: <a href={`https://${config.source.toLowerCase()}`} target="_blank" rel="noreferrer">{config.source}</a>

@@ -93,6 +93,35 @@ const GROUPS = [
     },
 ];
 
+/**
+ * Selitys pudotuspelipaikoista ja villistä kortista. Avautuu valmiiksi
+ * Villi kortti -näkymässä, muualla suljettuna taulukon alla.
+ */
+function PlayoffFormatExplainer({ fi, open }) {
+    return (
+        <details className="standings-explainer" open={open} key={open ? 'open' : 'closed'}>
+            <summary>{fi ? 'Miten pudotuspelipaikat ja villi kortti toimivat?' : 'How do playoff spots and wild cards work?'}</summary>
+            {fi ? (
+                <ul>
+                    <li>Kummastakin konferenssista (itä ja länsi) pudotuspeleihin pääsee <strong>8 joukkuetta</strong>, yhteensä 16.</li>
+                    <li>Konferenssin kahdesta divisioonasta pääsee suoraan <strong>kolme parasta</strong>, eli kuusi joukkuetta.</li>
+                    <li>Loput kaksi paikkaa ovat <strong>villejä kortteja</strong>. Ne saavat konferenssin kaksi parasta jäljelle jäänyttä joukkuetta divisioonasta riippumatta. Siksi yhdestä divisioonasta voi päästä viisi joukkuetta ja toisesta vain kolme.</li>
+                    <li>Ensimmäisellä kierroksella konferenssin pisteissä parempi divisioonavoittaja kohtaa heikomman villin kortin (WC2) ja toinen divisioonavoittaja paremman (WC1). Divisioonan kakkonen ja kolmonen pelaavat keskenään.</li>
+                    <li>Tasapisteissä järjestyksen ratkaisee ensin pisteprosentti (vähemmän otteluita pelannut edellä), sitten voitot varsinaisella peliajalla (VV), voitot ilman voittolaukauskilpailuja, kaikki voitot, keskinäisten otteluiden pisteet ja lopuksi maaliero.</li>
+                </ul>
+            ) : (
+                <ul>
+                    <li>Each conference (East and West) sends <strong>8 teams</strong> to the playoffs, 16 in total.</li>
+                    <li>The <strong>top three</strong> of each of the conference’s two divisions qualify directly: six teams.</li>
+                    <li>The last two spots are <strong>wild cards</strong>: the two best remaining teams in the conference, regardless of division. One division can therefore send five teams and the other only three.</li>
+                    <li>In the first round, the division winner with more points faces the lower wild card (WC2) and the other division winner faces WC1. Each division’s second and third place teams meet.</li>
+                    <li>Ties are broken by points percentage (fewer games played first), then regulation wins, regulation plus overtime wins, total wins, head-to-head points and goal differential.</li>
+                </ul>
+            )}
+        </details>
+    );
+}
+
 /** Onko joukkue nyt pudotuspelipaikalla (divisioonan kolme parasta tai kaksi villiä korttia). */
 const inPlayoffSpot = (row) => row.divSeq <= 3 || row.wcSeq === 1 || row.wcSeq === 2;
 
@@ -103,7 +132,8 @@ export default function StandingsView({ onTeamClick }) {
     const route = routeOf('/taulukot/sarjataulukko');
 
     const [season, setSeason] = useState(null);
-    const [mode, setMode] = usePersistentState('pucknower_standings_mode', 'division');
+    // Näkymä avautuu aina konferensseista; valintaa ei muisteta kerrasta toiseen.
+    const [mode, setMode] = useState('conference');
     const [groupId, setGroupId] = usePersistentState('pucknower_standings_group', 'basic');
 
     const { data, error, isLoading, reload } = useApi(
@@ -197,9 +227,9 @@ export default function StandingsView({ onTeamClick }) {
                     value={mode}
                     onChange={setMode}
                     options={[
+                        { value: 'conference', label: fi ? 'Konferenssit' : 'Conferences' },
                         { value: 'division', label: fi ? 'Divisioonat' : 'Divisions' },
                         { value: 'wildcard', label: fi ? 'Villi kortti' : 'Wild card' },
-                        { value: 'conference', label: fi ? 'Konferenssit' : 'Conferences' },
                         { value: 'league', label: fi ? 'Liiga' : 'League' },
                     ]}
                 />
@@ -268,6 +298,8 @@ export default function StandingsView({ onTeamClick }) {
                         : 'x = clinched playoffs, y = division, z = conference, p = Presidents’ Trophy, e = eliminated.'}
                 </p>
             )}
+
+            {teams.length > 0 && <PlayoffFormatExplainer fi={fi} open={mode === 'wildcard'} />}
         </div>
     );
 }

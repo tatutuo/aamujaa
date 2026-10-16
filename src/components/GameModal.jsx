@@ -3,6 +3,8 @@ import { IconPlayerPlayFilled, IconStarFilled, IconMapPin, IconDeviceTv, IconFla
 import Sheet from './Sheet';
 import ShotMap from './ShotMap';
 import LinesView from './LinesView';
+import { TeamInjuries } from './Injuries';
+import { useInjuries } from '../hooks/useInjuries';
 import TeamBadge from './TeamBadge';
 import DataTable from './ui/DataTable';
 import Segmented from './ui/Segmented';
@@ -191,6 +193,7 @@ function GameContent({ gameData, details, box, isLoading, error, awayAbbrev, hom
         ? [
             { value: 'info', label: fi ? 'Tiedot' : 'Info' },
             { value: 'lines', label: fi ? 'Kentälliset' : 'Lines' },
+            { value: 'injuries', label: fi ? 'Poissaolot' : 'Injuries' },
         ]
         : [
             { value: 'events', label: fi ? 'Tapahtumat' : 'Events' },
@@ -242,6 +245,9 @@ function GameContent({ gameData, details, box, isLoading, error, awayAbbrev, hom
                         )}
                         {activeTab === 'players' && (
                             <GamePlayers box={box} awayAbbrev={awayAbbrev} homeAbbrev={homeAbbrev} lang={lang} onPlayerClick={onPlayerClick} />
+                        )}
+                        {activeTab === 'injuries' && (
+                            <GameInjuries awayAbbrev={awayAbbrev} homeAbbrev={homeAbbrev} lang={lang} onPlayerClick={onPlayerClick} />
                         )}
                         {activeTab === 'lines' && (
                             <GameLines gameId={gameId} pregame={pregame} awayAbbrev={awayAbbrev} homeAbbrev={homeAbbrev} lang={lang} onPlayerClick={onPlayerClick} />
@@ -427,10 +433,9 @@ function GameEvents({ periods, stars, box, awayAbbrev, homeAbbrev, lang, onPlaye
                                                 {g.goalsToDate != null && <span className="gm2-todate"> ({g.goalsToDate})</span>}
                                             </button>
                                             <span className="gm2-event-sub">
-                                                {team}{tag && <span className="dt-tag">{tag}</span>}
+                                                {tag && <span className="dt-tag gm2-goal-tag">{tag}</span>}
                                                 {assists.length > 0 ? (
                                                     <>
-                                                        {' · '}
                                                         {assists.map((a, k) => (
                                                             <React.Fragment key={a.playerId ?? k}>
                                                                 {k > 0 && ', '}
@@ -446,7 +451,7 @@ function GameEvents({ periods, stars, box, awayAbbrev, homeAbbrev, lang, onPlaye
                                                             </React.Fragment>
                                                         ))}
                                                     </>
-                                                ) : (fi ? ' · ilman syöttäjää' : ' · unassisted')}
+                                                ) : (fi ? 'ilman syöttäjää' : 'unassisted')}
                                             </span>
                                         </span>
                                         <span className="gm2-event-score num">{g.awayScore}–{g.homeScore}</span>
@@ -511,6 +516,23 @@ function skaterColumns(group, fi, lang) {
     ];
 }
 
+/** Ennen ottelua: kummankin joukkueen poissaolot. */
+function GameInjuries({ awayAbbrev, homeAbbrev, lang, onPlayerClick }) {
+    const injuries = useInjuries();
+    const teams = useMemo(() => [awayAbbrev, homeAbbrev], [awayAbbrev, homeAbbrev]);
+    if (!injuries) return <div className="skeleton" style={{ height: 240 }} />;
+    return (
+        <>
+            <TeamInjuries rows={injuries} teams={teams} lang={lang} onPlayerClick={onPlayerClick} />
+            <p className="source-note">
+                {lang === 'fi'
+                    ? 'NHL ei julkaise loukkaantumistietoja. Lähde: ESPN (epävirallinen), paluupäivät ovat arvioita.'
+                    : 'The NHL publishes no injury data. Source: ESPN (unofficial); return dates are estimates.'}
+            </p>
+        </>
+    );
+}
+
 function GamePlayers({ box, awayAbbrev, homeAbbrev, lang, onPlayerClick }) {
     const fi = lang === 'fi';
     const [side, setSide] = useState('awayTeam');
@@ -519,6 +541,8 @@ function GamePlayers({ box, awayAbbrev, homeAbbrev, lang, onPlayerClick }) {
 
     const stats = box?.playerByGameStats?.[side];
     const abbrev = side === 'homeTeam' ? homeAbbrev : awayAbbrev;
+    const injuries = useInjuries();
+    const sideTeams = useMemo(() => [abbrev], [abbrev]);
 
     const rows = useMemo(() => {
         if (!stats) return [];
@@ -602,6 +626,7 @@ function GamePlayers({ box, awayAbbrev, homeAbbrev, lang, onPlayerClick }) {
                 language={lang}
                 caption={fi ? 'Pelaajatilastot' : 'Player stats'}
             />
+            <TeamInjuries rows={injuries} teams={sideTeams} lang={lang} onPlayerClick={onPlayerClick} />
         </>
     );
 }

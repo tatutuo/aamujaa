@@ -1,0 +1,269 @@
+/* ==========================================================================
+   Kierroksen data (etusivun "Kierroksen data" -välilehti)
+   ========================================================================== */
+
+.home-mode { margin: var(--space-2) 0 var(--space-3); }
+
+.rd { display: flex; flex-direction: column; gap: var(--space-3); }
+.rd.is-refreshing { opacity: 0.85; transition: opacity var(--duration-fast); }
+
+.rd-filter .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.rd-filter .chips::-webkit-scrollbar { display: none; }
+
+.rd-live {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: calc(-1 * var(--space-1)) 2px 0;
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+}
+
+.rd-live-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--live);
+    animation: rd-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes rd-pulse {
+    50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rd-live-dot { animation: none; }
+}
+
+.rd-card {
+    padding: 14px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    background: var(--surface-card);
+}
+
+.rd-card-title {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0 0 10px;
+    font-size: var(--text-sm);
+    font-weight: 750;
+    letter-spacing: 0.02em;
+    color: var(--text-primary);
+}
+
+.rd-card-title svg { color: var(--accent-text); }
+.rd-card-meta { margin-left: auto; font-size: var(--text-xs); font-weight: 600; color: var(--text-tertiary); }
+.rd-card-filter { margin-bottom: 8px; }
+.rd-card-filter .chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+.rd-card .source-note { margin-bottom: 0; }
+
+/* --- Kaaviot --- */
+
+.rd-chart { display: block; width: 100%; height: auto; max-height: 340px; overflow: visible; }
+.rd-grid { stroke: var(--border-subtle); stroke-width: 1; }
+.rd-period { stroke: var(--border-strong); stroke-width: 1; stroke-dasharray: 3 3; }
+.rd-axis { fill: var(--text-tertiary); font-size: 10px; font-family: var(--font-body); font-variant-numeric: tabular-nums; }
+.rd-axis-title { fill: var(--text-secondary); font-size: 10px; font-weight: 650; font-family: var(--font-body); }
+.rd-guide { stroke: var(--text-tertiary); stroke-width: 1; stroke-dasharray: 4 4; opacity: 0.6; }
+.rd-guide-label { fill: var(--text-tertiary); font-size: 9px; font-family: var(--font-body); }
+
+.rd-dot { cursor: pointer; }
+.rd-dot circle { stroke: var(--surface-card); stroke-width: 1.5; transition: transform var(--duration-fast); }
+.rd-dot circle.is-winner { stroke: var(--text-primary); stroke-width: 2.2; }
+.rd-dot:hover circle { transform: scale(1.15); }
+.rd-dot-label { fill: #fff; font-size: 7px; font-weight: 800; font-family: var(--font-body); pointer-events: none; paint-order: stroke; stroke: rgba(0, 0, 0, 0.45); stroke-width: 1.4px; }
+
+.rd-bar { transition: opacity var(--duration-fast); }
+.rd-bar.is-ev { fill: var(--accent); }
+.rd-bar.is-pp { fill: #f5a524; }
+.rd-bar.is-sh { fill: #3ecf8e; }
+.rd-bar.is-en { fill: var(--text-tertiary); }
+.rd-bar-value { fill: var(--text-primary); font-size: 11px; font-weight: 750; font-family: var(--font-body); }
+
+.rd-line { fill: none; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.rd-goal { stroke: var(--surface-card); stroke-width: 1.8; }
+
+.rd-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px 14px;
+    margin: 6px 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+.rd-legend li { display: inline-flex; align-items: center; gap: 5px; }
+
+.rd-swatch { width: 10px; height: 10px; border-radius: 3px; background: var(--text-tertiary); }
+.rd-swatch.is-ev { background: var(--accent); }
+.rd-swatch.is-pp { background: #f5a524; }
+.rd-swatch.is-sh { background: #3ecf8e; }
+.rd-swatch.is-en { background: var(--text-tertiary); }
+.rd-swatch.is-goal { border-radius: 50%; background: var(--text-primary); }
+
+/* --- xG: ylitti / jäi alle --- */
+
+.rd-verdict { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; font-size: var(--text-xs); color: var(--text-secondary); }
+.rd-verdict-item { padding: 6px 10px; border-radius: var(--radius-md); background: var(--surface-sunken); }
+.rd-verdict-item strong { margin-right: 4px; }
+.rd-verdict-item.is-over strong { color: var(--positive); }
+.rd-verdict-item.is-under strong { color: var(--negative); }
+
+/* --- Kärkilista --- */
+
+.rd-leaders { margin: 0; padding: 0; list-style: none; }
+
+.rd-leader {
+    display: grid;
+    grid-template-columns: 18px minmax(0, 1.3fr) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 7px 4px;
+    border: none;
+    border-radius: var(--radius-sm, 8px);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+@media (hover: hover) {
+    .rd-leader:hover { background: var(--surface-card-hover); }
+}
+
+.rd-leader-rank { font-size: var(--text-xs); font-weight: 800; color: var(--text-tertiary); text-align: right; }
+.rd-leader-name { display: flex; flex-direction: column; min-width: 0; }
+.rd-leader-player { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-sm); font-weight: 650; }
+.rd-leader-meta { font-size: var(--text-xs); color: var(--text-tertiary); }
+.rd-leader-track { height: 8px; border-radius: 999px; background: var(--surface-sunken); overflow: hidden; }
+.rd-leader-fill { display: block; height: 100%; border-radius: 999px; }
+.rd-leader-value { min-width: 40px; font-size: var(--text-sm); font-weight: 800; text-align: right; }
+
+/* --- Vertailupalkit --- */
+
+.rd-compare { display: flex; flex-direction: column; gap: 7px; }
+
+.rd-compare-teams {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--text-xs);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.rd-compare-row { display: grid; grid-template-columns: 44px 1fr 44px; align-items: end; gap: 8px; }
+.rd-compare-value { font-size: var(--text-sm); font-weight: 750; }
+.rd-compare-value.is-home { text-align: right; }
+.rd-compare-mid { display: flex; flex-direction: column; gap: 3px; }
+.rd-compare-label { font-size: var(--text-xs); color: var(--text-tertiary); text-align: center; }
+.rd-compare-track { display: flex; gap: 2px; height: 7px; }
+.rd-compare-fill { height: 100%; border-radius: 999px; min-width: 3px; transition: width 400ms ease; }
+
+/* --- Ottelut vierekkäin --- */
+
+.rd-games { display: grid; gap: 12px; }
+
+@media (min-width: 720px) {
+    .rd-games { grid-template-columns: 1fr 1fr; }
+}
+
+.rd-game {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border-radius: var(--radius-md);
+    background: var(--surface-sunken);
+}
+
+.rd-game-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    width: 100%;
+    margin-bottom: 4px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.rd-game-head.is-large { margin-bottom: 14px; }
+.rd-game-score { display: inline-flex; align-items: baseline; gap: 8px; font-weight: 800; letter-spacing: 0.02em; }
+.rd-game-score strong { font-size: 1.05rem; color: var(--text-primary); }
+.rd-game-head.is-large .rd-game-score strong { font-size: 1.4rem; }
+.rd-game-state { font-size: var(--text-xs); color: var(--text-tertiary); }
+.rd-game-state.is-live { color: var(--live); font-weight: 700; }
+
+.rd-open {
+    align-self: flex-end;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 0;
+    border: none;
+    background: none;
+    color: var(--accent-text);
+    font: inherit;
+    font-size: var(--text-xs);
+    font-weight: 650;
+    cursor: pointer;
+}
+
+/* --- Maalivirta --- */
+
+.rd-goals { margin: 0; padding: 0; list-style: none; }
+
+.rd-goal-row {
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr) auto 24px;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 4px 9px 10px;
+    border-left: 3px solid var(--team);
+}
+
+.rd-goal-row + .rd-goal-row { border-top: 1px solid var(--border-subtle); }
+
+.rd-goal-when { display: flex; flex-direction: column; font-size: var(--text-xs); color: var(--text-tertiary); }
+.rd-goal-when .num { font-weight: 700; color: var(--text-secondary); }
+.rd-goal-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; min-width: 0; }
+
+.rd-goal-scorer {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.rd-goal-assists { flex-basis: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--text-xs); color: var(--text-tertiary); }
+
+.rd-goal-game {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+}
+
+.rd-goal-score { padding: 2px 8px; border-radius: 999px; background: var(--surface-sunken); font-size: var(--text-xs); font-weight: 800; }
+.rd-goal-label { margin-top: 2px; font-size: 0.65rem; color: var(--text-tertiary); }

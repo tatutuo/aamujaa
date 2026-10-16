@@ -11,6 +11,7 @@ import './styles/table.css';
 import './styles/cards.css';
 import './styles/game.css';
 import './styles/views.css';
+import './styles/round.css';
 import './styles/shell.css';
 
 import TopBar from './components/shell/TopBar';
