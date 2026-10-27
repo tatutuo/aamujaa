@@ -12,6 +12,7 @@ import { toApiDate, getGameDayDate, addDays } from '../utils/dates';
 import { teamColors, DEFAULT_TEAM_COLORS } from '../utils/teamColors';
 import { int } from '../utils/format';
 import { routeOf } from '../router/routes';
+import GmCalendar from './schedule/GmCalendar';
 
 /**
  * Otteluohjelma.
@@ -40,7 +41,7 @@ function dayLabel(iso, lang) {
         : `${weekday} ${d.getDate()}.${d.getMonth() + 1}.`;
 }
 
-export default function ScheduleView({ onTeamClick, onGameClick }) {
+export default function ScheduleView({ onTeamClick, onGameClick, fantasyTeam }) {
     const { language, favTeams } = useSettings();
     const lang = language === 'en' ? 'en' : 'fi';
     const fi = lang === 'fi';
@@ -54,9 +55,11 @@ export default function ScheduleView({ onTeamClick, onGameClick }) {
     const start = useMemo(() => addDays(getGameDayDate(), offset), [offset]);
     const startDate = toApiDate(start);
 
+    const isGm = mode === 'gm';
+    // GM-kalenteri hakee omat jaksonsa; tätä hakua ei silloin tarvita.
     const { data, error, reload } = useApi(
-        (signal) => api.schedule({ startDate, days: range }, { signal }),
-        [startDate, range],
+        (signal) => (isGm ? Promise.resolve(null) : api.schedule({ startDate, days: range }, { signal })),
+        [startDate, range, isGm],
     );
 
     const endDate = data?.dates?.at(-1);
@@ -76,8 +79,15 @@ export default function ScheduleView({ onTeamClick, onGameClick }) {
                     options={[
                         { value: 'days', label: fi ? 'Päivittäin' : 'By day' },
                         { value: 'teams', label: fi ? 'Joukkueittain' : 'By team' },
+                        { value: 'gm', label: fi ? 'GM-kalenteri' : 'GM calendar' },
                     ]}
                 />
+            </div>
+
+            {isGm ? (
+                <GmCalendar lang={lang} favTeams={favTeams} fantasyTeam={fantasyTeam} onTeamClick={onTeamClick} />
+            ) : (<>
+            <div className="toolbar">
                 <div className="sched2-range">
                     <button
                         type="button"
@@ -137,6 +147,7 @@ export default function ScheduleView({ onTeamClick, onGameClick }) {
                     <DayList data={data} lang={lang} favTeams={favTeams} onlyFavs={onlyFavs} onGameClick={onGameClick} />
                 </>
             )}
+            </>)}
         </div>
     );
 }

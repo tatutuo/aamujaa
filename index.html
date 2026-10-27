@@ -4,8 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
 
-    <title>pucknower — NHL-tilastot</title>
-    <meta name="description" content="NHL-ottelut, sarjataulukot ja tilastot: odotusmaalit, luistelunopeudet, loukkaantumiset ja historia. Ei mainoksia, ei seurantaa." />
+    <title>puckoodi – NHL-tilastot ja tulokset suomeksi</title>
+    <meta name="description" content="NHL-tilastot suomeksi: live-tulokset, pistepörssi, odotetut maalit (xG), kentälliset, loukkaantumiset ja suomalaiset NHL:ssä. Ei mainoksia." />
+    <link rel="canonical" href="https://d4nyyy.fi/hockey/" />
+    <!-- Google Search Console: omistajuuden vahvistus (ominaisuus https://d4nyyy.fi/hockey/). Älä poista. -->
+    <meta name="google-site-verification" content="7nMAOPFek3OQRmz_VdTFJmfLWQ8JFVA5lRnq3T68CL8" />
 
     <link rel="manifest" href="./manifest.webmanifest" />
     <link rel="icon" href="./icon.svg" type="image/svg+xml" />
@@ -16,15 +19,46 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="pucknower" />
+    <meta name="apple-mobile-web-app-title" content="puckoodi" />
 
-    <meta property="og:title" content="pucknower — NHL-tilastot" />
-    <meta property="og:description" content="NHL-ottelut, sarjataulukot ja syvälliset tilastot yhdessä sovelluksessa." />
+    <!-- Jakokortit (WhatsApp, Facebook, X ym.): kuvan ja osoitteen on oltava täydellisiä URL-osoitteita. -->
+    <meta property="og:site_name" content="puckoodi" />
+    <meta property="og:title" content="puckoodi – NHL-tilastot ja tulokset suomeksi" />
+    <meta property="og:description" content="Live-tulokset, kierroksen data, odotetut maalit, kentälliset ja suomalaiset NHL:ssä yhdessä sovelluksessa." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="./icon-512.png" />
+    <meta property="og:url" content="https://d4nyyy.fi/hockey/" />
+    <meta property="og:locale" content="fi_FI" />
+    <meta property="og:image" content="https://d4nyyy.fi/hockey/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta name="twitter:card" content="summary" />
+
+    <!-- Rakenteinen tieto Googlelle: sivu on ilmainen verkkosovellus. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "puckoodi",
+        "url": "https://d4nyyy.fi/hockey/",
+        "description": "NHL-tilastot suomeksi: live-tulokset, pistepörssi, odotetut maalit (xG), kentälliset, loukkaantumiset ja suomalaiset NHL:ssä.",
+        "applicationCategory": "SportsApplication",
+        "operatingSystem": "Any",
+        "inLanguage": "fi",
+        "isAccessibleForFree": true,
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <h1>puckoodi – NHL-tilastot ja tulokset suomeksi</h1>
+      <p>
+        Mainokseton NHL-sovellus: live-tulokset, kierroksen data, pistepörssi, odotetut maalit (xG),
+        kentälliset, kunto, loukkaantumiset, sarjataulukot ja suomalaiset NHL-pelaajat.
+        Sovellus tarvitsee JavaScriptin.
+      </p>
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

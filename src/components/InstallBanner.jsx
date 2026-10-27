@@ -3,6 +3,7 @@ import { IconX, IconUpload, IconSquarePlus, IconDotsVertical, IconMenu2, IconDow
 import Sheet from './Sheet';
 import { usePersistentState } from '../hooks/usePersistentState';
 import { useInstallState, promptInstall, installPlatform } from '../utils/install';
+import { LOGO_URL } from '../config/app';
 
 /**
  * "Tee sovellus" -kortti etusivulla.
@@ -89,12 +90,12 @@ const STEPS = {
     desktop: {
         fi: [
             [IconDownload, 'Napsauta osoiterivin oikeassa reunassa olevaa asennuskuvaketta.'],
-            [IconDotsVertical, 'Tai avaa selaimen valikko ja valitse "Asenna pucknower" (Edgessä Sovellukset → Asenna).'],
+            [IconDotsVertical, 'Tai avaa selaimen valikko ja valitse "Asenna puckoodi" (Edgessä Sovellukset → Asenna).'],
             [IconCircleCheck, 'Vahvista "Asenna".'],
         ],
         en: [
             [IconDownload, 'Click the install icon at the right end of the address bar.'],
-            [IconDotsVertical, 'Or open the browser menu and choose "Install pucknower" (Edge: Apps → Install).'],
+            [IconDotsVertical, 'Or open the browser menu and choose "Install puckoodi" (Edge: Apps → Install).'],
             [IconCircleCheck, 'Confirm "Install".'],
         ],
     },
@@ -135,9 +136,9 @@ export default function InstallBanner({ language }) {
     return (
         <>
             <div className="install-card">
-                <img className="install-icon" src={`${import.meta.env.BASE_URL}icon-192.png`} alt="" width="44" height="44" />
+                <img className="install-icon" src={LOGO_URL} alt="" width="44" height="44" />
                 <div className="install-text">
-                    <span className="install-title">{fi ? 'Tee pucknowerista sovellus' : 'Make pucknower an app'}</span>
+                    <span className="install-title">{fi ? 'Tee puckoodista sovellus' : 'Make puckoodi an app'}</span>
                     <span className="install-sub">
                         {fi ? 'Kuvake kotivalikkoon, aukeaa koko näytölle.' : 'Home screen icon, opens full screen.'}
                     </span>

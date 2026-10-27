@@ -10,7 +10,7 @@ import Logo from './Logo';
 export default function TopBar({ onHome }) {
     return (
         <header className="topbar">
-            <button type="button" className="topbar-home" onClick={onHome} aria-label="pucknower — etusivulle">
+            <button type="button" className="topbar-home" onClick={onHome} aria-label="puckoodi — etusivulle">
                 <Logo />
             </button>
         </header>

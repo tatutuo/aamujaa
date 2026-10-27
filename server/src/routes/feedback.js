@@ -74,10 +74,10 @@ router.post('/', limiter, async (req, res, next) => {
 
     try {
         await transporter.sendMail({
-            from: `"pucknower" <${config.mail.user}>`,
+            from: `"puckoodi" <${config.mail.user}>`,
             to: config.mail.receiver,
             replyTo,
-            subject: `[pucknower] ${TYPES[type]}: ${message.slice(0, 60).replace(/\s+/g, ' ')}${message.length > 60 ? '…' : ''}`,
+            subject: `[puckoodi] ${TYPES[type]}: ${message.slice(0, 60).replace(/\s+/g, ' ')}${message.length > 60 ? '…' : ''}`,
             text: lines.join('\n'),
         });
         res.json({ status: 'ok' });

@@ -1,7 +1,7 @@
 {
-  "name": "pucknower",
+  "name": "puckoodi",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Aamujää — NHL-tilastosovellus",
   "type": "module",
   "scripts": {

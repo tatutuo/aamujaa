@@ -1,5 +1,5 @@
 /**
- * pucknower — vaiheen 4 näkymät: edistyneet, nopeudet, loukkaantumiset,
+ * puckoodi — vaiheen 4 näkymät: edistyneet, nopeudet, loukkaantumiset,
  * pudotuspelit, kansalliset, historia ja draft.
  */
 
@@ -447,6 +447,8 @@ button.inj-row:hover { background: var(--surface-card-hover); }
 /* ==========================================================================
    Tietoja
    ========================================================================== */
+
+.about-logo { flex: none; width: 64px; height: 64px; border-radius: 15px; }
 
 .about-hero {
     display: flex;

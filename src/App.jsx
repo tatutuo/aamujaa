@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 // Järjestys on merkityksellinen: tokenit ensin, sitten Aamujäästä perityt
-// tyylit, ja pucknowerin kuori viimeisenä jotta se voittaa vanhat säännöt.
+// tyylit, ja puckoodin kuori viimeisenä jotta se voittaa vanhat säännöt.
 // Perityt tiedostot poistuvat sitä mukaa kun näkymät rakennetaan uudelleen.
 import './styles/tokens.css';
 import './styles/global.css';
@@ -12,6 +12,7 @@ import './styles/cards.css';
 import './styles/game.css';
 import './styles/views.css';
 import './styles/round.css';
+import './styles/gm-calendar.css';
 import './styles/shell.css';
 
 import TopBar from './components/shell/TopBar';
@@ -243,7 +244,7 @@ function App() {
             case '/taulukot/sarjataulukko':
                 return <StandingsView onTeamClick={handleOpenTeam} />;
             case '/taulukot/ohjelma':
-                return <ScheduleView onTeamClick={handleOpenTeam} onGameClick={handleOpenGame} />;
+                return <ScheduleView onTeamClick={handleOpenTeam} onGameClick={handleOpenGame} fantasyTeam={fantasyProps.fantasyTeam} />;
             case '/tilastot/pisteporssi':
                 return <StatsTableView config={SCORING} onPlayerClick={handleOpenPlayer} />;
             case '/tilastot/kunto':

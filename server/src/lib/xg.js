@@ -29,9 +29,14 @@ export const FEATURE_NAMES = [
  *
  * Tarkkuus erillisellä testiotoksella (120 ottelua, 10 180 laukausta):
  * AUC 0,74, log loss 0,222 (pelkkä keskiarvo 0,245), odotetut maalit 686
- * vs. toteutuneet 678. Taso vastaa julkisia NHL:n omaan dataan perustuvia
- * malleja; MoneyPuckin malli (AUC ~0,77) käyttää lisäksi tarkempaa
- * tapahtumadataa.
+ * vs. toteutuneet 678.
+ *
+ * Vertailu MoneyPuckiin samoista otteluista joukkue-ottelutasolla
+ * (16.10.2026, 214 testijoukkue-ottelua): korrelaatio 0,88, keskimääräinen
+ * ero 0,39 xG/ottelu. Maalien ennustamisessa MoneyPuck on hieman parempi
+ * (korrelaatio maaleihin 0,43 vs. 0,37), virheen suuruus sama (RMSE 1,48
+ * vs. 1,49). MoneyPuckin mallissa on enemmän piirteitä (mm. edellisen
+ * tapahtuman sijainti ja kiekon nopeus).
  *
  * Huomio: paluukiekon kerroin on negatiivinen. Se ei ole virhe: NHL:n
  * datassa paluukiekot eivät mene samalta etäisyydeltä useammin sisään

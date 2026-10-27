@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
  * tai selain ei salli tallennusta (yksityinen selaus, täysi kiintiö).
  *
  * `legacyKeys`: vanhat avaimet, joista arvo luetaan jos uutta ei vielä ole.
- * pucknower toimii samassa osoitteessa kuin Aamujää (d4nyyy.fi/hockey), joten
+ * puckoodi toimii samassa osoitteessa kuin Aamujää (d4nyyy.fi/hockey), joten
  * sama selainmuisti on käytössä — käyttäjän suosikit ja asetukset siirtyvät
  * mukana eikä niitä tarvitse valita uudelleen.
  */

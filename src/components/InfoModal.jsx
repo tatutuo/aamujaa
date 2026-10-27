@@ -4,8 +4,7 @@ import {
     IconScale, IconMessage, IconExternalLink,
 } from '@tabler/icons-react';
 import Sheet from './Sheet';
-import { PuckMark } from './shell/Logo';
-import { APP_NAME, APP_VERSION, DEVELOPER } from '../config/app';
+import { APP_NAME, APP_VERSION, DEVELOPER, LOGO_URL } from '../config/app';
 
 /**
  * Tietoja sovelluksesta: mitä sovelluksessa on, mistä data tulee, miten
@@ -52,7 +51,8 @@ export default function InfoModal({ isOpen, onClose, onFeedback, language, zInde
         <Sheet isOpen={isOpen} onClose={onClose} zIndex={zIndex} size="full" title={fi ? 'Tietoja' : 'About'}>
             <div className="about">
                 <div className="about-hero">
-                    <PuckMark size={44} />
+                    {/* Koko logo hahmoineen: tässä on tilaa, toisin kuin yläpalkissa. */}
+                    <img className="about-logo" src={LOGO_URL} alt="" width="64" height="64" />
                     <div>
                         <p className="about-name">{APP_NAME}</p>
                         <p className="about-version">{fi ? 'Versio' : 'Version'} {APP_VERSION}</p>

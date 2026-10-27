@@ -309,6 +309,8 @@ router.get('/schedule', asyncRoute(async (req, res) => {
 
     const endDate = req.query.endDate ?? null;
     if (endDate && !isValidDateString(endDate)) throw badRequest('Virheellinen endDate');
+    // GM-kalenterin jaksot ovat enintään noin 40 päivää; yli 70 päivää ei haeta.
+    if (endDate && (Date.parse(endDate) - Date.parse(startDate)) / 86_400_000 > 70) throw badRequest('Liian pitkä aikaväli (enintään 70 päivää)');
 
     const days = Math.min(Math.max(parseInt(req.query.days, 10) || 7, 1), 28);
     const cacheKey = `schedule:${startDate}:${endDate ?? days}`;
@@ -321,7 +323,7 @@ router.get('/schedule', asyncRoute(async (req, res) => {
 
         // NHL palauttaa viikon kerrallaan; jatketaan nextStartDatella kunnes raja täyttyy.
         // guard estää ikuisen silmukan jos rajapinta palauttaa oudon nextStartDaten.
-        while (guard++ < 6) {
+        while (guard++ < 11) {
             const data = await web(url);
             let done = false;
 

@@ -24,7 +24,7 @@ const saved = [];
 async function fetchJson(url) {
     for (let attempt = 0; attempt < 5; attempt++) {
         try {
-            const res = await fetch(url, { headers: { 'User-Agent': 'pucknower-xg-fit/1.0 (+https://d4nyyy.fi/hockey)', Accept: 'application/json' } });
+            const res = await fetch(url, { headers: { 'User-Agent': 'puckoodi-xg-fit/1.0 (+https://d4nyyy.fi/hockey)', Accept: 'application/json' } });
             if (res.ok) return await res.json();
             if (res.status === 404) return null;
         } catch { /* uusi yritys */ }

@@ -1,4 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- puckoodi: kiekkopää silmälaseilla, hanskakädet ja laskin, jonka näytöllä tilastokäyrä. -->
   <defs>
     <radialGradient id="bg" cx="50%" cy="18%" r="85%">
       <stop offset="0" stop-color="#2a3139"/>
@@ -8,10 +9,60 @@
       <stop offset="0" stop-color="#3fa9e6"/>
       <stop offset="1" stop-color="#1f6fa3"/>
     </linearGradient>
+    <linearGradient id="calc" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a4550"/>
+      <stop offset="1" stop-color="#2a323b"/>
+    </linearGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <path d="M86 214v88c0 44 76 80 170 80s170-36 170-80v-88" fill="url(#side)"/>
-  <ellipse cx="256" cy="214" rx="170" ry="80" fill="#7cc8f5"/>
-  <ellipse cx="256" cy="214" rx="100" ry="44" fill="none" stroke="#0b1b27" stroke-opacity="0.28" stroke-width="10"/>
-  <path d="M110 318c40 22 88 32 146 32s106-10 146-32" fill="none" stroke="#a5dafa" stroke-opacity="0.35" stroke-width="8" stroke-linecap="round"/>
+
+  <g transform="translate(0 -14)">
+    <!-- Käsivarret: ohuet, pyöreäpäiset kuin piirroshahmolla. -->
+    <path d="M118 262 C 74 300 82 372 166 404" fill="none" stroke="#3fa9e6" stroke-width="15" stroke-linecap="round"/>
+    <path d="M394 262 C 438 300 430 372 346 404" fill="none" stroke="#3fa9e6" stroke-width="15" stroke-linecap="round"/>
+
+    <!-- Kiekkopää -->
+    <path d="M100 148v104c0 36 70 64 156 64s156-28 156-64v-104" fill="url(#side)"/>
+    <ellipse cx="256" cy="148" rx="156" ry="64" fill="#7cc8f5"/>
+    <ellipse cx="256" cy="148" rx="92" ry="36" fill="none" stroke="#0b1b27" stroke-opacity="0.25" stroke-width="9"/>
+
+    <!-- Silmälasit ja silmät -->
+    <circle cx="208" cy="236" r="33" fill="#eaf6ff"/>
+    <circle cx="304" cy="236" r="33" fill="#eaf6ff"/>
+    <circle cx="214" cy="240" r="11" fill="#0b1b27"/>
+    <circle cx="298" cy="240" r="11" fill="#0b1b27"/>
+    <circle cx="218" cy="236" r="3.5" fill="#ffffff"/>
+    <circle cx="302" cy="236" r="3.5" fill="#ffffff"/>
+    <circle cx="208" cy="236" r="33" fill="none" stroke="#0b1b27" stroke-width="10"/>
+    <circle cx="304" cy="236" r="33" fill="none" stroke="#0b1b27" stroke-width="10"/>
+    <path d="M241 233 Q256 222 271 233" fill="none" stroke="#0b1b27" stroke-width="9" stroke-linecap="round"/>
+    <path d="M175 230 L112 214" stroke="#0b1b27" stroke-width="8" stroke-linecap="round"/>
+    <path d="M337 230 L400 214" stroke="#0b1b27" stroke-width="8" stroke-linecap="round"/>
+
+    <!-- Hymy -->
+    <path d="M232 286 Q256 302 280 286" fill="none" stroke="#0b1b27" stroke-width="8" stroke-linecap="round"/>
+
+    <!-- Laskin -->
+    <rect x="184" y="330" width="144" height="150" rx="20" fill="url(#calc)" stroke="#7cc8f5" stroke-width="5"/>
+    <rect x="200" y="346" width="112" height="44" rx="8" fill="#9fe3b5"/>
+    <polyline points="208,380 228,370 246,374 266,360 284,364 304,352" fill="none" stroke="#14532d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <g fill="#7cc8f5" fill-opacity="0.85">
+      <rect x="202" y="402" width="28" height="18" rx="5"/>
+      <rect x="242" y="402" width="28" height="18" rx="5"/>
+      <rect x="282" y="402" width="28" height="18" rx="5"/>
+      <rect x="202" y="428" width="28" height="18" rx="5"/>
+      <rect x="242" y="428" width="28" height="18" rx="5"/>
+      <rect x="282" y="428" width="28" height="18" rx="5" fill="#f5a524" fill-opacity="1"/>
+      <rect x="202" y="454" width="28" height="14" rx="5"/>
+      <rect x="242" y="454" width="68" height="14" rx="5"/>
+    </g>
+
+    <!-- Hanskat (Mikki Hiiri -tyyliin): pitelevät laskinta sivuilta. -->
+    <g stroke="#0b1b27" stroke-width="5" stroke-linecap="round">
+      <circle cx="172" cy="408" r="27" fill="#f4f8fb"/>
+      <circle cx="340" cy="408" r="27" fill="#f4f8fb"/>
+      <path d="M180 396 L194 396 M182 408 L196 408 M180 420 L194 420" fill="none"/>
+      <path d="M332 396 L318 396 M330 408 L316 408 M332 420 L318 420" fill="none"/>
+    </g>
+  </g>
 </svg>

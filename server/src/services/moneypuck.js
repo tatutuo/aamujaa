@@ -66,7 +66,7 @@ async function fetchCsv(year, kind, gameType) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
     try {
-        const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'pucknower (+https://d4nyyy.fi/hockey)' } });
+        const res = await fetch(url, { signal: controller.signal, headers: { 'User-Agent': 'puckoodi (+https://d4nyyy.fi/hockey)' } });
         if (res.status === 404) return [];
         if (!res.ok) {
             const err = new Error(`MoneyPuck ${res.status}`);

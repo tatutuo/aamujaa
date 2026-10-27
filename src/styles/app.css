@@ -284,7 +284,7 @@ body {
    Päivämääränavigaatio
    ========================================================================== */
 
-/* Päivänavigaation tyylit siirtyivät shell.css:ään (pucknower). */
+/* Päivänavigaation tyylit siirtyivät shell.css:ään (puckoodi). */
 
 /* ==========================================================================
    Ottelukortti
@@ -1969,7 +1969,7 @@ button.team-badge {
 .legend-marker.is-miss    { background: none; opacity: 0.55; width: 8px; height: 8px; }
 .legend-marker.is-blocked { background: none; opacity: 0.55; width: 7px; height: 7px; }
 
-/* Pelaajan muotokäyrän tyylit siirtyivät cards.css:ään (pucknower). */
+/* Pelaajan muotokäyrän tyylit siirtyivät cards.css:ään (puckoodi). */
 
 /* ==========================================================================
    Edistyneet tilastot

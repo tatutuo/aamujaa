@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Sovelluksen näkymät ovat #-osoitteissa, joita Google ei indeksoi erikseen; siksi listalla on vain etusivu. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://d4nyyy.fi/hockey/</loc>
+    <changefreq>daily</changefreq>
+  </url>
+</urlset>

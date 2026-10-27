@@ -1,6 +1,6 @@
 {
-  "name": "pucknower — NHL-tilastot",
-  "short_name": "pucknower",
+  "name": "puckoodi — NHL-tilastot",
+  "short_name": "puckoodi",
   "description": "NHL-ottelut, sarjataulukot ja tilastot: odotusmaalit, luistelunopeudet, loukkaantumiset ja historia. Ei mainoksia, ei seurantaa.",
   "id": "/hockey/",
   "start_url": "/hockey/",

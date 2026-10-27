@@ -8,7 +8,7 @@ import { patchRecentGames, teamGamesPlayed } from './statsPatch.js';
  * Tilastotaulukot: kenttäpelaajat, maalivahdit ja joukkueet kokonaisina.
  *
  * Aiempi /leaders palautti valmiiksi lajitellun kärjen (enintään 100).
- * pucknowerin taulukko lajittelee ja suodattaa selaimessa, joten se tarvitsee
+ * puckoodin taulukko lajittelee ja suodattaa selaimessa, joten se tarvitsee
  * koko listan: jokainen sarakkeen napautus, suodatinsiru tai haku on silloin
  * välitön eikä vaadi uutta pyyntöä.
  *

@@ -14,9 +14,9 @@
  * käytännössä riittää että tämä tiedosto muuttuu julkaisun yhteydessä.
  */
 
-const VERSION = 'v1';
-const SHELL_CACHE = `pucknower-shell-${VERSION}`;
-const API_CACHE = `pucknower-api-${VERSION}`;
+const VERSION = 'v3';
+const SHELL_CACHE = `puckoodi-shell-${VERSION}`;
+const API_CACHE = `puckoodi-api-${VERSION}`;
 
 /** Tämän version välimuistit. Kaikki muut — myös Aamujään vanhat — poistetaan. */
 const CURRENT_CACHES = new Set([SHELL_CACHE, API_CACHE]);
@@ -105,7 +105,27 @@ async function networkFirst(request) {
     }
 }
 
-/** Välimuisti ensin. Sopii tiedostoille joiden nimessä on sisältöhajaute. */
+/**
+ * Verkko ensin, sovelluskuoren välimuisti varalla. Manifestille ja ikoneille:
+ * niiden tiedostonimet eivät muutu, joten välimuisti ensin näytti nimen ja
+ * logon vaihduttua vanhaa (iPhonen "Lisää Koti-valikkoon" ehdotti vanhaa nimeä).
+ */
+async function networkFirstShell(request) {
+    try {
+        const response = await fetch(request);
+        if (response.ok) {
+            const cache = await caches.open(SHELL_CACHE);
+            cache.put(request, response.clone());
+        }
+        return response;
+    } catch (err) {
+        const cached = await caches.match(request);
+        if (cached) return cached;
+        throw err;
+    }
+}
+
+/** Välimuisti ensin. Vain tiedostoille, joiden nimessä on sisältöhajaute (assets/). */
 async function cacheFirst(request) {
     const cached = await caches.match(request);
     if (cached) return cached;
@@ -145,5 +165,6 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
-    event.respondWith(cacheFirst(request));
+    // Viten tiedostoissa (assets/) on sisältöhajaute: sama nimi = sama sisältö.
+    event.respondWith(pathname.startsWith('/assets/') ? cacheFirst(request) : networkFirstShell(request));
 });

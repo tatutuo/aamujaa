@@ -72,13 +72,19 @@ function changeColumn(key, label, title, { get, fmt, diffFmt, lowerIsBetter, wid
     };
 }
 
-function indexColumn(fi, lang) {
+/** Joukkueiden indeksi lasketaan eri mittareista kuin pelaajien (ks. server/src/services/form.js). */
+function indexColumn(fi, lang, scope = 'player') {
+    const title = scope === 'team'
+        ? (fi
+            ? 'Kuntoindeksi: jakson muutos kauden tasoon pisteprosentissa, maalierossa per ottelu ja laukausyritysten osuudessa (CF%). +1 = selvästi kautta parempi, −1 = selvästi heikompi'
+            : 'Form index: change versus season in points percentage, goal differential per game and shot attempt share (CF%). +1 = clearly better than season, −1 = clearly worse')
+        : (fi
+            ? 'Kuntoindeksi: jakson muutos kauden tasoon pelipaikan tärkeimmissä mittareissa, suhteutettuna pelaajien väliseen hajontaan. +1 = selvästi kautta parempi, −1 = selvästi heikompi'
+            : 'Form index: change versus season in the key metrics for the position, scaled by spread between players');
     return {
         key: 'formIndex',
         label: 'KI',
-        title: fi
-            ? 'Kuntoindeksi: jakson muutos kauden tasoon pelipaikan tärkeimmissä mittareissa, suhteutettuna pelaajien väliseen hajontaan. +1 = selvästi kautta parempi, −1 = selvästi heikompi'
-            : 'Form index: change versus season in the key metrics for the position, scaled by spread between players',
+        title,
         value: (row) => row.formIndex,
         format: (v) => (
             <span className={`fm-index ${v > 0.3 ? 'is-up' : v < -0.3 ? 'is-down' : ''}`}>
@@ -313,7 +319,7 @@ function TeamsTab({ data, lang, favTeams, onTeamClick, onPlayerClick }) {
     const d2 = (v) => dec(v, 2, lang);
 
     const columns = [
-        indexColumn(fi, lang),
+        indexColumn(fi, lang, 'team'),
         changeColumn('ptsPct', fi ? 'P%' : 'P%', fi ? 'Pisteprosentti jaksolla (alla muutos kauteen)' : 'Points percentage in the period', { get: (l) => l.ptsPct, fmt: (v) => pct(v, 0, lang) }),
         changeColumn('gdpg', fi ? 'ME/O' : 'GD/GP', fi ? 'Maaliero per ottelu' : 'Goal differential per game', { get: (l) => l.gdpg, fmt: (v) => (v > 0 ? `+${d2(v)}` : d2(v)), diffFmt: d2, width: '50px' }),
         changeColumn('cf', 'CF%', fi ? 'Corsi: osuus laukaisuyrityksistä tasakentin. Yli 50 % = hallitsee kiekkoa' : 'Corsi share at 5v5', { get: (l) => l.cf, fmt: (v) => pct(v, 1, lang) }),

@@ -14,7 +14,7 @@ const STATS_BASE = 'https://api.nhle.com/stats/rest/en';
 const SEARCH_BASE = 'https://search.d3.nhle.com/api/v1';
 
 const DEFAULT_TIMEOUT_MS = 12_000;
-const USER_AGENT = 'pucknower/1.0 (+https://d4nyyy.fi/hockey)';
+const USER_AGENT = 'puckoodi/1.0 (+https://d4nyyy.fi/hockey)';
 
 export class NhlApiError extends Error {
     constructor(message, status) {

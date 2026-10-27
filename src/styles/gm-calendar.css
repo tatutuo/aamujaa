@@ -1,0 +1,191 @@
+/* ==========================================================================
+   GM-kalenteri (Taulukot → Otteluohjelma → GM-kalenteri)
+
+   Rakenne: päivämäärärivi (.gmc-header) ja runko (.gmc-scroll) ovat erilliset
+   taulukot samoilla kiinteillä sarakeleveyksillä. Runko vierii vain
+   sivuttain ja sivu itse pystysuunnassa, joten puhelin lukitsee pyyhkäisyn
+   yhteen suuntaan: aiemmin laatikko vieri molempiin suuntiin sivun sisällä,
+   ja iPhonessa se heilui vinottain ja venyi reunoilta.
+   ========================================================================== */
+
+.gmc {
+    --gmc-team: 104px;
+    --gmc-day: 42px;
+}
+
+@media (min-width: 900px) {
+    .gmc { --gmc-day: 46px; }
+}
+
+.gmc-sub { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.gmc-range { font-size: var(--text-sm); font-weight: 700; color: var(--text-secondary); }
+
+.gmc-frame {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    background: var(--surface-card);
+}
+
+/* Päivämäärärivi pysyy sivun yläreunassa (yläpalkin alla). */
+.gmc-header {
+    position: sticky;
+    top: calc(52px + var(--safe-top));
+    z-index: 3;
+    overflow: hidden;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    background: var(--surface-card);
+    border-bottom: 1px solid var(--border-strong);
+}
+
+/* Runko: vain vaakavieritys, ei venymistä reunoilla. */
+.gmc-scroll {
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-x: none;
+    touch-action: pan-x pan-y;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.gmc-table {
+    table-layout: fixed;
+    width: calc(var(--gmc-team) + var(--gmc-days) * var(--gmc-day));
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.72rem;
+}
+
+.gmc-col-team { width: var(--gmc-team); }
+.gmc-col-day { width: var(--gmc-day); }
+
+.gmc-table th,
+.gmc-table td { padding: 0; }
+
+/* Rungon oma otsikkorivi on vain ruudunlukijoille; näkyvä rivi on yllä. */
+.gmc-sr-head th {
+    height: 0;
+    overflow: hidden;
+    font-size: 0;
+    line-height: 0;
+    border: 0;
+}
+
+.gmc-team {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    padding: 5px 6px 5px 8px !important;
+    background: var(--surface-card);
+    border-right: 1px solid var(--border-strong);
+    text-align: left;
+    overflow: hidden;
+}
+
+.gmc-header .gmc-team { z-index: 2; vertical-align: bottom; }
+
+.gmc-head-label { display: block; font-size: var(--text-xs); font-weight: 750; color: var(--text-primary); }
+.gmc-head-sub { display: block; font-size: 0.62rem; font-weight: 600; color: var(--text-tertiary); }
+
+.gmc-team-line { display: flex; align-items: center; gap: 4px; }
+
+.gmc-team-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text-primary);
+    font: inherit;
+    font-size: var(--text-sm);
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.gmc-total { margin-left: auto; font-size: var(--text-sm); font-weight: 850; color: var(--accent-text); }
+
+.gmc-pin {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+}
+
+.gmc-pin.is-on { color: var(--accent-text); }
+
+.gmc-meta { display: block; margin-top: 1px; font-size: 0.62rem; color: var(--text-tertiary); white-space: nowrap; }
+
+tr.is-pinned .gmc-team { box-shadow: inset 3px 0 0 var(--accent); }
+
+/* --- Päiväsarakkeet --- */
+
+.gmc-day {
+    padding: 5px 0 4px !important;
+    text-align: center;
+    font-weight: 700;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+.gmc-wd { display: block; font-size: 0.6rem; letter-spacing: 0.04em; color: var(--text-tertiary); }
+.gmc-date { display: block; font-size: 0.66rem; }
+
+.gmc-count {
+    display: inline-block;
+    min-width: 18px;
+    margin-top: 2px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--text-tertiary);
+}
+
+.gmc-day.is-today { color: var(--accent-text); box-shadow: inset 0 -3px 0 var(--accent); }
+.gmc-day.is-today .gmc-wd { color: var(--accent-text); }
+
+/* Viikon raja maanantain eteen. */
+.is-monday { border-left: 1px solid var(--border-strong); }
+
+/* --- Solut --- */
+
+.gmc-cell {
+    height: 32px;
+    text-align: center;
+    font-weight: 750;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    border-bottom: 1px solid var(--border-subtle);
+    border-right: 1px solid color-mix(in srgb, var(--border-subtle) 50%, transparent);
+}
+
+.gmc-cell.is-home { background: color-mix(in srgb, var(--positive) 22%, transparent); color: var(--text-primary); }
+.gmc-cell.is-away { background: color-mix(in srgb, var(--negative) 22%, transparent); color: var(--text-primary); }
+.gmc-cell.is-off { color: var(--text-tertiary); opacity: 0.6; }
+.gmc-cell.is-past { opacity: 0.4; }
+.gmc-cell.is-today { box-shadow: inset 2px 0 0 var(--accent), inset -2px 0 0 var(--accent); }
+
+.gmc-table tbody th.gmc-team { border-bottom: 1px solid var(--border-subtle); }
+
+/* --- Selitteet --- */
+
+.gmc-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin: 10px 2px 0;
+    padding: 0;
+    list-style: none;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+.gmc-legend li { display: inline-flex; align-items: center; gap: 5px; }
+.gmc-swatch { width: 14px; height: 14px; border-radius: 4px; }
+.gmc-swatch.is-home { background: color-mix(in srgb, var(--positive) 45%, transparent); }
+.gmc-swatch.is-away { background: color-mix(in srgb, var(--negative) 45%, transparent); }
