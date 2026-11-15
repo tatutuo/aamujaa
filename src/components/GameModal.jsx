@@ -4,6 +4,7 @@ import Sheet from './Sheet';
 import ShotMap from './ShotMap';
 import LinesView from './LinesView';
 import { TeamInjuries } from './Injuries';
+import GamePrediction from './game/GamePrediction';
 import { useInjuries } from '../hooks/useInjuries';
 import TeamBadge from './TeamBadge';
 import DataTable from './ui/DataTable';
@@ -107,11 +108,11 @@ export default function GameModal({ isOpen, onClose, gameData, onTeamClick, onPl
             zIndex={zIndex}
             size="full"
             accent={colourOf(homeAbbrev)}
-            title={`${teamNickname(awayAbbrev)} – ${teamNickname(homeAbbrev)}`}
+            title={`${teamNickname(homeAbbrev)} – ${teamNickname(awayAbbrev)}`}
             subtitle={venue}
         >
             <GameContent
-                key={gameId}
+                key={`${gameId}:${gameData.initialTab ?? ''}`}
                 gameData={gameData}
                 details={details}
                 box={data?.box ?? null}
@@ -133,7 +134,8 @@ function GameContent({ gameData, details, box, isLoading, error, awayAbbrev, hom
     const state = game?.gameState ?? gameData?.gameState;
     const pregame = isPregame(state);
 
-    const [tab, setTab] = useState(null);
+    // Etusivun ennustepalkista avattaessa suoraan Ennuste-välilehdelle.
+    const [tab, setTab] = useState(gameData.initialTab ?? null);
     const activeTab = tab ?? (pregame ? 'info' : 'events');
 
     const gameId = gameData.id;
@@ -192,6 +194,7 @@ function GameContent({ gameData, details, box, isLoading, error, awayAbbrev, hom
     const tabs = pregame
         ? [
             { value: 'info', label: fi ? 'Tiedot' : 'Info' },
+            { value: 'prediction', label: fi ? 'Ennuste' : 'Prediction' },
             { value: 'lines', label: fi ? 'Kentälliset' : 'Lines' },
             { value: 'injuries', label: fi ? 'Poissaolot' : 'Injuries' },
         ]
@@ -202,6 +205,7 @@ function GameContent({ gameData, details, box, isLoading, error, awayAbbrev, hom
             { value: 'stats', label: fi ? 'Tilastot' : 'Stats' },
             { value: 'shots', label: fi ? 'Laukaukset' : 'Shots' },
             { value: 'faceoffs', label: fi ? 'Aloitukset' : 'Faceoffs' },
+            { value: 'prediction', label: fi ? 'Ennuste' : 'Prediction' },
             { value: 'info', label: fi ? 'Tiedot' : 'Info' },
         ];
 
@@ -245,6 +249,16 @@ function GameContent({ gameData, details, box, isLoading, error, awayAbbrev, hom
                         )}
                         {activeTab === 'players' && (
                             <GamePlayers box={box} awayAbbrev={awayAbbrev} homeAbbrev={homeAbbrev} lang={lang} onPlayerClick={onPlayerClick} />
+                        )}
+                        {activeTab === 'prediction' && (
+                            <GamePrediction
+                                game={{ ...gameData, ...(details ?? {}) }}
+                                gameDate={details?.gameDate ?? gameData.gameDate ?? null}
+                                awayAbbrev={awayAbbrev}
+                                homeAbbrev={homeAbbrev}
+                                lang={lang}
+                                state={state}
+                            />
                         )}
                         {activeTab === 'injuries' && (
                             <GameInjuries awayAbbrev={awayAbbrev} homeAbbrev={homeAbbrev} lang={lang} onPlayerClick={onPlayerClick} />
@@ -290,6 +304,19 @@ function GameContent({ gameData, details, box, isLoading, error, awayAbbrev, hom
 // Tulostaulu
 // ---------------------------------------------------------------------------
 
+/**
+ * NHL.comin koostevideo. Päivän tuloslistasta tullut ottelu sisältää suoran
+ * polun 3 minuutin koosteeseen; muualta avattaessa linkki vie NHL.comin
+ * ottelusivulle, jolla koosteet ovat.
+ */
+function highlightsUrl(gameData, game) {
+    const path = gameData?.threeMinRecap ?? game?.threeMinRecap;
+    if (typeof path === 'string' && path.startsWith('/')) return `https://www.nhl.com${path}`;
+    const link = gameData?.gameCenterLink ?? game?.gameCenterLink;
+    if (typeof link === 'string' && link.startsWith('/')) return `https://www.nhl.com${link}`;
+    return `https://www.nhl.com/gamecenter/${gameData?.id ?? game?.id}`;
+}
+
 function Scoreboard({ game, gameData, box, state, awayAbbrev, homeAbbrev, periodScores, lang, onTeamClick }) {
     const fi = lang === 'fi';
     const away = game?.awayTeam ?? {};
@@ -334,7 +361,8 @@ function Scoreboard({ game, gameData, box, state, awayAbbrev, homeAbbrev, period
         <div className={`gm2-board ${isLive(state) ? 'is-live' : ''}`} style={{ '--away': colourOf(awayAbbrev), '--home': colourOf(homeAbbrev) }}>
             {typeLabel && <span className="gm2-type">{typeLabel}</span>}
             <div className="gm2-board-row">
-                {side(away, awayAbbrev, 'away')}
+                {/* Koti vasemmalla, vieras oikealla (suomalainen tapa). */}
+                {side(home, homeAbbrev, 'home')}
                 <div className="gm2-center">
                     {isPregame(state) ? (
                         <span className="gm2-time num">
@@ -342,19 +370,25 @@ function Scoreboard({ game, gameData, box, state, awayAbbrev, homeAbbrev, period
                         </span>
                     ) : (
                         <span className="gm2-score num">
-                            <span className={winner === 'away' ? 'is-winner' : ''}>{awayScore ?? '–'}</span>
-                            <span className="gm2-dash">–</span>
                             <span className={winner === 'home' ? 'is-winner' : ''}>{homeScore ?? '–'}</span>
+                            <span className="gm2-dash">–</span>
+                            <span className={winner === 'away' ? 'is-winner' : ''}>{awayScore ?? '–'}</span>
                         </span>
                     )}
                     {status && <span className={`gm2-status ${isLive(state) ? 'is-live' : ''}`}>{status}</span>}
                 </div>
-                {side(home, homeAbbrev, 'home')}
+                {side(away, awayAbbrev, 'away')}
             </div>
+            {isFinal(state) && (
+                <a className="gm2-highlights" href={highlightsUrl(gameData, game)} target="_blank" rel="noreferrer">
+                    <IconPlayerPlayFilled size={14} aria-hidden="true" />
+                    {fi ? 'Ottelun kohokohdat NHL.comissa' : 'Game highlights on NHL.com'}
+                </a>
+            )}
             {periodScores.length > 0 && (
                 <div className="gm2-periods num" aria-label={fi ? 'Maalit erittäin' : 'Goals by period'}>
                     {periodScores.map((p) => (
-                        <span key={p.label}><em>{p.label}</em> {p.away}–{p.home}</span>
+                        <span key={p.label}><em>{p.label}</em> {p.home}–{p.away}</span>
                     ))}
                 </div>
             )}
@@ -425,8 +459,9 @@ function GameEvents({ periods, stars, box, awayAbbrev, homeAbbrev, lang, onPlaye
                                 const tag = goalTag(g, fi);
                                 const assists = (g.assists ?? []).filter((a) => a.name?.default);
                                 return (
-                                    <li key={`g${i}`} className="gm2-event is-goal" style={{ '--team': colourOf(team) }}>
+                                    <li key={`g${i}`} className={`gm2-event is-goal ${team === awayAbbrev ? 'is-away' : ''}`} style={{ '--team': colourOf(team) }}>
                                         <span className="gm2-event-time num">{event.time}</span>
+                                        <span className="gm2-event-score num">{g.homeScore}–{g.awayScore}</span>
                                         <span className="gm2-event-main">
                                             <button type="button" className="gm2-event-player" onClick={() => g.playerId && onPlayerClick(g.playerId)}>
                                                 {g.name?.default}
@@ -454,7 +489,6 @@ function GameEvents({ periods, stars, box, awayAbbrev, homeAbbrev, lang, onPlaye
                                                 ) : (fi ? 'ilman syöttäjää' : 'unassisted')}
                                             </span>
                                         </span>
-                                        <span className="gm2-event-score num">{g.awayScore}–{g.homeScore}</span>
                                         {g.highlightClipSharingUrl ? (
                                             <a className="gm2-video" href={g.highlightClipSharingUrl} target="_blank" rel="noreferrer" aria-label={fi ? 'Katso maali' : 'Watch goal'}>
                                                 <IconPlayerPlayFilled size={12} aria-hidden="true" />
@@ -471,17 +505,17 @@ function GameEvents({ periods, stars, box, awayAbbrev, homeAbbrev, lang, onPlaye
                             const id = raw?.playerId ?? (raw?.sweaterNumber != null ? idByNumber.get(`${team}-${raw.sweaterNumber}`) : null);
                             const drawn = p.drawnBy ? personName(p.drawnBy) : null;
                             return (
-                                <li key={`p${i}`} className="gm2-event is-penalty" style={{ '--team': colourOf(team) }}>
+                                <li key={`p${i}`} className={`gm2-event is-penalty ${team === awayAbbrev ? 'is-away' : ''}`} style={{ '--team': colourOf(team) }}>
                                     <span className="gm2-event-time num">{event.time}</span>
+                                    <span className="gm2-penalty num">{p.duration ?? 2} min</span>
                                     <span className="gm2-event-main">
                                         <button type="button" className="gm2-event-player" onClick={() => id && onPlayerClick(id)} disabled={!id}>
                                             {name}
                                         </button>
                                         <span className="gm2-event-sub">
-                                            {team} · {penaltyName(p.descKey, fi)}{drawn && ` · ${fi ? 'kohde' : 'drawn by'} ${drawn}`}
+                                            {penaltyName(p.descKey, fi)}{drawn && ` · ${fi ? 'kohde' : 'drawn by'} ${drawn}`}
                                         </span>
                                     </span>
-                                    <span className="gm2-penalty num">{p.duration ?? 2} min</span>
                                     <span className="gm2-video is-empty" aria-hidden="true" />
                                 </li>
                             );

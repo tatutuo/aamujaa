@@ -68,6 +68,9 @@ const HomePage = ({
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState(null);
 
+    // Otteluennusteiden todennäköisyydet korteille (asetuksista piilotettavissa).
+    const [predictions, setPredictions] = useState({ date: null, byGame: new Map() });
+
     const [seasonStats, setSeasonStats] = useState({});
     const [goalAlert, setGoalAlert] = useState(null);
     // Ottelut vai kierroksen data. Muistetaan istunnon ajan, ei pysyvästi:
@@ -151,6 +154,16 @@ const HomePage = ({
         load({ signal: controller.signal });
         return () => controller.abort();
     }, [load]);
+
+    const showPredictions = settings.predictions !== false;
+    useEffect(() => {
+        if (!showPredictions) return undefined;
+        const controller = new AbortController();
+        api.predictionSummary(apiDate, { signal: controller.signal })
+            .then((data) => setPredictions({ date: apiDate, byGame: new Map((data.games ?? []).map((g) => [g.gameId, g])) }))
+            .catch(() => {});
+        return () => controller.abort();
+    }, [apiDate, showPredictions]);
 
     // Live-päivitys vain kun sitä oikeasti tarvitaan.
     useEffect(() => {
@@ -433,6 +446,8 @@ const HomePage = ({
                             favTeams={favTeams}
                             toggleFavTeam={toggleFavTeam}
                             language={language}
+                            prediction={showPredictions && predictions.date === apiDate ? predictions.byGame.get(game.id) : undefined}
+                            onPredictionClick={() => onGameClick({ ...game, initialTab: 'prediction' })}
                         />
                     ))
                 )}

@@ -15,6 +15,7 @@ Aamujää-sovellukselle, joka toimi samassa osoitteessa.
 - **Kierroksen data**: koko ottelupäivä kaavioina; laukaukset ja odotetut maalit vs. maalit, maalit erittäin, ottelut vierekkäin, kärjet ja maalivirta
 - **Ottelukortti**: tapahtumat, pelaajat, kentälliset, joukkuetilastot, laukauskartta, aloitukset ja poissaolot
 - **Odotetut maalit (xG)**: oma malli, joka arvioi jokaisen laukauksen maalitodennäköisyyden (ks. alla)
+- **Otteluennusteet**: voittotodennäköisyydet etusivulla ja laskenta vaihe vaiheelta ottelukortissa (ks. alla)
 
 **Tilastot**
 - **Pistepörssi, maalivahdit ja joukkueet**: koko liiga lajiteltavina taulukkoina; juuri päättyneet ottelut lisätään pöytäkirjoista NHL:n noin kahden tunnin tilastoviiveen ajaksi
@@ -155,12 +156,47 @@ ohje cPanelin Node.js-näkymälle on tiedostossa
 Sovellus on asennettava PWA, joka paketoidaan Play Storeen TWA:na
 (Trusted Web Activity). Vaiheet: [docs/play-store.md](docs/play-store.md).
 
-## 📊 Ennusteet
+## 📊 Otteluennusteet
 
-Ottelu-, pelaaja- ja joukkue-ennusteiden koodi on mukana mutta oletuksena
-pois päältä (`PREDICTIONS_ENABLED=false`), kunnes kaudesta on kertynyt
-riittävästi dataa. Mallin kuvaus ja takautuva testaus:
-`server/src/predictions/` ja `npm --prefix server run backtest`.
+Etusivun ottelukorteissa näkyy voittotodennäköisyys (piilotettavissa
+asetuksista), ja ottelukortin **Ennuste**-välilehti näyttää ennusteen, sen
+laskennan vaihe vaiheelta ja mallin toteutuneen tarkkuuden.
+
+Malli (`server/src/predictions/matches.js`):
+
+1. Lähtötaso: liigan keskimääräinen maalimäärä
+2. Odotetut laukaukset: oma laukausvoima vs. vastustajan laukausten esto
+3. Viimeistely ja vastustajan todennäköinen maalivahti
+4. Kotietu ja lepo (lepovaikutus mitattu kolmen kauden datasta)
+5. Tulosjakauma analyyttisesti (Poisson + Dixon–Coles + tasatilanteiden
+   korotus), jatkoaika ja voittolaukaukset erikseen
+
+Joukkueiden luvut kutistetaan otoskoon mukaan kohti ennakko-oletusta, joka on
+liigan keskiarvo siirrettynä osittain kohti joukkueen viime kauden tasoa.
+Ennuste lasketaan joka aamu klo 9 ja lukitaan tietokantaan ennen otteluita.
+
+### Mitattu tarkkuus
+
+Takautuva testi, jossa jokaisen päivän ennuste käyttää vain sitä edeltävää
+dataa. Parametrit on kalibroitu näillä kausilla (`scripts/tune-predictions.js`,
+ristiintarkistus kausien välillä), joten luvut ovat hieman optimistisia.
+
+| Kausi | Otteluita | Oikein | Brier | "Koti voittaa aina" |
+|-------|-----------|--------|-------|---------------------|
+| 2024–25 | 1 212 | **60,8 %** | **0,232** | 56,3 % · 0,246 |
+| 2025–26 | 1 292 | **54,6 %** | **0,245** | 52,2 % · 0,250 |
+
+Aiemmin raportoitu 58,6 % (2025–26) oli liian hyvä: testi näki muodossa jo
+saman illan tuloksen. Vuoto korjattiin 27.10.2026. Muoto, erikoistilanteet ja
+Corsi eivät kalibroinnissa tuoneet ennustearvoa, joten niiden paino on 0.
+
+```bash
+TUNE_CACHE=./tmp node server/scripts/tune-predictions.js
+npm --prefix server run backtest 2025-12-01 2026-01-31
+```
+
+Tuotannossa ennusteet kytketään päälle ympäristömuuttujalla
+`PREDICTIONS_ENABLED=true`.
 
 ---
 

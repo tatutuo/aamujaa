@@ -84,10 +84,10 @@ export const DIXON_COLES_RHO = -0.035;
  * ottaa riskejä sekä nostaa maalivahdin. Molemmat vaikutukset kuljettavat
  * otteluita kohti tasalukemaa tavalla, jota riippumaton mallinnus ei tavoita.
  *
- * Kerroin on kalibroitu takautuvalla testauksella. Koko kauden 2025–26
- * aineistossa (1292 ottelua) arvo 0,46 antoi keskimäärin 22,3 %:n
- * jatkoaikaennusteen, kun toteutunut osuus oli 25,0 %. Arvo nostettiin siksi
- * 0,58:aan. Testi `outcomeProbabilities` valvoo, ettei se pääse ajautumaan.
+ * Tämä on oletusarvo. Otteluennusteet käyttävät kalibroitua arvoa
+ * (DEFAULT_PARAMS.tieInflation, matches.js), joka sovitettiin kausien
+ * 2024–25 ja 2025–26 toteutuneisiin jatkoaikoihin (20,4 % ja 25,0 %).
+ * Testi `outcomeProbabilities` valvoo, ettei oletus pääse ajautumaan.
  */
 export const TIE_INFLATION = 0.58;
 
@@ -110,7 +110,7 @@ const MAX_GOALS = 14;
  * ja teki tuloksista toistokelvottomia: sama ottelu antoi eri luvut joka ajolla.
  * Suora summaus on sekä tarkka että nopeampi.
  */
-export function scoreMatrix(lambdaHome, lambdaAway, rho = DIXON_COLES_RHO) {
+export function scoreMatrix(lambdaHome, lambdaAway, rho = DIXON_COLES_RHO, tieInflation = TIE_INFLATION) {
     const homePmf = [];
     const awayPmf = [];
     for (let i = 0; i <= MAX_GOALS; i++) {
@@ -126,7 +126,7 @@ export function scoreMatrix(lambdaHome, lambdaAway, rho = DIXON_COLES_RHO) {
         for (let j = 0; j <= MAX_GOALS; j++) {
             let p = homePmf[i] * awayPmf[j] * dixonColesTau(i, j, lambdaHome, lambdaAway, rho);
             // Tasalukemat saavat lisäpainoa: ks. TIE_INFLATION.
-            if (i === j) p *= 1 + TIE_INFLATION;
+            if (i === j) p *= 1 + tieInflation;
             matrix[i][j] = Math.max(0, p);
             total += matrix[i][j];
         }
@@ -182,8 +182,8 @@ export function overtimeWinProbability(lambdaHome, lambdaAway) {
 /**
  * Kokoaa tulosmatriisista kaikki käyttöliittymän tarvitsemat todennäköisyydet.
  */
-export function outcomeProbabilities(lambdaHome, lambdaAway, rho = DIXON_COLES_RHO) {
-    const matrix = scoreMatrix(lambdaHome, lambdaAway, rho);
+export function outcomeProbabilities(lambdaHome, lambdaAway, rho = DIXON_COLES_RHO, tieInflation = TIE_INFLATION) {
+    const matrix = scoreMatrix(lambdaHome, lambdaAway, rho, tieInflation);
 
     let homeRegulation = 0;
     let awayRegulation = 0;
@@ -275,6 +275,16 @@ export function outcomeProbabilities(lambdaHome, lambdaAway, rho = DIXON_COLES_R
         shootout: tied * (1 - OVERTIME.decidedInOvertime),
         overFiveHalfGoals: overFiveHalf,
         mostLikelyScore: mostLikely,
+        // Viisi todennäköisintä lopputulosta käyttöliittymälle.
+        topScores: [...finalScores.values()]
+            .sort((a, b) => b.probability - a.probability)
+            .slice(0, 5)
+            .map((e) => ({
+                home: e.home,
+                away: e.away,
+                probability: e.probability,
+                isOvertime: e.regulationShare < e.probability / 2,
+            })),
     };
 }
 

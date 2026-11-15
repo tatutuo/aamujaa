@@ -84,7 +84,9 @@ const statements = {
     listDates: db.prepare('SELECT date FROM predictions ORDER BY date DESC LIMIT ?'),
     // Ei koskaan poisteta juuri kirjoitettua riviä, vaikka sen päivämäärä olisi
     // säilytysikkunan ulkopuolella (esim. kun ennusteita lasketaan takautuvasti).
-    pruneOld: db.prepare("DELETE FROM predictions WHERE date < date('now', '-90 days') AND date != ?"),
+    // Koko kausi säilyy, jotta ottelukortti voi näyttää ennusteen ja toteuman
+    // jälkikäteenkin (otteluennusteet ovat pieniä, vuosi on noin 1 300 riviä).
+    pruneOld: db.prepare("DELETE FROM predictions WHERE date < date('now', '-400 days') AND date != ?"),
     saveResult: db.prepare(`
         INSERT INTO prediction_results
             (game_id, date, predicted_winner, actual_winner, home_win_prob, home_win_probability, home_won, correct)
@@ -100,6 +102,11 @@ const statements = {
         SELECT home_win_probability AS probability, home_won AS outcome
         FROM prediction_results
         WHERE date >= date('now', ?) AND home_win_probability IS NOT NULL
+    `),
+    seasonResults: db.prepare(`
+        SELECT home_win_probability AS probability, home_won AS outcome, correct
+        FROM prediction_results
+        WHERE date >= ? AND home_win_probability IS NOT NULL
     `),
     accuracy: db.prepare(`
         SELECT COUNT(*) AS total, SUM(correct) AS hits
@@ -127,6 +134,30 @@ export function getPredictions(date) {
         teams: JSON.parse(row.teams_json),
         matches: JSON.parse(row.matches_json),
         createdAt: row.created_at,
+    };
+}
+
+/**
+ * Kauden toteutunut tarkkuus vertailukohtineen. "Koti voittaa aina" on
+ * yksinkertaisin mahdollinen ennuste; jos malli ei voita sitä, siitä ei ole
+ * hyötyä. Sen Brier lasketaan kauden kotivoitto-osuudesta.
+ */
+export function getSeasonAccuracy(fromDate) {
+    const rows = statements.seasonResults.all(fromDate);
+    const total = rows.length;
+    if (total === 0) return { total: 0 };
+    const hits = rows.reduce((s, r) => s + (r.correct ? 1 : 0), 0);
+    const homeRate = rows.reduce((s, r) => s + r.outcome, 0) / total;
+    return {
+        total,
+        hits,
+        percentage: Math.round((hits / total) * 1000) / 10,
+        brierScore: Number(brierScore(rows).toFixed(4)),
+        homeAlways: {
+            percentage: Math.round(Math.max(homeRate, 1 - homeRate) * 1000) / 10,
+            brierScore: Number(brierScore(rows.map((r) => ({ probability: homeRate, outcome: r.outcome }))).toFixed(4)),
+        },
+        coinFlipBrier: 0.25,
     };
 }
 

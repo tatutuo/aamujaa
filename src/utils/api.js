@@ -148,9 +148,10 @@ export const api = {
     draftPicks: (year, opts) => request(`/api/nhl/draft/picks${query({ year })}`, opts),
     draftRankings: (year, category, opts) => request(`/api/nhl/draft/rankings${query({ year, category })}`, opts),
 
-    predictions: (date, opts) => request(`/api/nhl/predictions${query({ date })}`, opts),
-    predictionDates: (opts) => request('/api/nhl/predictions/dates', opts),
-    predictionAccuracy: (days, opts) => request(`/api/nhl/predictions/accuracy${query({ days })}`, opts),
+    /** Otteluennusteiden todennäköisyydet etusivun korteille. */
+    predictionSummary: (date, opts) => request(`/api/nhl/predictions/summary${query({ date })}`, opts),
+    /** Yhden ottelun ennuste laskentavaiheineen ja mallin kauden tarkkuus. */
+    gamePrediction: (id, date, opts) => request(`/api/nhl/predictions/game/${id}${query({ date })}`, opts),
 
     /** Palaute: { type: 'bug'|'idea'|'other', message, contact, technical, website }. */
     sendFeedback: async (feedback) => {

@@ -244,26 +244,27 @@ export function GameCompare({ game, rows, lang }) {
     return (
         <div className="rd-compare">
             <div className="rd-compare-teams">
-                <span style={{ color: colors.away }}>{game.away.abbrev}</span>
+                {/* Koti vasemmalla, vieras oikealla. */}
                 <span style={{ color: colors.home }}>{game.home.abbrev}</span>
+                <span style={{ color: colors.away }}>{game.away.abbrev}</span>
             </div>
             {rows.map((row) => {
                 const a = row.away ?? 0;
                 const h = row.home ?? 0;
                 const total = a + h;
-                let share = total > 0 ? a / total : 0.5;
-                if (row.lowerIsBetter && total > 0) share = h / total;
+                let share = total > 0 ? h / total : 0.5;
+                if (row.lowerIsBetter && total > 0) share = a / total;
                 return (
                     <div key={row.key} className="rd-compare-row">
-                        <span className="rd-compare-value num">{row.format ? row.format(row.awayRaw ?? a, lang) : a}</span>
+                        <span className="rd-compare-value num">{row.format ? row.format(row.homeRaw ?? h, lang) : h}</span>
                         <span className="rd-compare-mid">
                             <span className="rd-compare-label">{row.label}</span>
                             <span className="rd-compare-track">
-                                <span className="rd-compare-fill" style={{ width: `${share * 100}%`, background: colors.away }} />
-                                <span className="rd-compare-fill" style={{ width: `${(1 - share) * 100}%`, background: colors.home }} />
+                                <span className="rd-compare-fill" style={{ width: `${share * 100}%`, background: colors.home }} />
+                                <span className="rd-compare-fill" style={{ width: `${(1 - share) * 100}%`, background: colors.away }} />
                             </span>
                         </span>
-                        <span className="rd-compare-value num is-home">{row.format ? row.format(row.homeRaw ?? h, lang) : h}</span>
+                        <span className="rd-compare-value num is-home">{row.format ? row.format(row.awayRaw ?? a, lang) : a}</span>
                     </div>
                 );
             })}
@@ -361,8 +362,8 @@ export function ShotTimeline({ shots, away, home, lang, mode = 'shots' }) {
                 ))}
             </svg>
             <ul className="rd-legend">
-                <li><span className="rd-swatch" style={{ background: colors.away }} aria-hidden="true" />{away} {fmt(a.total)}</li>
                 <li><span className="rd-swatch" style={{ background: colors.home }} aria-hidden="true" />{home} {fmt(h.total)}</li>
+                <li><span className="rd-swatch" style={{ background: colors.away }} aria-hidden="true" />{away} {fmt(a.total)}</li>
                 <li><span className="rd-swatch is-goal" aria-hidden="true" />{fi ? 'maali' : 'goal'}</li>
             </ul>
         </>
@@ -395,7 +396,7 @@ export function ShotsByPeriod({ periods, away, home, lang }) {
                 const cx = pad.l + slot * i + slot / 2;
                 return (
                     <g key={`${p.period}-${p.periodType}`}>
-                        {[['away', -1], ['home', 1]].map(([side, dir]) => {
+                        {[['home', -1], ['away', 1]].map(([side, dir]) => {
                             const v = p[side] ?? 0;
                             const bx = cx + (dir < 0 ? -barW - 2 : 2);
                             return (

@@ -89,21 +89,49 @@ const CORSI_WEIGHT = Number(process.env.CORSI_WEIGHT ?? 0.35);
  */
 const CORSI_PRIOR_GAMES = 15;
 
-export function computeTeamStrength(team, league, corsi) {
+/**
+ * Edellisen kauden taso ennakko-oletukseksi.
+ *
+ * Kauden alussa kutistus kohti liigan keskiarvoa tekee kaikista joukkueista
+ * lähes yhtä hyviä, vaikka viime kauden kärki ja häntä ovat yhä eri tasoa.
+ * Siksi ennakko-oletus on liigan keskiarvo siirrettynä osittain kohti
+ * joukkueen viime kauden tasoa (`carryOver` = kuinka suuri osa tasoerosta
+ * siirtyy; kokoonpanot muuttuvat, joten ei koko eroa).
+ *
+ * @param {object} previous computeTeamStrength-tulos edelliseltä kaudelta (tai null)
+ */
+function priorFor(previous, carryOver) {
+    if (!previous || !carryOver) return { shotGeneration: 1, shotSuppression: 1, finishing: 1 };
+    const pull = (ratio) => 1 + (ratio - 1) * carryOver;
+    return {
+        shotGeneration: pull(previous.shotGeneration),
+        shotSuppression: pull(previous.shotSuppression),
+        finishing: pull(previous.finishing),
+    };
+}
+
+/**
+ * @param {object} [params] mallin parametrit (oletukset alla); takautuva
+ *   testaus ja kalibrointi ajavat mallia eri arvoilla.
+ * @param {object} [previous] joukkueen edellisen kauden voimaluvut
+ */
+export function computeTeamStrength(team, league, corsi, params = {}, previous = null) {
+    const p = { ...MODEL, corsiWeight: CORSI_WEIGHT, corsiPriorGames: CORSI_PRIOR_GAMES, carryOver: 0, ...params };
     const gp = team.gamesPlayed ?? 0;
+    const prior = priorFor(previous, p.carryOver);
 
     const shotsFor = shrinkRate(
         (team.shotsForPerGame ?? league.shotsPerGame) * gp,
         gp,
-        league.shotsPerGame,
-        MODEL.priorGames,
+        league.shotsPerGame * prior.shotGeneration,
+        p.priorGames,
     );
 
     const shotsAgainst = shrinkRate(
         (team.shotsAgainstPerGame ?? league.shotsPerGame) * gp,
         gp,
-        league.shotsPerGame,
-        MODEL.priorGames,
+        league.shotsPerGame / prior.shotSuppression,
+        p.priorGames,
     );
 
     // Maalintekoprosentti kutistetaan laukausmäärän mukaan, ei ottelumäärän:
@@ -112,8 +140,8 @@ export function computeTeamStrength(team, league, corsi) {
     const shootingPct = shrinkRate(
         team.goalsFor ?? 0,
         totalShots,
-        league.shootingPct,
-        MODEL.shootingPriorShots,
+        league.shootingPct * prior.finishing,
+        p.shootingPriorShots,
     );
 
     const totalShotsAgainst = (team.shotsAgainstPerGame ?? 0) * gp;
@@ -121,7 +149,7 @@ export function computeTeamStrength(team, league, corsi) {
         team.goalsAgainst ?? 0,
         totalShotsAgainst,
         1 - league.savePct,
-        MODEL.shootingPriorShots,
+        p.shootingPriorShots,
     );
 
     // Laukausvoima blendataan Corsin kanssa, jos se on saatavilla.
@@ -130,7 +158,7 @@ export function computeTeamStrength(team, league, corsi) {
     const shotSuppressionRaw = league.shotsPerGame / shotsAgainst;
 
     const corsiRatio = corsi ? corsi / 0.5 : null;
-    const corsiWeight = CORSI_WEIGHT * (gp / (gp + CORSI_PRIOR_GAMES));
+    const corsiWeight = p.corsiWeight * (gp / (gp + p.corsiPriorGames));
 
     const blend = (raw) => (corsiRatio === null
         ? raw
@@ -159,11 +187,11 @@ export function computeTeamStrength(team, league, corsi) {
  * maalivahdin vaikutuksen noin nelinkertaisesti, koska oikea mittakaava on
  * kohdattujen laukausten määrä (~29 per ottelu), ei kahdeksan.
  */
-export function regressedSavePct(goalie, leagueSavePct) {
+export function regressedSavePct(goalie, leagueSavePct, priorShots = MODEL.goaliePriorShots) {
     const shotsAgainst = goalie.shotsAgainst ?? 0;
     const saves = goalie.saves ?? Math.round(shotsAgainst * (goalie.savePct ?? leagueSavePct));
 
-    return shrinkRate(saves, shotsAgainst, leagueSavePct, MODEL.goaliePriorShots);
+    return shrinkRate(saves, shotsAgainst, leagueSavePct, priorShots);
 }
 
 /**

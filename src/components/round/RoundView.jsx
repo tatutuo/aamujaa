@@ -40,7 +40,7 @@ const LEADER_CATEGORIES = [
 
 const STRENGTH_TAG = { pp: { fi: 'YV', en: 'PP' }, sh: { fi: 'AV', en: 'SH' } };
 
-const gameLabel = (g) => `${g.away.abbrev}–${g.home.abbrev}`;
+const gameLabel = (g) => `${g.home.abbrev}–${g.away.abbrev}`;
 const parseFraction = (v) => {
     const [a, b] = String(v ?? '').split('/').map(Number);
     return { made: a || 0, tries: b || 0 };
@@ -134,7 +134,7 @@ export default function RoundView({ date, lang, onGameClick, onPlayerClick }) {
         { value: 'all', label: fi ? 'Kaikki ottelut' : 'All games' },
         ...started.map((g) => ({
             value: g.id,
-            label: `${gameLabel(g)} ${g.away.score}–${g.home.score}${LIVE.has(g.state) ? ' •' : ''}`,
+            label: `${gameLabel(g)} ${g.home.score}–${g.away.score}${LIVE.has(g.state) ? ' •' : ''}`,
         })),
     ];
 
@@ -205,7 +205,7 @@ export default function RoundView({ date, lang, onGameClick, onPlayerClick }) {
                                             </span>
                                         </span>
                                         <button type="button" className="rd-goal-game" onClick={() => gm && onGameClick(toGameRef(gm))}>
-                                            <span className="rd-goal-score num">{g.awayScore}–{g.homeScore}</span>
+                                            <span className="rd-goal-score num">{g.homeScore}–{g.awayScore}</span>
                                             {!game && gm && <span className="rd-goal-label">{gameLabel(gm)}</span>}
                                         </button>
                                         {g.video ? (
@@ -388,9 +388,9 @@ function AllGames({ games, goals, lang, onGameClick, onSelect }) {
                         <div key={g.id} className="rd-game">
                             <button type="button" className="rd-game-head" onClick={() => onSelect(g.id)}>
                                 <span className="rd-game-score">
-                                    <span style={{ color: chartColor(g.away.abbrev) }}>{g.away.abbrev}</span>
-                                    <strong className="num">{g.away.score}–{g.home.score}</strong>
                                     <span style={{ color: chartColor(g.home.abbrev) }}>{g.home.abbrev}</span>
+                                    <strong className="num">{g.home.score}–{g.away.score}</strong>
+                                    <span style={{ color: chartColor(g.away.abbrev) }}>{g.away.abbrev}</span>
                                 </span>
                                 <span className={`rd-game-state ${LIVE.has(g.state) ? 'is-live' : ''}`}>{stateText(g, fi)}</span>
                             </button>
@@ -418,9 +418,9 @@ function SingleGame({ game, lang, onGameClick, updated }) {
             <section className="rd-card">
                 <button type="button" className="rd-game-head is-large" onClick={() => onGameClick(toGameRef(game))}>
                     <span className="rd-game-score">
-                        <span style={{ color: chartColor(game.away.abbrev) }}>{game.away.abbrev}</span>
-                        <strong className="num">{game.away.score}–{game.home.score}</strong>
                         <span style={{ color: chartColor(game.home.abbrev) }}>{game.home.abbrev}</span>
+                        <strong className="num">{game.home.score}–{game.away.score}</strong>
+                        <span style={{ color: chartColor(game.away.abbrev) }}>{game.away.abbrev}</span>
                     </span>
                     <span className={`rd-game-state ${LIVE.has(game.state) ? 'is-live' : ''}`}>
                         {stateText(game, fi)} · {fi ? 'avaa ottelukortti' : 'open game card'}

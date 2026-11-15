@@ -2,15 +2,19 @@ import { web } from '../lib/nhlApi.js';
 import { toDateString, addDays } from '../lib/dates.js';
 import { config } from '../config.js';
 import { savePredictions, getPredictions, saveResult } from '../lib/db.js';
-import { generatePlayerPredictions } from './players.js';
-import { generateTeamPredictions } from './teams.js';
 import { generateMatchPredictions } from './matches.js';
 
 /**
- * Ennusteiden ajastus ja ajo.
+ * Otteluennusteiden ajastus ja ajo.
  *
  * Ennusteet lasketaan kerran vuorokaudessa klo 09:00 Suomen aikaa, kun edellisen
- * yön ottelut ovat päättyneet ja NHL:n tilastot päivittyneet.
+ * yön ottelut ovat päättyneet ja NHL:n tilastot päivittyneet. Ennuste
+ * lukitaan tietokantaan ennen otteluita, joten osumatarkkuus mitataan
+ * rehellisesti eikä jälkiviisaasti.
+ *
+ * Aamujään pelaaja- ja joukkue-ennusteet (kausipisteet, sarjasijoitukset)
+ * poistettiin: ne olivat raskaita laskea webhotellissa, eikä niiden
+ * tarkkuutta mitattu. Kausiennuste tehdään myöhemmin omana kokonaisuutenaan.
  */
 
 let running = false;
@@ -35,48 +39,21 @@ export async function runPredictions({ force = false, date = toDateString() } = 
     try {
         console.log(`[ennusteet] Aloitetaan laskenta päivälle ${date}`);
 
-        // Kolme mallia ovat toisistaan riippumattomia, joten ne ajetaan rinnakkain.
-        // allSettled: yhden mallin kaatuminen ei saa hukata kahta muuta.
-        const [players, teams, matches] = await Promise.allSettled([
-            generatePlayerPredictions(),
-            generateTeamPredictions(),
-            generateMatchPredictions(date),
-        ]);
+        const matches = await generateMatchPredictions(date);
 
-        const result = {
-            players: players.status === 'fulfilled' ? players.value : [],
-            teams: teams.status === 'fulfilled' ? teams.value : [],
-            matches: matches.status === 'fulfilled' ? matches.value : [],
-        };
-
-        for (const [name, outcome] of [['pelaajat', players], ['joukkueet', teams], ['ottelut', matches]]) {
-            if (outcome.status === 'rejected') {
-                console.error(`[ennusteet] ${name} epäonnistui:`, outcome.reason?.message ?? outcome.reason);
-            }
+        // Ei tallenneta tyhjää ajoa: pelittömänä päivänä ei ole mitään
+        // ennustettavaa, ja rajapinnan häiriö ei saa pyyhkiä aiempaa ajoa.
+        if (matches.length === 0) {
+            return { skipped: true, reason: 'Ei ennustettavia otteluita tai dataa ei saatu' };
         }
 
-        // Ei tallenneta täysin tyhjää ajoa vanhan päälle — se pyyhkisi eilisen
-        // toimivat ennusteet jos NHL:n rajapinta sattuu olemaan nurin.
-        const isEmpty = result.players.length === 0 && result.teams.length === 0 && result.matches.length === 0;
-        if (isEmpty) {
-            console.warn('[ennusteet] Kaikki mallit palauttivat tyhjää — ei tallenneta');
-            return { skipped: true, reason: 'Ulkoisesta rajapinnasta ei saatu dataa' };
-        }
-
-        savePredictions(date, result);
+        savePredictions(date, { players: [], teams: [], matches });
         lastRun = new Date().toISOString();
 
         const seconds = ((Date.now() - startedAt) / 1000).toFixed(1);
-        console.log(
-            `[ennusteet] Valmis ${seconds}s: ${result.players.length} pelaajaa, ` +
-            `${result.teams.length} joukkuetta, ${result.matches.length} ottelua`,
-        );
+        console.log(`[ennusteet] Valmis ${seconds}s: ${matches.length} ottelua`);
 
-        return { ok: true, date, counts: {
-            players: result.players.length,
-            teams: result.teams.length,
-            matches: result.matches.length,
-        } };
+        return { ok: true, date, counts: { matches: matches.length } };
     } finally {
         running = false;
     }

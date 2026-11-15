@@ -110,7 +110,7 @@ const PlayerCard = ({ player, onClick, variant = 'fin', favPlayers, toggleFavPla
                     {isFav ? <IconHeartFilled size={16} aria-hidden="true" /> : <IconHeart size={16} stroke={2} aria-hidden="true" />}
                 </button>
 
-                {/* Fantasy-tähti vain kun ominaisuus on päällä (ks. config/features.js). */}
+                {/* Fantasy-tähti vain kun Fantasy on päällä asetuksissa. */}
                 {toggleFantasyPlayer && (
                     <button
                         type="button"

@@ -192,6 +192,24 @@ export default function SettingsView() {
             </section>
 
             <section className="panel">
+                <h2 className="panel-title">{fi ? 'Otteluennusteet' : 'Match predictions'}</h2>
+                <p className="panel-hint">
+                    {fi
+                        ? 'Etusivun otteluissa näkyy tilastomallin arvio voittotodennäköisyyksistä. Ennuste, sen laskenta ja mallin osumatarkkuus löytyvät ottelukortin Ennuste-välilehdeltä, vaikka palkit olisivat piilossa.'
+                        : 'Games on the home page show the statistical model’s win probabilities. The prediction, how it was calculated and the model’s accuracy are always on the game card’s Prediction tab.'}
+                </p>
+                <Segmented
+                    label={fi ? 'Otteluennusteet' : 'Match predictions'}
+                    value={settings.predictions ? 'on' : 'off'}
+                    onChange={(value) => update({ predictions: value === 'on' })}
+                    options={[
+                        { value: 'off', label: fi ? 'Piilota' : 'Hide' },
+                        { value: 'on', label: fi ? 'Näytä' : 'Show' },
+                    ]}
+                />
+            </section>
+
+            <section className="panel">
                 <h2 className="panel-title">{fi ? 'Teema' : 'Theme'}</h2>
                 <p className="panel-hint">{fi ? 'Grafiitti on sovelluksen oletus.' : 'Graphite is the default.'}</p>
                 <Segmented

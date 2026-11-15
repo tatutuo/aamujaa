@@ -3,6 +3,7 @@ import { IconHeart, IconHeartFilled } from '@tabler/icons-react';
 import { translations } from '../utils/translations';
 import TeamBadge from './TeamBadge';
 import { teamColors, DEFAULT_TEAM_COLORS } from '../utils/teamColors';
+import { chartColor } from '../utils/chartColors';
 
 /**
  * Ottelukortti.
@@ -23,7 +24,11 @@ const periodLabel = (game, t) => {
     return `${number}. ${t.gamePeriod ?? 'erä'}`;
 };
 
-const GameCard = ({ game, onClick, favTeams, toggleFavTeam, language }) => {
+/**
+ * @param {object} [prediction] { awayWinProb, homeWinProb } otteluennusteesta
+ * @param {Function} [onPredictionClick] avaa ottelukortin Ennuste-välilehden
+ */
+const GameCard = ({ game, onClick, favTeams, toggleFavTeam, language, prediction, onPredictionClick }) => {
     const t = translations[language] || translations.fi;
 
     if (!game?.homeTeam || !game?.awayTeam) return null;
@@ -124,9 +129,29 @@ const GameCard = ({ game, onClick, favTeams, toggleFavTeam, language }) => {
                 </div>
 
                 <div className="gc-teams">
-                    {renderTeam(away, 'away')}
+                    {/* Kotijoukkue ylempänä, vieras alempana (suomalainen tapa). */}
                     {renderTeam(home, 'home')}
+                    {renderTeam(away, 'away')}
                 </div>
+
+                {/* Ennusteen voittotodennäköisyydet; napautus avaa laskennan. */}
+                {prediction && (
+                    <button
+                        type="button"
+                        className={`gc-pred ${!isUpcoming ? 'is-past' : ''}`}
+                        onClick={(e) => { e.stopPropagation(); onPredictionClick?.(); }}
+                        aria-label={language === 'en'
+                            ? `Prediction: ${away.abbrev} ${prediction.awayWinProb}%, ${home.abbrev} ${prediction.homeWinProb}%`
+                            : `Ennuste: ${away.abbrev} ${prediction.awayWinProb} %, ${home.abbrev} ${prediction.homeWinProb} %`}
+                    >
+                        <span className="gc-pred-pct num">{prediction.homeWinProb}</span>
+                        <span className="gc-pred-bar" aria-hidden="true">
+                            <span style={{ width: `${prediction.homeWinProb}%`, background: chartColor(home.abbrev) }} />
+                            <span style={{ width: `${prediction.awayWinProb}%`, background: chartColor(away.abbrev) }} />
+                        </span>
+                        <span className="gc-pred-pct num">{prediction.awayWinProb}</span>
+                    </button>
+                )}
             </div>
 
         </article>

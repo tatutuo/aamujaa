@@ -35,6 +35,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
     nationalities: ['FIN'],
     /** Hockey GM -pisteisiin perustuva fantasy-joukkue. Oletuksena pois. */
     fantasy: false,
+    /** Otteluennusteiden todennäköisyyspalkit etusivun otteluissa. Oletuksena päällä. */
+    predictions: true,
     homeSections: HOME_SECTIONS.map((id) => ({ id, visible: true })),
 });
 

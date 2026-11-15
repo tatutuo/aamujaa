@@ -74,8 +74,10 @@ export function pairColors(away, home) {
     if (distance(a, h) < 90) {
         // Kaksi samansävyistä (esim. TOR–TBL): kotijoukkueelle sen toinen
         // väri, jos se erottuu, muuten neutraali harmaa.
+        // Tumma toinen väri (esim. EDM:n tummansininen) vaalennetaan ensin.
         const [, secondary] = teamColors[home] ?? DEFAULT_TEAM_COLORS;
-        h = usable(secondary) && distance(a, secondary) >= 90 ? secondary : '#9aa4b0';
+        const alternative = usable(secondary) ? secondary : lift(secondary);
+        h = distance(a, alternative) >= 90 ? alternative : '#9aa4b0';
     }
     return { away: a, home: h };
 }

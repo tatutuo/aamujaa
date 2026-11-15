@@ -477,6 +477,43 @@
 
 .gc-fav.is-active { color: var(--live); }
 
+/* Ennusteen voittotodennäköisyyspalkki ottelukortin alareunassa. */
+.gc-pred {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 6px;
+    padding: 4px 2px 2px;
+    border: none;
+    border-top: 1px solid var(--border-subtle);
+    background: none;
+    color: var(--text-secondary);
+    font: inherit;
+    cursor: pointer;
+}
+
+.gc-pred.is-past { opacity: 0.6; }
+
+.gc-pred-pct { min-width: 18px; font-size: 0.68rem; font-weight: 750; text-align: center; }
+
+.gc-pred-bar {
+    flex: 1;
+    display: flex;
+    gap: 2px;
+    height: 6px;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.gc-pred-bar span { height: 100%; }
+
+@media (hover: hover) {
+    .gc-pred:hover .gc-pred-bar { filter: brightness(1.15); }
+}
+
 .gc-type {
     padding: 0 4px;
     border-radius: 4px;

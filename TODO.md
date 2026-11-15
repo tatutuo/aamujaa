@@ -2,8 +2,11 @@
 
 ## Ennusteet (koodi valmiina, tuotannossa `PREDICTIONS_ENABLED=false`)
 
-- [ ] Otteluennusteet etusivulle, kun joukkueilla on noin 15–20 ottelua (marraskuun puoliväli).
-      Takautuva testi oli heikko kauden alussa ja hyvä loppukaudella.
+- [x] Otteluennusteet tehty 27.10.2026: kalibrointi kahdella kaudella, Ennuste-välilehti,
+      etusivun palkit, asetus. Tuotannossa `PREDICTIONS_ENABLED=true`.
+- [ ] Kalibroi uudelleen joulun jälkeen kuluvan kauden datalla (scripts/tune-predictions.js).
+- [ ] Kokeile omaa xG:tä laukausmäärän rinnalle / tilalle (xG kertoo paikkojen laadun).
+- [ ] Vertailu vedonlyöntikertoimiin (markkinan Brier on tyypillisesti paras vertailukohta).
 - [ ] Kausiennuste joulun jälkeen. Parannukset: edellisen kauden lähtötaso, MoneyPuckin
       ottelukohtainen xG (tai oma xG-malli), tuoreimpien otteluiden painotus, loukkaantumiset,
       sovitetut parametrit, vertailu vedonlyönnin kertoimiin, koko kauden simulointi.
